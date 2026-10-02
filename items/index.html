@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>道具資料庫｜魔龍數據</title>
+<meta name="description" content="《楓之谷 Classic》1.15.3 全部道具的數值、說明、職業限制，以及掉落怪物與任務取得方式。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+<style>
+  /* 色彩 token：冷灰藍底 + 藍 accent */
+  :root{
+    --bg:#ECEEF1;
+    --surface:#FFFFFF;
+    --surface-2:#F4F6F9;
+    --sunk:#E0E4EA;
+    --text:#14181F;
+    --text-muted:#556072;
+    --faint:#84909F;
+    --border:#D6DCE4;
+    --border-soft:#E6EAF0;
+    --accent:#2F5DA8;
+    --accent-ink:#264C8C;
+    --accent-weak:#E1E9F7;
+    --bronze:#8A6420;
+    --bronze-weak:#F4EBD9;
+    --stat:#1F6B52;
+    --stat-weak:#DEEFE8;
+    --tag-bg:var(--sunk);
+    --shadow:0 1px 2px rgba(20,24,31,.06),0 10px 26px -18px rgba(20,24,31,.35);
+    --r:10px;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1114;
+      --surface:#161A20;
+      --surface-2:#1C222A;
+      --sunk:#13171C;
+      --text:#E6EAF0;
+      --text-muted:#98A4B4;
+      --faint:#6F7C8C;
+      --border:#262E38;
+      --border-soft:#1E242C;
+      --accent:#6F9DE8;
+      --accent-ink:#8FB5F0;
+      --accent-weak:#182437;
+      --bronze:#D5A64C;
+      --bronze-weak:#2C2413;
+      --stat:#5CBF9B;
+      --stat-weak:#12291F;
+      --tag-bg:var(--sunk);
+      --shadow:0 1px 2px rgba(0,0,0,.45),0 10px 26px -18px rgba(0,0,0,.85);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1114;
+    --surface:#161A20;
+    --surface-2:#1C222A;
+    --sunk:#13171C;
+    --text:#E6EAF0;
+    --text-muted:#98A4B4;
+    --faint:#6F7C8C;
+    --border:#262E38;
+    --border-soft:#1E242C;
+    --accent:#6F9DE8;
+    --accent-ink:#8FB5F0;
+    --accent-weak:#182437;
+    --bronze:#D5A64C;
+    --bronze-weak:#2C2413;
+    --stat:#5CBF9B;
+    --stat-weak:#12291F;
+    --tag-bg:var(--sunk);
+    --shadow:0 1px 2px rgba(0,0,0,.45),0 10px 26px -18px rgba(0,0,0,.85);
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+    margin:0;
+  }
+  .page{max-width:980px;margin:0 auto;padding-inline:16px;display:flex;flex-direction:column;gap:14px;padding-block:14px 40px;}
+
+  h1,h2,h3{font-family:'Noto Serif TC',serif;text-wrap:balance;margin:0;}
+  .mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+
+  /* ---------- 頁首 ---------- */
+  .hero{display:flex;flex-direction:column;gap:10px;}
+  .hero h1{font-size:1.65rem;font-weight:700;color:var(--text);}
+  .hero .sub{color:var(--text-muted);font-size:.85rem;margin:0;}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .stat-tile{
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    padding:10px 12px;display:flex;flex-direction:column;gap:2px;box-shadow:0 1px 2px var(--shadow);
+  }
+  .stat-tile b{font-family:'IBM Plex Mono',monospace;font-size:1.15rem;font-variant-numeric:tabular-nums;color:var(--accent);}
+  .stat-tile span{font-size:.72rem;color:var(--text-muted);}
+  @media (max-width:520px){ .stats{grid-template-columns:repeat(2,1fr);} }
+
+  /* ---------- 工具列 ---------- */
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;}
+  #search{
+    flex:1 1 220px;min-width:0;background:var(--surface);color:var(--text);
+    border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.92rem;
+    box-shadow:var(--shadow);outline:none;
+  }
+  #search::placeholder{color:var(--faint);}
+  #search:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-weak);}
+  #sort{
+    background:var(--surface);color:var(--text-muted);border:1px solid var(--border);
+    border-radius:999px;padding:7px 14px;font-size:.85rem;cursor:pointer;
+  }
+  #sort:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  /* ---------- 篩選 chip ---------- */
+  .chiprow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .chiprow .divider{width:1px;align-self:stretch;background:var(--border);margin:0 2px;}
+  .chip{
+    font-family:inherit;font-size:.82rem;color:var(--text-muted);background:var(--surface);
+    border:1px solid var(--border);border-radius:999px;padding:6px 13px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;line-height:1.1;
+  }
+  .chip:hover{color:var(--text);border-color:var(--faint);}
+  .chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .chip b{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:.74rem;color:var(--faint);font-variant-numeric:tabular-nums;}
+  .chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .chip.active b{color:rgba(255,255,255,.8);}
+  /* 第二、三列（部位/武器/itemType、職業/等級）用淡藍底，跟線上版的「次要篩選」chip 風格一致 */
+  #chip-sub .chip.active,#chip-extra .chip.active{background:var(--accent-weak);color:var(--accent-ink);border-color:var(--accent);}
+  #chip-sub .chip.active b,#chip-extra .chip.active b{color:var(--accent-ink);}
+  .chiprow.cat-row .chip{text-transform:uppercase;letter-spacing:.04em;font-weight:600;font-size:.78rem;}
+
+  /* ---------- 結果列 ---------- */
+  .resultbar{display:flex;justify-content:space-between;align-items:baseline;color:var(--text-muted);font-size:.8rem;padding-top:2px;}
+
+  /* ---------- 列表 ---------- */
+  .list{display:flex;flex-direction:column;gap:6px;}
+  .row{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .row-main{
+    width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;
+    background:none;border:none;color:inherit;text-align:left;cursor:pointer;font-family:inherit;
+  }
+  .row-main:hover{background:var(--surface-2);}
+  .row-main:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .row-icon{
+    flex:0 0 auto;width:40px;height:40px;border-radius:7px;background:var(--surface-2);
+    border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .row-icon .icon{image-rendering:pixelated;}
+  .row-icon .icon-ph{width:16px;height:16px;border-radius:3px;background:var(--faint);opacity:.5;}
+  .row-lv{flex:0 0 auto;width:46px;font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:var(--text-muted);font-variant-numeric:tabular-nums;}
+  .row-main-info{flex:1 1 180px;min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .row-name{font-weight:600;font-size:.94rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row-name .row-id{font-family:'IBM Plex Mono',monospace;font-weight:400;color:var(--faint);font-size:.74rem;margin-left:5px;}
+  .row-tags{display:flex;gap:5px;flex-wrap:wrap;}
+  .tag{font-size:.68rem;background:var(--tag-bg);border:1px solid var(--border);border-radius:5px;padding:2px 6px;color:var(--text-muted);white-space:nowrap;}
+  .tag-cat{color:var(--accent-ink);border-color:var(--accent);background:var(--accent-weak);}
+  .tag-job{color:var(--text-muted);border-color:var(--border);background:transparent;}
+  .row-obtain{flex:1 1 220px;min-width:0;font-size:.76rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .row-stats{flex:0 0 auto;display:flex;gap:4px;flex-wrap:wrap;max-width:230px;justify-content:flex-end;}
+  /* 數值 tag：跟線上版的 .tag.atk 一樣用綠色，標出這件道具的「有效數值」 */
+  .stag{font-size:.7rem;background:var(--stat-weak);border:1px solid transparent;border-radius:5px;padding:2px 6px;white-space:nowrap;color:var(--stat);}
+  .stag em{font-style:normal;color:var(--stat);opacity:.8;margin-right:3px;}
+  .stag b{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;color:var(--stat);}
+
+  @media (max-width:620px){
+    .row-main{flex-wrap:wrap;}
+    .row-main-info{flex:1 1 100%;order:1;}
+    .row-obtain{flex:1 1 100%;order:2;white-space:normal;}
+    .row-stats{order:3;max-width:none;justify-content:flex-start;}
+  }
+
+  .detail{border-top:1px solid var(--border-soft);padding:12px 14px 14px;background:var(--surface-2);font-size:.86rem;display:flex;flex-direction:column;gap:10px;}
+  .detail p.desc{margin:0;padding:9px 12px;background:var(--surface);border-left:2px solid var(--accent);border-radius:0 8px 8px 0;color:var(--text-muted);line-height:1.6;}
+  .detail h4{font-size:.78rem;color:var(--faint);margin:0 0 6px;font-weight:600;letter-spacing:.03em;}
+  .kvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;}
+  .kv{display:flex;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--border-soft);border-radius:6px;padding:5px 8px;font-size:.78rem;}
+  .kv span{color:var(--faint);}
+  .kv b{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;}
+  /* 價格用 bronze 色標出來，跟數值 tag 的綠色分開 */
+  .kv.price{background:var(--bronze-weak);border-color:transparent;}
+  .kv.price span,.kv.price b{color:var(--bronze);}
+  .obtain-list{display:flex;flex-direction:column;gap:6px;}
+  .obtain-list .line{font-size:.82rem;line-height:1.5;}
+  .obtain-list .line b{color:var(--text-muted);font-weight:600;margin-right:4px;}
+
+  .xlink{color:var(--accent-ink);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 40%,transparent);text-underline-offset:2px;}
+  .xlink:hover{text-decoration-color:currentColor;}
+  .empty{text-align:center;color:var(--text-muted);padding:40px 10px;font-size:.9rem;}
+  #load-more{display:block;margin:4px auto 0;background:var(--surface);border:1px dashed var(--accent);color:var(--accent-ink);border-radius:var(--r);padding:10px 18px;font-size:.84rem;cursor:pointer;}
+  #load-more:hover{background:var(--accent-weak);}
+
+  .credits{margin-top:30px;padding-top:16px;border-top:1px solid var(--border-soft);font-size:.78rem;color:var(--faint);display:flex;flex-direction:column;gap:4px;}
+  .credits p{margin:0;}
+  .credits code{font-family:'IBM Plex Mono',monospace;color:var(--text-muted);}
+</style>
+</head>
+<body>
+<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/">怪物</a><a href="../items/" aria-current="page">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a></div></div>
+<div class="page">
+  <header class="hero">
+    <h1>道具資料庫</h1>
+    <p class="sub">《楓之谷 Classic》客戶端 1.15.3 資料 · 僅收錄客戶端資產裡的欄位，沒有查任何外站數字</p>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="搜尋名稱、編號、說明、掉落怪物、任務…" autocomplete="off">
+    <select id="sort" aria-label="排序方式">
+      <option value="id-asc">編號（小→大）</option>
+      <option value="id-desc">編號（大→小）</option>
+      <option value="lvl-asc">需求等級（低→高）</option>
+      <option value="lvl-desc">需求等級（高→低）</option>
+      <option value="price-desc">價格（高→低）</option>
+      <option value="price-asc">價格（低→高）</option>
+      <option value="name">名稱</option>
+    </select>
+  </div>
+
+  <div class="chiprow cat-row" id="chip-cat"></div>
+  <div class="chiprow" id="chip-sub" hidden></div>
+  <div class="chiprow" id="chip-extra" hidden></div>
+
+  <div class="resultbar"><span id="result-count"></span><span id="active-filter-note"></span></div>
+
+  <div class="list" id="list"><p class="empty" id="loading">資料載入中…</p></div>
+  <div id="sentinel" style="height:1px;"></div>
+  <button id="load-more" type="button" hidden>載入更多</button>
+  <p class="empty" id="empty" hidden>找不到符合條件的道具，換個關鍵字或篩選條件看看。</p>
+
+  <div class="credits">
+    <p>「取得方式」的掉落只收錄「怪物圖鑑有收的怪」；圖鑑沒收的怪的掉寶表在伺服器端，客戶端查不到。</p>
+  </div>
+</div>
+
+<script>
+(async function(){
+  'use strict';
+
+  // ========== 載入資料（data/*.json） ==========
+  var loaded = await Promise.all(['items','item_atlas'].map(function(n){
+    return fetch('../data/' + n + '.json').then(function(r){ if (!r.ok) throw new Error(n + ' ' + r.status); return r.json(); });
+  }));
+  var DATA = loaded[0];   // 道具精簡資料
+  var ATLAS = loaded[1];  // 圖示 atlas：{cell, sheets:[圖檔檔名,…], w:[寬,…], h:[高,…], pos:{道具id: [sheet,x,y,w,h]}}
+  var loadingEl = document.getElementById('loading'); if (loadingEl) loadingEl.remove();
+
+  var N = DATA.length;
+
+  // ---------- 逐筆預算：等級、價格、搜尋字串、圖示座標（只做一次，之後篩選都直接查表） ----------
+  var lvl = new Array(N), price = new Array(N), searchStr = new Array(N), iconPos = new Array(N);
+  for (var i = 0; i < N; i++){
+    var it = DATA[i], st = it.st || {};
+    lvl[i] = st.reqLevel || 0;
+    price[i] = st.price || 0;
+    iconPos[i] = ATLAS.pos[it.i] || null;
+    var s = it.n + ' ' + it.i;
+    if (it.d) s += ' ' + it.d;
+    var ob = it.ob;
+    if (ob){
+      if (ob.dr) s += ' ' + ob.dr.join(' ');
+      if (ob.qr) s += ' ' + ob.qr.join(' ');
+      if (ob.qn) s += ' ' + ob.qn.join(' ');
+    }
+    searchStr[i] = s.toLowerCase();
+  }
+
+  // ---------- 分類排序偏好（只影響 chip 顯示順序，資料仍然是從實際值產生，不是寫死分類） ----------
+  var CAT_ORDER = ['裝備','消耗','其他','設置','現金','寵物','特殊'];
+  var SLOT_ORDER = ['帽子','上衣','套服','褲裙','鞋子','手套','披風','盾牌','戒指','眼飾','臉飾','耳環','墜飾','腰帶','勳章'];
+  var WEAPON_ORDER = ['短劍','單手劍','雙手劍','單手斧','雙手斧','單手棍','雙手棍','短杖','長杖','槍','矛','弓','弩','拳套','指虎','火槍'];
+  var JOB_ORDER = ['全職業','初心者（推定）','劍士','法師','弓箭手','盜賊','海盜'];
+
+  function rankOf(order, v){ var idx = order.indexOf(v); return idx === -1 ? 999 : idx; }
+
+  // ---------- 小工具 ----------
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;';
+    });
+  }
+  function countBy(keyFn, filterFn){
+    var m = new Map();
+    for (var idx = 0; idx < N; idx++){
+      if (filterFn && !filterFn(idx)) continue;
+      var k = keyFn(idx);
+      if (k == null || k === '') continue;
+      m.set(k, (m.get(k) || 0) + 1);
+    }
+    return m;
+  }
+  function sortedEntries(map, order){
+    var arr = Array.from(map.entries());
+    arr.sort(function(a, b){
+      var ra = order ? rankOf(order, a[0]) : 0, rb = order ? rankOf(order, b[0]) : 0;
+      if (ra !== rb) return ra - rb;
+      return b[1] - a[1];
+    });
+    return arr;
+  }
+
+  // ---------- 武器種類集合（用來判斷 sub chip 點的是部位還是武器種類） ----------
+  var weaponTypeSet = new Set();
+  for (var wi = 0; wi < N; wi++){ if (DATA[wi].wt) weaponTypeSet.add(DATA[wi].wt); }
+
+  // ========== 狀態 ==========
+  var state = { cat: null, sub: null, subKind: null, job: null, lvlBucket: null, q: '', sort: 'id-asc' };
+  var PAGE = 120;
+  var currentList = [];
+  var shown = 0;
+  var detailBuilt = new Set();
+
+  // ========== 篩選 ==========
+  function matches(idx){
+    var it = DATA[idx];
+    if (state.cat && it.c !== state.cat) return false;
+    if (state.sub){
+      if (state.subKind === 'weapon'){ if (it.wt !== state.sub) return false; }
+      else if (state.subKind === 'slot'){ if (it.sl !== state.sub) return false; }
+      else { if (it.ty !== state.sub) return false; }
+    }
+    if (state.job){
+      if (state.job === '全職業'){ if (it.jb && it.jb !== '全職業') return false; }
+      else { if (!(it.jb || '').indexOf(state.job) > -1) return false; }
+    }
+    if (state.lvlBucket != null){
+      var b = Math.min(9, Math.floor(lvl[idx] / 20));
+      if (b !== state.lvlBucket) return false;
+    }
+    if (state.q && searchStr[idx].indexOf(state.q) === -1) return false;
+    return true;
+  }
+
+  var COMPARATORS = {
+    'id-asc':   function(a, b){ return DATA[a].i - DATA[b].i; },
+    'id-desc':  function(a, b){ return DATA[b].i - DATA[a].i; },
+    'lvl-asc':  function(a, b){ return (lvl[a] - lvl[b]) || (DATA[a].i - DATA[b].i); },
+    'lvl-desc': function(a, b){ return (lvl[b] - lvl[a]) || (DATA[a].i - DATA[b].i); },
+    'price-desc': function(a, b){ return (price[b] - price[a]) || (DATA[a].i - DATA[b].i); },
+    'price-asc':  function(a, b){ return (price[a] - price[b]) || (DATA[a].i - DATA[b].i); },
+    'name': function(a, b){ return DATA[a].n.localeCompare(DATA[b].n, 'zh-Hant'); }
+  };
+
+  function computeList(){
+    var out = [];
+    for (var idx = 0; idx < N; idx++) if (matches(idx)) out.push(idx);
+    out.sort(COMPARATORS[state.sort] || COMPARATORS['id-asc']);
+    return out;
+  }
+
+  // ========== 欄位中文標籤（「全部欄位格」用） ==========
+  var STAT_LABELS = {
+    reqLevel:'需求等級', price:'價格', slotMax:'衝卷次數上限', tuc:'目前衝卷次數', attackSpeed:'攻擊速度',
+    incPAD:'物理攻擊力', incMAD:'魔法攻擊力', incPDD:'物理防禦力', incMDD:'魔法防禦力',
+    incSTR:'力量', incDEX:'敏捷', incINT:'智力', incLUK:'幸運',
+    incMHP:'最大HP', incMMP:'最大MP', incACC:'命中率', incEVA:'迴避率', incSpeed:'移動速度', incJump:'跳躍力',
+    reqSTR:'需求力量', reqDEX:'需求敏捷', reqINT:'需求智力', reqLUK:'需求幸運', reqJob:'職業限制碼（位元遮罩）',
+    cash:'現金道具', tradeBlock:'禁止交易', notSale:'禁止出售給商店', only:'限定持有數量', setItemID:'套裝編號',
+    'spec/hp':'HP 回復', 'spec/mp':'MP 回復', 'spec/time':'持續時間（秒）', 'spec/prob':'成功率(%)',
+    'spec/pad':'暫時物攻', 'spec/mad':'暫時魔攻', 'spec/pdd':'暫時物防', 'spec/mdd':'暫時魔防',
+    'spec/acc':'暫時命中', 'spec/eva':'暫時迴避', 'spec/speed':'暫時移動速度', 'spec/jump':'暫時跳躍力',
+    'spec/consumeOnPickup':'撿取即生效', 'spec/onlyPickup':'僅能撿取使用', 'spec/script':'腳本道具',
+    'spec/npc':'NPC 互動道具', 'spec/itemupbyitem':'道具取得量加成', 'spec/mesoupbyitem':'楓幣取得量加成'
+  };
+  function fmtKV(k, v){
+    if (STAT_LABELS[k]) return STAT_LABELS[k];
+    if (k.indexOf('spec/') === 0) return '額外：' + k.slice(5);
+    return k;
+  }
+  function fmtVal(v){
+    if (typeof v === 'number') return String(v);
+    if (typeof v === 'boolean') return v ? '是' : '否';
+    if (v === 1) return '是';
+    return String(v);
+  }
+
+  // ========== 圖示 ==========
+  function iconHTML(idx){
+    var ap = iconPos[idx];
+    if (!ap) return '<div class="icon-ph"></div>';
+    var sheet = ap[0], x = ap[1], y = ap[2], w = ap[3], h = ap[4];
+    var file = ATLAS.sheets[sheet];
+    return '<div class="icon" style="width:' + w + 'px;height:' + h + 'px;background-image:url(\'../assets/' + file +
+      '\');background-position:-' + x + 'px -' + y + 'px;"></div>';
+  }
+
+  // 連到其他資料庫頁並預填搜尋
+  function xlink(page, name){
+    var m = /^（無名怪物 (\d+)）$/.exec(name);  // 沒名字的怪改用編號搜尋
+    return '<a class="xlink" href="../' + page + '/?q=' + encodeURIComponent(m ? m[1] : name) + '">' + esc(name) + '</a>';
+  }
+
+  // ========== 取得方式 ==========
+  function obtainSummary(it){
+    var ob = it.ob;
+    if (!ob) return '取得方式不明（商店購買或暫無資料）';
+    var parts = [];
+    if (ob.dr && ob.dr.length){
+      var dr = ob.dr.slice(0, 4).join('、');
+      parts.push('掉落：' + dr + (ob.dr.length > 4 ? '等 ' + ob.dr.length + ' 隻' : ''));
+    }
+    if (ob.qr && ob.qr.length){
+      var qr = ob.qr.slice(0, 3).join('、');
+      parts.push('任務給：' + qr + (ob.qr.length > 3 ? '等 ' + ob.qr.length + ' 個' : ''));
+    }
+    return parts.length ? parts.join('／') : '僅見於任務需求，非掉落或獎勵';
+  }
+  function obtainFullHTML(it){
+    var ob = it.ob;
+    if (!ob) return '<p class="desc">目前資料裡沒有這件道具的掉落怪物或任務記錄（可能是商店購買、活動限定，或客戶端沒有收錄）。</p>';
+    var lines = [];
+    if (ob.dr && ob.dr.length) lines.push('<div class="line"><b>掉落怪物（' + ob.dr.length + '）</b>' + ob.dr.map(function(x){ return xlink('mobs', x); }).join('、') + '</div>');
+    if (ob.qr && ob.qr.length) lines.push('<div class="line"><b>任務獎勵（' + ob.qr.length + '）</b>' + ob.qr.map(function(x){ return xlink('quests', x); }).join('、') + '</div>');
+    if (ob.qn && ob.qn.length) lines.push('<div class="line"><b>任務需要繳交／持有（' + ob.qn.length + '）</b>' + ob.qn.map(function(x){ return xlink('quests', x); }).join('、') + '</div>');
+    return '<div class="obtain-list">' + lines.join('') + '</div>';
+  }
+
+  // ========== 數值 tag（列表列右側） ==========
+  function statTags(it){
+    var st = it.st || {}, tags = [];
+    if (it.c === '裝備'){
+      if (st.incPAD) tags.push(['物攻', '+' + st.incPAD]);
+      if (st.incMAD) tags.push(['魔攻', '+' + st.incMAD]);
+      if (st.incPDD) tags.push(['物防', '+' + st.incPDD]);
+      if (st.incMDD) tags.push(['魔防', '+' + st.incMDD]);
+      var four = [];
+      if (st.incSTR) four.push('力+' + st.incSTR);
+      if (st.incDEX) four.push('敏+' + st.incDEX);
+      if (st.incINT) four.push('智+' + st.incINT);
+      if (st.incLUK) four.push('運+' + st.incLUK);
+      if (four.length) tags.push(['四圍', four.join(' ')]);
+      if (st.tuc) tags.push(['衝卷', st.tuc + '次']);
+    } else {
+      if (st['spec/hp']) tags.push(['HP', '+' + st['spec/hp']]);
+      if (st['spec/mp']) tags.push(['MP', '+' + st['spec/mp']]);
+      if (st['spec/time']) tags.push(['持續', st['spec/time'] + '秒']);
+      var rate = (it.sr != null) ? it.sr : st['spec/prob'];
+      if (rate != null) tags.push(['成功率', rate + '%']);
+    }
+    return tags;
+  }
+
+  // ========== 建立單一列（row） ==========
+  function catLabel(it){ return it.sl || it.wt || it.ty || it.c; }
+
+  function buildRow(idx){
+    var it = DATA[idx];
+    var wrap = document.createElement('div');
+    wrap.className = 'row';
+    wrap.dataset.idx = idx;
+
+    var tagsHtml = '<span class="tag tag-cat">' + esc(catLabel(it)) + '</span>';
+    if (it.jb) tagsHtml += '<span class="tag tag-job">' + esc(it.jb) + '</span>';
+
+    var statsHtml = statTags(it).map(function(t){
+      return '<span class="stag"><em>' + esc(t[0]) + '</em><b>' + esc(t[1]) + '</b></span>';
+    }).join('');
+
+    wrap.innerHTML =
+      '<button class="row-main" type="button" aria-expanded="false">' +
+        '<div class="row-icon">' + iconHTML(idx) + '</div>' +
+        '<div class="row-lv mono">Lv.' + lvl[idx] + '</div>' +
+        '<div class="row-main-info">' +
+          '<div class="row-name">' + esc(it.n) + '<span class="row-id">#' + it.i + '</span></div>' +
+          '<div class="row-tags">' + tagsHtml + '</div>' +
+        '</div>' +
+        '<div class="row-obtain">' + esc(obtainSummary(it)) + '</div>' +
+        '<div class="row-stats">' + statsHtml + '</div>' +
+      '</button>' +
+      '<div class="detail" hidden></div>';
+    return wrap;
+  }
+
+  function buildDetailHTML(idx){
+    var it = DATA[idx], st = it.st || {};
+    var kv = Object.keys(st).map(function(k){
+      // 價格這格換成 bronze 色（純外觀，跟其他欄位格的篩選/資料邏輯無關）
+      var cls = k === 'price' ? 'kv price' : 'kv';
+      return '<div class="' + cls + '"><span>' + esc(fmtKV(k, st[k])) + '</span><b>' + esc(fmtVal(st[k])) + '</b></div>';
+    }).join('');
+    var meta = [];
+    meta.push('<div class="kv"><span>編號</span><b class="mono">' + it.i + '</b></div>');
+    meta.push('<div class="kv"><span>大類／資料夾</span><b>' + esc(it.c + '／' + it.s) + '</b></div>');
+    if (it.sl) meta.push('<div class="kv"><span>部位</span><b>' + esc(it.sl) + '</b></div>');
+    if (it.wt) meta.push('<div class="kv"><span>武器種類</span><b>' + esc(it.wt) + '</b></div>');
+    if (it.ty) meta.push('<div class="kv"><span>道具細分類</span><b>' + esc(it.ty) + '</b></div>');
+    if (it.jb) meta.push('<div class="kv"><span>職業限制</span><b>' + esc(it.jb) + '</b></div>');
+    if (it.mk) meta.push('<div class="kv"><span>拍賣場分類</span><b>' + esc(it.mk) + '</b></div>');
+
+    return (
+      (it.d ? '<p class="desc">' + esc(it.d) + '</p>' : '<p class="desc">（客戶端沒有這件道具的說明文字）</p>') +
+      '<div><h4>全部欄位</h4><div class="kvgrid">' + meta.join('') + kv + '</div></div>' +
+      '<div><h4>完整取得方式</h4>' + obtainFullHTML(it) + '</div>'
+    );
+  }
+
+  // ========== 清單渲染（分批每 120 筆） ==========
+  var listEl = document.getElementById('list');
+  var loadMoreBtn = document.getElementById('load-more');
+  var emptyEl = document.getElementById('empty');
+  var resultCountEl = document.getElementById('result-count');
+
+  function renderMore(){
+    var end = Math.min(shown + PAGE, currentList.length);
+    var frag = document.createDocumentFragment();
+    for (; shown < end; shown++) frag.appendChild(buildRow(currentList[shown]));
+    listEl.appendChild(frag);
+    loadMoreBtn.hidden = shown >= currentList.length;
+  }
+
+  function renderReset(){
+    currentList = computeList();
+    shown = 0;
+    listEl.innerHTML = '';
+    detailBuilt.clear();
+    emptyEl.hidden = currentList.length !== 0;
+    resultCountEl.textContent = '符合條件：' + currentList.length.toLocaleString('zh-Hant') + ' 件';
+    renderMore();
+  }
+
+  listEl.addEventListener('click', function(ev){
+    var btn = ev.target.closest('.row-main');
+    if (!btn) return;
+    var row = btn.closest('.row');
+    var idx = Number(row.dataset.idx);
+    var detail = row.querySelector('.detail');
+    if (!detailBuilt.has(idx)){
+      detail.innerHTML = buildDetailHTML(idx);
+      detailBuilt.add(idx);
+    }
+    var open = !detail.hidden;
+    detail.hidden = open;
+    btn.setAttribute('aria-expanded', String(!open));
+  });
+
+  loadMoreBtn.addEventListener('click', renderMore);
+  new IntersectionObserver(function(entries){
+    if (entries[0].isIntersecting && shown < currentList.length) renderMore();
+  }, { rootMargin: '600px' }).observe(document.getElementById('sentinel'));
+
+  // ========== Chip 列：大類 ==========
+  var chipCatEl = document.getElementById('chip-cat');
+  var chipSubEl = document.getElementById('chip-sub');
+  var chipExtraEl = document.getElementById('chip-extra');
+
+  function chipButton(label, count, active, onClick){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip' + (active ? ' active' : '');
+    b.innerHTML = esc(label) + (count != null ? ' <b>' + count.toLocaleString('zh-Hant') + '</b>' : '');
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function renderCatChips(){
+    chipCatEl.innerHTML = '';
+    var counts = countBy(function(idx){ return DATA[idx].c; });
+    chipCatEl.appendChild(chipButton('全部', N, state.cat === null, function(){
+      state.cat = null; state.sub = null; state.subKind = null; state.job = null; state.lvlBucket = null;
+      afterCatChange();
+    }));
+    sortedEntries(counts, CAT_ORDER).forEach(function(entry){
+      var cat = entry[0], cnt = entry[1];
+      chipCatEl.appendChild(chipButton(cat, cnt, state.cat === cat, function(){
+        state.cat = cat; state.sub = null; state.subKind = null; state.job = null; state.lvlBucket = null;
+        afterCatChange();
+      }));
+    });
+  }
+
+  function afterCatChange(){
+    renderCatChips();
+    renderSubChips();
+    renderExtraChips();
+    renderReset();
+  }
+
+  // ========== Chip 列：裝備＝部位＋武器種類／其他大類＝道具細分類 ==========
+  function renderSubChips(){
+    if (!state.cat){ chipSubEl.hidden = true; chipSubEl.innerHTML = ''; return; }
+    chipSubEl.hidden = false;
+    chipSubEl.innerHTML = '';
+
+    if (state.cat === '裝備'){
+      var slotCounts = countBy(function(idx){ return DATA[idx].sl; },
+        function(idx){ return DATA[idx].c === '裝備' && DATA[idx].sl && DATA[idx].sl !== '武器'; });
+      var weaponCounts = countBy(function(idx){ return DATA[idx].wt; },
+        function(idx){ return DATA[idx].c === '裝備' && !!DATA[idx].wt; });
+
+      sortedEntries(slotCounts, SLOT_ORDER).forEach(function(e){ addSubChip(e[0], e[1], 'slot'); });
+      if (slotCounts.size && weaponCounts.size){
+        var div = document.createElement('span'); div.className = 'divider'; chipSubEl.appendChild(div);
+      }
+      sortedEntries(weaponCounts, WEAPON_ORDER).forEach(function(e){ addSubChip(e[0], e[1], 'weapon'); });
+    } else {
+      var typeCounts = countBy(function(idx){ return DATA[idx].ty; },
+        function(idx){ return DATA[idx].c === state.cat && !!DATA[idx].ty; });
+      sortedEntries(typeCounts, null).forEach(function(e){ addSubChip(e[0], e[1], 'type'); });
+    }
+  }
+  function addSubChip(value, count, kind){
+    var active = state.sub === value && state.subKind === kind;
+    chipSubEl.appendChild(chipButton(value, count, active, function(){
+      if (active){ state.sub = null; state.subKind = null; } else { state.sub = value; state.subKind = kind; }
+      renderSubChips(); renderReset();
+    }));
+  }
+
+  // ========== Chip 列：裝備限定＝職業＋需求等級區間 ==========
+  var LVL_BUCKETS = [[0,19],[20,39],[40,59],[60,79],[80,99],[100,119],[120,139],[140,159],[160,179],[180,200]];
+  function renderExtraChips(){
+    if (state.cat !== '裝備'){ chipExtraEl.hidden = true; chipExtraEl.innerHTML = ''; return; }
+    chipExtraEl.hidden = false;
+    chipExtraEl.innerHTML = '';
+
+    // 職業 chip 固定用這 7 個官方職業名稱（題目指定的清單），但計數用跟篩選一樣的「包含比對」，
+    // 這樣「劍士」底下也會算進「劍士、盜賊」這種複合職業限制的裝備，chip 上的數字才會跟篩選結果一致。
+    JOB_ORDER.forEach(function(job){
+      var cnt = 0;
+      for (var idx = 0; idx < N; idx++){
+        if (DATA[idx].c !== '裝備') continue;
+        var jb = DATA[idx].jb;
+        if (job === '全職業'){ if (!jb || jb === '全職業') cnt++; }
+        else { if ((jb || '').indexOf(job) > -1) cnt++; }
+      }
+      if (!cnt) return;
+      var active = state.job === job;
+      chipExtraEl.appendChild(chipButton(job, cnt, active, function(){
+        state.job = active ? null : job; renderExtraChips(); renderReset();
+      }));
+    });
+
+    var div = document.createElement('span'); div.className = 'divider'; chipExtraEl.appendChild(div);
+
+    LVL_BUCKETS.forEach(function(range, bi){
+      var cnt = 0;
+      for (var idx = 0; idx < N; idx++){
+        if (DATA[idx].c === '裝備' && Math.min(9, Math.floor(lvl[idx] / 20)) === bi) cnt++;
+      }
+      if (!cnt) return;
+      var active = state.lvlBucket === bi;
+      chipExtraEl.appendChild(chipButton('Lv.' + range[0] + '~' + range[1], cnt, active, function(){
+        state.lvlBucket = active ? null : bi; renderExtraChips(); renderReset();
+      }));
+    });
+  }
+
+  // ========== 搜尋 / 排序 ==========
+  var searchEl = document.getElementById('search');
+  var sortEl = document.getElementById('sort');
+  var searchTimer = null;
+  searchEl.addEventListener('input', function(){
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function(){
+      state.q = searchEl.value.trim().toLowerCase();
+      renderReset();
+    }, 140);
+  });
+  sortEl.addEventListener('change', function(){ state.sort = sortEl.value; renderReset(); });
+
+  // ========== 頁首統計 ==========
+  function renderHeaderStats(){
+    var iconCount = 0, obtainCount = 0, equipCount = 0;
+    for (var idx = 0; idx < N; idx++){
+      if (iconPos[idx]) iconCount++;
+      if (DATA[idx].ob) obtainCount++;
+      if (DATA[idx].c === '裝備') equipCount++;
+    }
+    var tiles = [
+      ['道具總數', N], ['有圖示', iconCount], ['有取得方式', obtainCount], ['裝備數', equipCount]
+    ];
+    document.getElementById('stats').innerHTML = tiles.map(function(t){
+      return '<div class="stat-tile"><b class="mono">' + t[1].toLocaleString('zh-Hant') + '</b><span>' + esc(t[0]) + '</span></div>';
+    }).join('');
+  }
+
+  // ========== 啟動 ==========
+  // 網址 ?q= 預填搜尋
+  try {
+    var pq = new URLSearchParams(location.search).get('q');
+    if (pq){ searchEl.value = pq; state.q = pq.trim().toLowerCase(); }
+  } catch(e) {}
+  renderHeaderStats();
+  renderCatChips();
+  renderSubChips();
+  renderExtraChips();
+  renderReset();
+})().catch(function(err){
+  document.getElementById('list').innerHTML = '<p class="empty">資料載入失敗，請重新整理頁面。</p>';
+  console.error(err);
+});
+</script>
+<div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 1.15.3 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理</div>
+</body>
+</html>

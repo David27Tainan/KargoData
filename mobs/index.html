@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>怪物資料庫｜魔龍數據</title>
+<meta name="description" content="《楓之谷 Classic》1.15.3 全部怪物數值、屬性、出沒地圖、戰利品與重生時間。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+<style>
+:root {
+  color-scheme: light dark;
+  --bg:#EFEDE9; --surface:#FFFFFF; --surface-2:#F7F5F2; --sunk:#E5E1DB;
+  --ink:#1A1714; --muted:#615A52; --faint:#8C847A;
+  --line:#DDD7CF; --line-soft:#E9E4DD;
+  --accent:#9B3B2B; --accent-soft:#F6E4DF; --accent-ink:#83301F;
+  --hp:#B1352C; --hp-soft:#F7E2DF;
+  --exp:#4C4AA6; --exp-soft:#E6E5F7;
+  --boss:#8A6516; --boss-soft:#F6EAD0;
+  --shadow:0 1px 2px rgba(26,23,20,.06), 0 10px 26px -18px rgba(26,23,20,.35);
+  --r:10px;
+  /* 別名：本頁特有的屬性/旗標/命中率徽章，共用上面那套色票 */
+  --good:var(--accent); --good-soft:var(--accent-soft);
+  --bad:var(--boss); --bad-soft:var(--boss-soft);
+  --none:var(--faint); --none-soft:var(--sunk);
+  --neutral:var(--muted); --neutral-soft:var(--surface-2);
+  --mark:var(--accent-ink); --mark-soft:var(--accent-soft);
+  --serif: "Noto Serif TC","Noto Sans TC","PingFang TC","Microsoft JhengHei",serif;
+  --sans: "Noto Sans TC","PingFang TC","Microsoft JhengHei","Hiragino Sans TC",
+          system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg:#131110; --surface:#1C1917; --surface-2:#221E1B; --sunk:#171412;
+    --ink:#EDE8E2; --muted:#A39A90; --faint:#7C736A;
+    --line:#302B26; --line-soft:#26221E;
+    --accent:#E07A5F; --accent-soft:#33201A; --accent-ink:#EE9678;
+    --hp:#E4736A; --hp-soft:#331C1A;
+    --exp:#9A96EE; --exp-soft:#1E1D33;
+    --boss:#DBAB48; --boss-soft:#2E2512;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -18px rgba(0,0,0,.85);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:#131110; --surface:#1C1917; --surface-2:#221E1B; --sunk:#171412;
+  --ink:#EDE8E2; --muted:#A39A90; --faint:#7C736A;
+  --line:#302B26; --line-soft:#26221E;
+  --accent:#E07A5F; --accent-soft:#33201A; --accent-ink:#EE9678;
+  --hp:#E4736A; --hp-soft:#331C1A;
+  --exp:#9A96EE; --exp-soft:#1E1D33;
+  --boss:#DBAB48; --boss-soft:#2E2512;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -18px rgba(0,0,0,.85);
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--sans); line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+.wrap { max-width:1100px; margin:0 auto; padding:0 16px 80px; }
+header { padding:40px 0 20px; }
+h1 {
+  margin:0; font-family:var(--serif); font-size:clamp(26px,5vw,42px); font-weight:900;
+  letter-spacing:-.01em; text-wrap:balance;
+}
+.lede { margin:8px 0 0; color:var(--muted); max-width:62ch; font-size:14px; }
+.stats { display:flex; flex-wrap:wrap; gap:22px; margin-top:20px; }
+.stat b { display:block; font-family:var(--mono); font-size:22px; font-weight:500; font-variant-numeric:tabular-nums; letter-spacing:-.01em; color:var(--accent-ink); }
+.stat span { font-size:11px; color:var(--muted); letter-spacing:.1em; }
+
+.bar {
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:6; margin:0 -16px;
+  padding:12px 16px; background:color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter:blur(10px); border-bottom:1px solid var(--line-soft);
+  display:flex; flex-direction:column; gap:10px;
+}
+.search { display:flex; gap:8px; flex-wrap:wrap; }
+input[type=search], input[type=number] {
+  font:inherit; color:var(--ink); padding:10px 12px; background:var(--surface);
+  border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow);
+}
+input[type=search]::placeholder, input[type=number]::placeholder { color:var(--faint); }
+input[type=search] { flex:1; min-width:140px; }
+input[type=number] { width:88px; }
+input[type=search]:focus, input[type=number]:focus {
+  outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);
+}
+input:focus-visible, select:focus-visible, button:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+select {
+  font:inherit; color:var(--muted); padding:10px 10px; background:var(--surface);
+  border:1px solid var(--line); border-radius:var(--r); cursor:pointer;
+}
+.row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip {
+  font:inherit; font-size:12.5px; color:var(--muted); cursor:pointer;
+  padding:5px 11px; border-radius:999px; background:var(--surface); border:1px solid var(--line);
+}
+.chip:hover { color:var(--ink); border-color:var(--faint); }
+.chip[aria-pressed="true"] { background:var(--accent-soft); border-color:var(--accent); color:var(--accent-ink); font-weight:700; }
+.count { color:var(--muted); font-size:12.5px; font-variant-numeric:tabular-nums; }
+
+.mebox { border:1px solid var(--line); border-radius:12px; background:var(--surface); overflow:hidden; }
+.metoggle {
+  width:100%; text-align:left; font:inherit; font-weight:700; color:inherit; background:none;
+  border:0; padding:10px 14px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+}
+.mepanel { display:none; padding:4px 14px 14px; border-top:1px solid var(--line); flex-direction:column; gap:10px; }
+.mepanel.open { display:flex; }
+.mepanel label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); }
+.meinputs { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.modebtn { font:inherit; font-size:13px; padding:9px 14px; border-radius:10px; border:1px solid var(--line); background:var(--surface-2); color:var(--muted); cursor:pointer; }
+.modebtn[aria-pressed="true"] { background:var(--accent-soft); border-color:var(--accent); color:var(--ink); font-weight:700; }
+.meclear { font:inherit; font-size:12.5px; padding:9px 12px; border-radius:10px; border:1px solid var(--line); background:var(--surface-2); color:var(--muted); cursor:pointer; }
+.menote { font-size:11.5px; color:var(--faint); margin:0; }
+
+.list { display:flex; flex-direction:column; gap:10px; margin-top:18px; }
+.mob { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; }
+.head {
+  display:flex; flex-direction:column; gap:10px; width:100%; text-align:left;
+  font:inherit; color:inherit; background:none; border:0; cursor:pointer; padding:14px 16px;
+}
+.toprow { display:flex; gap:12px; align-items:center; }
+.thumb {
+  flex:none; width:60px; height:60px; border-radius:10px; background:var(--surface-2);
+  border:1px solid var(--line); display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.thumb i { display:block; background-repeat:no-repeat; image-rendering:pixelated; }
+.thumb.noimg { color:var(--faint); font-size:20px; }
+.who { min-width:0; flex:1; }
+.who h2 { margin:0; font-size:16px; font-weight:700; display:flex; flex-wrap:wrap; gap:6px; align-items:baseline; }
+.who h2 code { font-family:var(--mono); font-size:11.5px; color:var(--muted); font-weight:400; }
+.tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:5px; }
+.tag {
+  font-family:var(--mono); font-size:11px; padding:2px 8px; border-radius:999px;
+  background:var(--sunk); color:var(--muted); border:1px solid var(--line);
+  white-space:nowrap; font-variant-numeric:tabular-nums;
+}
+.tag.lv { background:var(--sunk); color:var(--ink); font-weight:700; }
+.tag.boss { background:var(--boss-soft); color:var(--boss); border-color:var(--boss); font-weight:500; }
+.tag.hit { background:var(--accent-soft); color:var(--accent-ink); border-color:var(--accent); font-weight:500; }
+
+.statgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:6px; }
+.s { background:var(--surface-2); border:1px solid var(--line-soft); border-radius:8px; padding:6px 4px; text-align:center; }
+.s b { display:block; font-family:var(--mono); font-size:13px; font-variant-numeric:tabular-nums; font-weight:500; }
+.s span { font-size:10px; color:var(--faint); letter-spacing:.04em; }
+.s.hp b { color:var(--hp); }
+.s.exp b { color:var(--exp); }
+.s.pushed0 b { cursor:help; border-bottom:1px dotted var(--faint); }
+
+.elems { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+@media (min-width:560px) { .elems { grid-template-columns:repeat(6,1fr); } }
+.el { border-radius:8px; padding:6px 4px; text-align:center; font-size:11px; border:1px solid transparent; }
+.el b { display:block; font-size:12px; }
+.el.lv3 { background:var(--good-soft); color:var(--good); }
+.el.lv2 { background:var(--neutral-soft); color:var(--neutral); }
+.el.lv1 { background:var(--bad-soft); color:var(--bad); }
+.el.lv0 { background:var(--none-soft); color:var(--none); text-decoration:line-through; }
+
+.hitreq { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); }
+.hitreq b { color:var(--ink); font-variant-numeric:tabular-nums; }
+.hitreq .src { font-size:10.5px; color:var(--faint); }
+
+.body { display:none; padding:2px 16px 16px; border-top:1px solid var(--line-soft); margin-top:2px; }
+.mob.open .body { display:block; }
+.sec { margin-top:14px; }
+.sec h3 { margin:0 0 8px; font-size:11px; letter-spacing:.1em; color:var(--faint); font-weight:700; text-transform:uppercase; }
+.pillrow { display:flex; flex-wrap:wrap; gap:6px; }
+.pill.link { color:var(--accent-ink); text-decoration:none; }
+.pill.link:hover { border-color:var(--accent); background:var(--accent-soft); }
+.pagenote { margin:28px 0 0; font-size:12.5px; color:var(--faint); }
+.pill { font-size:12.5px; padding:5px 10px; border-radius:8px; background:var(--surface); border:1px solid var(--line); }
+.flags { display:flex; flex-wrap:wrap; gap:6px; }
+.flag { font-size:11.5px; padding:4px 9px; border-radius:999px; background:var(--mark-soft); color:var(--mark); border:1px solid var(--accent); }
+.desc {
+  margin:0; padding:10px 13px; font-size:13.5px; color:var(--muted); white-space:pre-wrap; max-width:70ch;
+  background:var(--surface-2); border-left:2px solid var(--accent); border-radius:0 8px 8px 0;
+}
+.empty { padding:50px 0; text-align:center; color:var(--muted); }
+.more { display:flex; justify-content:center; padding:18px 0; }
+.morebtn {
+  font:inherit; font-size:13px; padding:10px 20px; border-radius:var(--r);
+  border:1px dashed var(--accent); background:var(--surface); color:var(--accent-ink); cursor:pointer;
+}
+.morebtn:hover { background:var(--accent-soft); }
+footer { margin-top:36px; padding-top:16px; border-top:1px solid var(--line-soft); font-size:12.5px; color:var(--faint); }
+footer code { font-family:var(--mono); color:var(--muted); }
+footer p { margin:4px 0; }
+@media (prefers-reduced-motion:no-preference) { .mob { transition:border-color .15s; } }
+</style>
+</head>
+<body>
+<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/" aria-current="page">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a></div></div>
+<div class="wrap">
+<header>
+  <h1>怪物資料庫</h1>
+  <p class="lede">《楓之谷 Classic》客戶端 1.15.3 資料。每隻怪一列就看到全部數值，點一下展開出沒地點、戰利品、重生與圖鑑說明。</p>
+  <div class="stats">
+    <div class="stat"><b id="statTotal">-</b><span>怪物總數</span></div>
+    <div class="stat"><b id="statBook">-</b><span>圖鑑收錄</span></div>
+    <div class="stat"><b id="statDrop">-</b><span>有戰利品</span></div>
+    <div class="stat"><b id="statBoss">-</b><span>BOSS</span></div>
+  </div>
+</header>
+
+<div class="bar">
+  <div class="search">
+    <input type="search" id="q" placeholder="搜怪物名字、掉落道具、地圖或編號…" autocomplete="off">
+    <select id="sort">
+      <option value="i">編號</option>
+      <option value="lv">等級由低到高</option>
+      <option value="-lv">等級由高到低</option>
+      <option value="-hp">血量最多</option>
+      <option value="-e">經驗最多</option>
+    </select>
+  </div>
+  <div class="row">
+    <div class="chips" id="boolChips"></div>
+  </div>
+  <div class="row">
+    <select id="lvRange"><option value="">全部等級</option></select>
+    <select id="moveSel">
+      <option value="">全部移動方式</option>
+      <option value="飄">飄</option>
+      <option value="跳">跳</option>
+      <option value="走">走</option>
+      <option value="定點">定點</option>
+      <option value="null">無資料</option>
+    </select>
+    <select id="elemSel">
+      <option value="">任何屬性非常好</option>
+      <option value="0">對火非常好</option>
+      <option value="1">對冰非常好</option>
+      <option value="2">對雷非常好</option>
+      <option value="3">對毒非常好</option>
+      <option value="4">對聖非常好</option>
+    </select>
+    <select id="regionSel"><option value="">全部區域</option></select>
+  </div>
+  <div class="count" id="count"></div>
+
+  <div class="mebox">
+    <button class="metoggle" id="meToggle" aria-expanded="false">我的角色（填入後各列會顯示預估命中率） ▾</button>
+    <div class="mepanel" id="mePanel">
+      <div class="meinputs">
+        <label>角色等級<input type="number" id="meLv" min="1" max="300" inputmode="numeric" placeholder="例如 110"></label>
+        <div class="row">
+          <button type="button" class="modebtn" id="meModePhys" aria-pressed="true">物理攻擊</button>
+          <button type="button" class="modebtn" id="meModeMagic" aria-pressed="false">魔法攻擊</button>
+        </div>
+        <label id="meAccWrap">命中<input type="number" id="meAcc" min="0" inputmode="numeric" placeholder="命中值"></label>
+        <label id="meIntWrap" hidden>INT<input type="number" id="meInt" min="0" inputmode="numeric"></label>
+        <label id="meLukWrap" hidden>LUK<input type="number" id="meLuk" min="0" inputmode="numeric"></label>
+        <button type="button" class="meclear" id="meClear">清除</button>
+      </div>
+      <p class="menote">命中率是社群公式估算（Maple-ACC-calculator），不是遊戲內建資料；魔法命中＝⌊INT/10⌋+⌊LUK/10⌋。</p>
+    </div>
+  </div>
+</div>
+
+<div class="list" id="list"><p class="empty" id="loading">資料載入中…</p></div>
+<div class="more" id="moreWrap" hidden><button class="morebtn" id="moreBtn">載入更多</button></div>
+<p class="pagenote">命中需求與「我的角色」命中率為社群公式估算（Maple-ACC-calculator），客戶端內找不到此公式，僅供參考。圖片為原始素材重新排版的縮圖。</p>
+</div>
+
+<script>
+(async function(){
+/* ---------- 載入資料（data/*.json） ---------- */
+const [MOBS, ATLAS, ACCREQ] = await Promise.all(['mobs','mob_atlas','acc'].map(n =>
+  fetch('../data/' + n + '.json').then(r => { if (!r.ok) throw new Error(n + ' ' + r.status); return r.json(); })));
+document.getElementById('loading')?.remove();
+
+/* ---------- 共用小工具 ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const num = n => (n ?? 0).toLocaleString('zh-Hant');
+const EE_LABEL = ['非常好','普通','大打折扣','行不通'];
+const EE_NAMES = ['火','冰','雷','毒','聖','治癒'];
+
+/* ---------- 命中率估算公式 ----------
+   來源：社群計算器 Maple-ACC-calculator (https://a2983456456.github.io/Maple-ACC-calculator/)。
+   客戶端內找不到命中判定的常數（命中應在伺服器算），所以只能用社群公式。
+   diff = max(0, 怪物等級 - 角色等級)
+   物理：acc100 = (55.2 + 2.15*diff) * (怪物迴避/15)
+         命中率% = 100 * (角色命中 - acc100/2) / (acc100/2)，夾在 0~100（迴避 0 的怪永遠 100%）
+   魔法：curAcc  = floor(INT/10) + floor(LUK/10)
+         acc100  = floor((怪物迴避+1) * (1+0.04*diff))
+         acc1    = round(0.41 * acc100)（JS Math.round 式的 .5 進位）
+         part    = min(1, (curAcc - acc1 + 1) / (acc100 - acc1 + 1))
+         命中率% = (-0.7011618132*part^2 + 1.702139835*part) * 100，夾在 0~100
+---------------------------------------------- */
+function jsRound(x){ return Math.floor(x + 0.5); }
+function clamp100(x){ return Math.max(0, Math.min(100, x)); }
+function physAcc100(eva, diff){ return (55.2 + 2.15 * diff) * (eva / 15.0); }
+function hitRatePct(mob, charLv, mode, acc, intStat, lukStat){
+  const eva = mob.ev || 0;
+  const diff = Math.max(0, (mob.lv || 0) - charLv);
+  if (mode === 'phys') {
+    const half = physAcc100(eva, diff) * 0.5;
+    if (half <= 0) return 100;
+    return clamp100(100 * (acc - half) / half);
+  }
+  const cur = Math.floor((intStat||0) / 10) + Math.floor((lukStat||0) / 10);
+  const a100 = Math.floor((eva + 1.0) * (1.0 + 0.04 * diff));
+  const a1 = jsRound(0.41 * a100);
+  const denom = (a100 - a1 + 1) || 1;
+  const part = Math.min(1, (cur - a1 + 1) / denom);
+  return clamp100((-0.7011618132 * part * part + 1.702139835 * part) * 100);
+}
+
+/* ---------- 重生時間字串 ---------- */
+function respawnText(sec){
+  if (sec % 3600 === 0) return `每 ${sec/3600} 小時`;
+  if (sec % 60 === 0) return `每 ${sec/60} 分`;
+  return `每 ${sec} 秒`;
+}
+
+/* ---------- 區域（取地圖名第一個空白前的字），統計前 20 ---------- */
+const regionCount = new Map();
+for (const m of MOBS) {
+  const seen = new Set();
+  for (const mp of (m.mps || [])) seen.add(mp.split(' ')[0]);
+  for (const r of seen) regionCount.set(r, (regionCount.get(r) || 0) + 1);
+}
+const TOP_REGIONS = [...regionCount.entries()].sort((a,b) => b[1]-a[1]).slice(0,20).map(x => x[0]);
+
+/* ---------- 搜尋用字串、haystack ---------- */
+for (const m of MOBS) {
+  m.hay = (m.n + ' ' + m.i + ' ' + (m.dr||[]).join(' ') + ' ' + (m.mps||[]).join(' ')).toLowerCase();
+}
+
+/* ---------- 頂部統計（全資料，不受篩選影響） ---------- */
+$('#statTotal').textContent = num(MOBS.length);
+$('#statBook').textContent = num(MOBS.filter(m => m.bk).length);
+$('#statDrop').textContent = num(MOBS.filter(m => m.dr && m.dr.length).length);
+$('#statBoss').textContent = num(MOBS.filter(m => m.b).length);
+
+/* ---------- 等級區間（1~20、21~40 … 181~200、201+） ---------- */
+const lvSel = $('#lvRange');
+for (let start = 1; start <= 181; start += 20) {
+  const opt = document.createElement('option');
+  opt.value = `${start}-${start+19}`;
+  opt.textContent = `${start}~${start+19}`;
+  lvSel.appendChild(opt);
+}
+{ const opt = document.createElement('option'); opt.value = '201-999999'; opt.textContent = '201+'; lvSel.appendChild(opt); }
+
+/* ---------- 區域下拉 ---------- */
+const regionSel = $('#regionSel');
+for (const r of TOP_REGIONS) {
+  const opt = document.createElement('option');
+  opt.value = r; opt.textContent = `${r}（${regionCount.get(r)}）`;
+  regionSel.appendChild(opt);
+}
+
+/* ---------- 布林 chip（BOSS／圖鑑收錄／有戰利品／查得到地點／先攻／不死族） ---------- */
+const BOOL_DEFS = [
+  { k:'b',  label:'BOSS' },
+  { k:'bk', label:'圖鑑收錄' },
+  { k:'dr', label:'有戰利品' },
+  { k:'mps',label:'查得到地點' },
+  { k:'fa', label:'先攻' },
+  { k:'u',  label:'不死族' },
+];
+const boolActive = new Set();
+const boolWrap = $('#boolChips');
+boolWrap.innerHTML = BOOL_DEFS.map(d => `<button class="chip" aria-pressed="false" data-k="${d.k}">${d.label}</button>`).join('');
+boolWrap.addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const k = b.dataset.k;
+  if (boolActive.has(k)) { boolActive.delete(k); b.setAttribute('aria-pressed','false'); }
+  else { boolActive.add(k); b.setAttribute('aria-pressed','true'); }
+  resetAndRender();
+});
+function boolPass(m, k){
+  if (k === 'dr') return !!(m.dr && m.dr.length);
+  if (k === 'mps') return !!(m.mps && m.mps.length);
+  return !!m[k];
+}
+
+/* ---------- 圖片縮圖 ---------- */
+function thumbHTML(id){
+  const p = ATLAS.pos[String(id)];
+  if (!p) return `<span class="thumb noimg" aria-hidden="true">？</span>`;
+  const [sheet,x,y,w,h] = p;
+  const src = ATLAS.sheets[sheet];
+  return `<span class="thumb" aria-hidden="true"><i style="width:${w}px;height:${h}px;background-image:url('../assets/${esc(src)}');background-position:-${x}px -${y}px"></i></span>`;
+}
+
+/* ---------- 擊退文字 ---------- */
+function pushedHTML(m){
+  if (m.pu === undefined) return `<div class="s"><b>—</b><span>擊退</span></div>`;
+  if (m.pu === 0) return `<div class="s pushed0"><b title="原始資料 pushed=0，推定為「不會被打退」，客戶端沒有說明文字，請謹慎參考">打不退？</b><span>擊退</span></div>`;
+  return `<div class="s"><b>${num(m.pu)}</b><span>擊退</span></div>`;
+}
+
+/* ---------- 命中需求（同等級，社群公式估算） ---------- */
+function hitReqHTML(id){
+  const a = ACCREQ[String(id)];
+  if (!a) return `<div class="hitreq">命中需求：無迴避資料 <span class="src">（社群公式估算，非遊戲資料）</span></div>`;
+  return `<div class="hitreq">
+    <span>物理命中需求 acc1 <b>${a.phys.acc1}</b> ／ acc100 <b>${a.phys.acc100}</b></span>
+    <span>魔法命中需求 acc1 <b>${a.magic.acc1}</b> ／ acc100 <b>${a.magic.acc100}</b></span>
+    <span class="src">同等級；社群公式估算，非遊戲資料</span>
+  </div>`;
+}
+
+/* ---------- 屬性六格 ---------- */
+function elemsHTML(ee){
+  if (!ee) return `<div class="elems">${EE_NAMES.map(n => `<div class="el lv2"><b>${n}</b>無資料</div>`).join('')}</div>`;
+  return `<div class="elems">${ee.map((v,i) => `<div class="el lv${v}"><b>${EE_NAMES[i]}</b>${EE_LABEL[3-v]}</div>`).join('')}</div>`;
+}
+
+/* ---------- 單隻怪的列（收合狀態） ---------- */
+function mobCard(m, meState){
+  const tags = [
+    `<span class="tag lv">Lv ${m.lv ?? '?'}</span>`,
+    m.b ? `<span class="tag boss">BOSS</span>` : '',
+    m.u ? `<span class="tag">不死族</span>` : '',
+    `<span class="tag">${esc(m.k || '—')}</span>`,
+    `<span class="tag">${esc(m.mv || '—')}</span>`,
+  ].join('');
+
+  const stats = [
+    ['HP', m.hp, 'hp'], ['MP', m.mp, ''], ['經驗', m.e, 'exp'], ['物攻', m.pa, ''], ['魔攻', m.ma, ''],
+    ['物防', m.pd, ''], ['魔防', m.md, ''], ['命中', m.ac, ''], ['迴避', m.ev, ''], ['移速', m.sp, ''],
+  ].map(([label,v,cls]) => `<div class="s${cls ? ' '+cls : ''}"><b>${v === undefined ? '—' : num(v)}</b><span>${label}</span></div>`).join('');
+
+  let hitRateTag = '';
+  if (meState) {
+    const pct = hitRatePct(m, meState.lv, meState.mode, meState.acc, meState.int, meState.luk);
+    hitRateTag = `<span class="tag hit">命中率 ${pct.toFixed(0)}%</span>`;
+  }
+
+  const open = m._open ? ' open' : '';
+  return `<article class="mob${open}" data-id="${m.i}">
+    <button class="head" aria-expanded="${!!m._open}">
+      <div class="toprow">
+        ${thumbHTML(m.i)}
+        <div class="who">
+          <h2>${esc(m.n)} <code>#${m.i}</code> ${hitRateTag}</h2>
+          <div class="tags">${tags}</div>
+        </div>
+      </div>
+      <div class="statgrid">${stats}${pushedHTML(m)}</div>
+      ${elemsHTML(m.ee)}
+      ${hitReqHTML(m.i)}
+    </button>
+    <div class="body">${detailHTML(m)}</div>
+  </article>`;
+}
+
+/* ---------- 展開內容 ---------- */
+function detailHTML(m){
+  const flagDefs = [
+    [m.fa,'先攻'], [m.ba,'碰撞傷害'], [m.iv,'無敵'], [m.fd ? `固定傷害 ${m.fd}` : null, null],
+    [m.pr,'共享獎勵'], [m.xr,'爆發式掉寶'], [m.dm,'會被其他怪打'], [m.na,'不主動攻擊'],
+  ];
+  const flags = flagDefs.filter(([v]) => v).map(([v,label]) => `<span class="flag">${esc(label || v)}</span>`).join('');
+
+  let out = '';
+  if (m.mps && m.mps.length) {
+    out += `<div class="sec"><h3>出沒地圖</h3><div class="pillrow">${m.mps.map(x => /^地圖 \d+$/.test(x) ? `<span class="pill">${esc(x)}</span>` : `<a class="pill link" href="../maps/?q=${encodeURIComponent(x.trim())}">${esc(x)}</a>`).join('')}</div></div>`;
+  }
+  if (m.dr && m.dr.length) {
+    out += `<div class="sec"><h3>戰利品</h3><div class="pillrow">${m.dr.map(x => `<a class="pill link" href="../items/?q=${encodeURIComponent(x)}">${esc(x)}</a>`).join('')}</div></div>`;
+  }
+  if (m.rs && m.rs.length) {
+    out += `<div class="sec"><h3>重生時間</h3><div class="pillrow">${m.rs.map(([mp,sec]) => `<span class="pill">${esc(mp)}：${respawnText(sec)}</span>`).join('')}</div></div>`;
+  }
+  if (m.rv && m.rv.length) {
+    out += `<div class="sec"><h3>死後召喚</h3><div class="pillrow">${m.rv.map(x => `<span class="pill">${esc(x)}</span>`).join('')}</div></div>`;
+  }
+  if (flags) {
+    out += `<div class="sec"><h3>其他旗標</h3><div class="flags">${flags}</div></div>`;
+  }
+  if (m.d) {
+    out += `<div class="sec"><h3>圖鑑說明</h3><p class="desc">${esc(m.d)}</p></div>`;
+  }
+  if (!out) out = `<p class="desc">沒有更多資料。</p>`;
+  return out;
+}
+
+/* ---------- 篩選、排序、分批渲染 ---------- */
+const list = $('#list'), q = $('#q'), sortSel = $('#sort'), count = $('#count');
+const moveSel = $('#moveSel'), elemSel = $('#elemSel');
+const moreWrap = $('#moreWrap'), moreBtn = $('#moreBtn');
+const BATCH = 150;
+let filtered = [];
+let shown = 0;
+
+function currentFilter(){
+  const term = q.value.trim().toLowerCase();
+  const lvRange = lvSel.value;
+  const move = moveSel.value;
+  const elemIdx = elemSel.value;
+  const region = regionSel.value;
+  let out = MOBS.filter(m => {
+    if (term && !m.hay.includes(term)) return false;
+    for (const k of boolActive) if (!boolPass(m, k)) return false;
+    if (lvRange) {
+      const [lo,hi] = lvRange.split('-').map(Number);
+      const lv = m.lv || 0;
+      if (lv < lo || lv > hi) return false;
+    }
+    if (move) {
+      if (move === 'null') { if (m.mv) return false; }
+      else if (m.mv !== move) return false;
+    }
+    if (elemIdx !== '') {
+      if (!m.ee || m.ee[Number(elemIdx)] !== 3) return false;
+    }
+    if (region) {
+      if (!(m.mps || []).some(mp => mp.split(' ')[0] === region)) return false;
+    }
+    return true;
+  });
+  const s = sortSel.value;
+  out = out.slice().sort(
+    s === 'lv' ? (a,b) => (a.lv||0)-(b.lv||0) || a.i-b.i :
+    s === '-lv' ? (a,b) => (b.lv||0)-(a.lv||0) || a.i-b.i :
+    s === '-hp' ? (a,b) => (b.hp||0)-(a.hp||0) :
+    s === '-e' ? (a,b) => (b.e||0)-(a.e||0) :
+    (a,b) => a.i-b.i);
+  return out;
+}
+
+function resetAndRender(){
+  filtered = currentFilter();
+  shown = 0;
+  list.innerHTML = '';
+  count.textContent = `顯示 ${filtered.length} 隻（共 ${MOBS.length} 隻）`;
+  if (!filtered.length) { list.innerHTML = `<p class="empty">找不到符合的怪物。</p>`; moreWrap.hidden = true; return; }
+  renderMore();
+}
+
+function renderMore(){
+  const next = filtered.slice(shown, shown + BATCH);
+  list.insertAdjacentHTML('beforeend', next.map(m => mobCard(m, meState)).join(''));
+  shown += next.length;
+  moreWrap.hidden = shown >= filtered.length;
+}
+moreBtn.addEventListener('click', renderMore);
+
+const sentinel = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting && !moreWrap.hidden) renderMore();
+}, { rootMargin: '600px' });
+sentinel.observe(moreWrap);
+
+list.addEventListener('click', e => {
+  const h = e.target.closest('.head'); if (!h) return;
+  const card = h.parentElement;
+  const open = !card.classList.contains('open');
+  card.classList.toggle('open', open);
+  h.setAttribute('aria-expanded', String(open));
+  const m = MOBS.find(x => String(x.i) === card.dataset.id);
+  if (m) m._open = open;
+});
+
+let qTimer;
+q.addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(resetAndRender, 150); });
+[sortSel, moveSel, elemSel, regionSel, lvSel].forEach(el => el.addEventListener('change', resetAndRender));
+
+/* ---------- 我的角色（命中率小工具） ---------- */
+let meState = null;
+const meToggle = $('#meToggle'), mePanel = $('#mePanel');
+const meLv = $('#meLv'), meAcc = $('#meAcc'), meInt = $('#meInt'), meLuk = $('#meLuk');
+const meModePhys = $('#meModePhys'), meModeMagic = $('#meModeMagic');
+const meAccWrap = $('#meAccWrap'), meIntWrap = $('#meIntWrap'), meLukWrap = $('#meLukWrap');
+let meMode = 'phys';
+
+meToggle.addEventListener('click', () => {
+  const open = !mePanel.classList.contains('open');
+  mePanel.classList.toggle('open', open);
+  meToggle.setAttribute('aria-expanded', String(open));
+});
+function setMeMode(mode){
+  meMode = mode;
+  meModePhys.setAttribute('aria-pressed', String(mode === 'phys'));
+  meModeMagic.setAttribute('aria-pressed', String(mode === 'magic'));
+  meAccWrap.hidden = mode !== 'phys';
+  meIntWrap.hidden = mode !== 'magic';
+  meLukWrap.hidden = mode !== 'magic';
+  updateMeState();
+}
+meModePhys.addEventListener('click', () => setMeMode('phys'));
+meModeMagic.addEventListener('click', () => setMeMode('magic'));
+
+function updateMeState(){
+  const lv = Number(meLv.value);
+  if (!lv || lv <= 0) { meState = null; renderStatic(); return; }
+  if (meMode === 'phys') {
+    const acc = Number(meAcc.value);
+    if (meAcc.value === '' || isNaN(acc)) { meState = null; renderStatic(); return; }
+    meState = { lv, mode:'phys', acc };
+  } else {
+    const int_ = Number(meInt.value) || 0, luk = Number(meLuk.value) || 0;
+    if (meInt.value === '' && meLuk.value === '') { meState = null; renderStatic(); return; }
+    meState = { lv, mode:'magic', int:int_, luk };
+  }
+  try { localStorage.setItem('mapleMobsMe', JSON.stringify({ lv, mode:meMode, acc:meAcc.value, int:meInt.value, luk:meLuk.value })); } catch(e) {}
+  renderStatic();
+}
+function renderStatic(){ resetAndRenderKeepScroll(); }
+function resetAndRenderKeepScroll(){
+  // 只重畫卡片內容（命中率標籤），不重新套用篩選，避免清掉捲動位置太頻繁
+  resetAndRender();
+}
+[meLv, meAcc, meInt, meLuk].forEach(el => el.addEventListener('input', updateMeState));
+$('#meClear').addEventListener('click', () => {
+  meLv.value = ''; meAcc.value = ''; meInt.value = ''; meLuk.value = '';
+  meState = null;
+  try { localStorage.removeItem('mapleMobsMe'); } catch(e) {}
+  resetAndRender();
+});
+try {
+  const saved = JSON.parse(localStorage.getItem('mapleMobsMe') || 'null');
+  if (saved) {
+    meLv.value = saved.lv ?? ''; meAcc.value = saved.acc ?? ''; meInt.value = saved.int ?? ''; meLuk.value = saved.luk ?? '';
+    setMeMode(saved.mode === 'magic' ? 'magic' : 'phys');
+    updateMeState();
+  }
+} catch(e) {}
+
+/* ---------- 網址 ?q= 預填搜尋 ---------- */
+try { const pq = new URLSearchParams(location.search).get('q'); if (pq) q.value = pq; } catch(e) {}
+resetAndRender();
+})().catch(err => {
+  document.getElementById('list').innerHTML = '<p class="empty">資料載入失敗，請重新整理頁面。</p>';
+  console.error(err);
+});
+</script>
+<div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 1.15.3 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理</div>
+</body>
+</html>

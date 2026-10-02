@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>地圖名冊｜魔龍數據</title>
+<meta name="description" content="《楓之谷 Classic》1.15.3 全部地圖名稱與編號，依區域分組，可查每張地圖出現的怪物。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body class="kd-body">
+<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/" aria-current="page">地圖</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a></div></div>
+<main class="kd-wrap">
+  <div class="kd-hero">
+    <p class="kd-eyebrow">MapleStory Classic · 1.15.3</p>
+    <h1>地圖名冊</h1>
+    <p class="kd-lede">客戶端裡每一張有名字的地圖，依區域分組。右邊的「N 種怪」可以直接跳到怪物資料庫，看那張地圖出沒的怪。</p>
+    <div class="kd-stats" id="stats"></div>
+  </div>
+  <div class="kd-bar">
+    <input class="kd-search" id="q" type="search" placeholder="搜地圖名稱、區域或編號…" autocomplete="off">
+    <div class="kd-chips" id="chips"></div>
+    <div class="kd-count" id="count"></div>
+  </div>
+  <div id="list"><p class="kd-empty">資料載入中…</p></div>
+</main>
+<div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 1.15.3 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理</div>
+<script>
+(async function(){
+  var resp = await fetch('../data/maps.json');
+  if (!resp.ok) throw new Error('maps ' + resp.status);
+  var MAPS = await resp.json();   // [[地圖編號, 區域, 名稱, 出沒怪物種數], …]
+  var listEl = document.getElementById('list'), qEl = document.getElementById('q');
+  var chipsEl = document.getElementById('chips'), countEl = document.getElementById('count');
+  var region = null;
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function num(n){ return Number(n).toLocaleString('zh-Hant'); }
+  function full(m){ return m[1] ? m[1] + ' ' + m[2] : m[2]; }
+
+  MAPS.forEach(function(m){ m.hay = (m[0] + ' ' + full(m)).toLowerCase(); });
+
+  var tally = {}, order = [];
+  MAPS.forEach(function(m){ var r = m[1] || '其他'; if (!tally[r]){ tally[r] = 0; order.push(r); } tally[r]++; });
+  var byCount = order.slice().sort(function(a, b){ return tally[b] - tally[a]; });
+
+  document.getElementById('stats').innerHTML =
+    '<div class="kd-stat"><b>' + num(MAPS.length) + '</b><span>地圖</span></div>' +
+    '<div class="kd-stat"><b>' + num(order.length) + '</b><span>區域</span></div>' +
+    '<div class="kd-stat"><b>' + num(MAPS.filter(function(m){ return m[3]; }).length) + '</b><span>查得到怪物</span></div>';
+
+  function renderChips(){
+    var h = '<button type="button" class="kd-chip" data-r="" aria-pressed="' + (region === null) + '">全部<b>' + MAPS.length + '</b></button>';
+    byCount.forEach(function(r){
+      h += '<button type="button" class="kd-chip" data-r="' + esc(r) + '" aria-pressed="' + (region === r) + '">' + esc(r) + '<b>' + tally[r] + '</b></button>';
+    });
+    chipsEl.innerHTML = h;
+  }
+  chipsEl.addEventListener('click', function(e){
+    var b = e.target.closest('.kd-chip'); if (!b) return;
+    var r = b.getAttribute('data-r');
+    region = (r === '' || region === r) ? null : r;
+    renderChips(); render();
+  });
+
+  function render(){
+    var q = qEl.value.trim().toLowerCase();
+    var hits = MAPS.filter(function(m){
+      if (region !== null && (m[1] || '其他') !== region) return false;
+      return !q || m.hay.indexOf(q) !== -1;
+    });
+    countEl.textContent = hits.length === MAPS.length ? '顯示全部 ' + num(MAPS.length) + ' 張地圖' : '找到 ' + num(hits.length) + ' 張地圖';
+    if (!hits.length){ listEl.innerHTML = '<p class="kd-empty">找不到符合的地圖。</p>'; return; }
+    var groups = {}, gorder = [];
+    hits.forEach(function(m){ var r = m[1] || '其他'; if (!groups[r]){ groups[r] = []; gorder.push(r); } groups[r].push(m); });
+    listEl.innerHTML = gorder.map(function(r){
+      return '<section class="kd-group"><h2>' + esc(r) + ' <small>' + groups[r].length + ' 張</small></h2><ul class="kd-rows">' +
+        groups[r].map(function(m){
+          var mob = m[3] ? '<a href="../mobs/?q=' + encodeURIComponent(full(m)) + '">' + m[3] + ' 種怪</a>' : '';
+          return '<li><code>' + m[0] + '</code><span class="kd-grow">' + esc(m[2]) + '</span>' + mob + '</li>';
+        }).join('') + '</ul></section>';
+    }).join('');
+  }
+
+  var t;
+  qEl.addEventListener('input', function(){ clearTimeout(t); t = setTimeout(render, 120); });
+  try { var pq = new URLSearchParams(location.search).get('q'); if (pq) qEl.value = pq; } catch(e) {}
+  renderChips();
+  render();
+})().catch(function(err){
+  document.getElementById('list').innerHTML = '<p class="kd-empty">資料載入失敗，請重新整理頁面。</p>';
+  console.error(err);
+});
+</script>
+</body>
+</html>
