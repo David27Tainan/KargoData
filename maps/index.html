@@ -16,9 +16,10 @@
   <div class="kd-hero">
     <p class="kd-eyebrow">MapleStory Classic · 1.15.3</p>
     <h1>地圖名冊</h1>
-    <p class="kd-lede">客戶端裡每一張有名字的地圖，依區域分組。右邊的「N 種怪」可以直接跳到怪物資料庫，看那張地圖出沒的怪。</p>
+    <p class="kd-lede">客戶端裡每一張有名字的地圖，依區域分組。每張地圖出沒的怪都列在後面，點名字可以跳到怪物資料庫看那一隻。</p>
     <div class="kd-stats" id="stats"></div>
   </div>
+  <div id="notice"></div>
   <div class="kd-bar">
     <input class="kd-search" id="q" type="search" placeholder="搜地圖名稱、區域或編號…" autocomplete="off">
     <div class="kd-chips" id="chips"></div>
@@ -31,10 +32,12 @@
 (async function(){
   var resp = await fetch('../data/maps.json');
   if (!resp.ok) throw new Error('maps ' + resp.status);
-  var MAPS = await resp.json();   // [[地圖編號, 區域, 名稱, 出沒怪物種數], …]
+  var MAPS = await resp.json();   // [[地圖編號, 區域, 名稱, 出沒怪物數, [[怪物編號,怪物名稱], …]], …]
   var listEl = document.getElementById('list'), qEl = document.getElementById('q');
   var chipsEl = document.getElementById('chips'), countEl = document.getElementById('count');
+  var noticeEl = document.getElementById('notice');
   var region = null;
+  var MOB_SUMMARY_N = 6;
 
   function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function num(n){ return Number(n).toLocaleString('zh-Hant'); }
@@ -50,6 +53,22 @@
     '<div class="kd-stat"><b>' + num(MAPS.length) + '</b><span>地圖</span></div>' +
     '<div class="kd-stat"><b>' + num(order.length) + '</b><span>區域</span></div>' +
     '<div class="kd-stat"><b>' + num(MAPS.filter(function(m){ return m[3]; }).length) + '</b><span>查得到怪物</span></div>';
+
+  function mobCellHTML(m){
+    var mobs = m[4] || [];
+    if (!mobs.length) return '';
+    var mobLink = function(p){ return '<a href="../mobs/?id=' + p[0] + '">' + esc(p[1]) + '</a>'; };
+    var shortHTML = mobs.slice(0, MOB_SUMMARY_N).map(mobLink).join('、');
+    var extra = mobs.length - MOB_SUMMARY_N;
+    if (extra <= 0) {
+      return '<span class="kd-mobcell">' + shortHTML + '</span>';
+    }
+    var fullHTML = mobs.map(mobLink).join('、');
+    return '<span class="kd-mobcell" data-map="' + m[0] + '">' +
+      '<span class="kd-moblist-short">' + shortHTML + ' <button type="button" class="kd-morebtn-inline">等 ' + extra + ' 隻 ▾</button></span>' +
+      '<span class="kd-moblist-full" hidden>' + fullHTML + ' <button type="button" class="kd-morebtn-inline">收合 ▴</button></span>' +
+      '</span>';
+  }
 
   function renderChips(){
     var h = '<button type="button" class="kd-chip" data-r="" aria-pressed="' + (region === null) + '">全部<b>' + MAPS.length + '</b></button>';
@@ -78,17 +97,49 @@
     listEl.innerHTML = gorder.map(function(r){
       return '<section class="kd-group"><h2>' + esc(r) + ' <small>' + groups[r].length + ' 張</small></h2><ul class="kd-rows">' +
         groups[r].map(function(m){
-          var mob = m[3] ? '<a href="../mobs/?q=' + encodeURIComponent(full(m)) + '">' + m[3] + ' 種怪</a>' : '';
-          return '<li><code>' + m[0] + '</code><span class="kd-grow">' + esc(m[2]) + '</span>' + mob + '</li>';
+          return '<li data-id="' + m[0] + '"><code>' + m[0] + '</code><span class="kd-grow">' + esc(m[2]) + '</span>' + mobCellHTML(m) + '</li>';
         }).join('') + '</ul></section>';
     }).join('');
   }
 
+  listEl.addEventListener('click', function(e){
+    var b = e.target.closest('.kd-morebtn-inline'); if (!b) return;
+    var cell = b.closest('.kd-mobcell');
+    var shortEl = cell.querySelector('.kd-moblist-short'), fullEl = cell.querySelector('.kd-moblist-full');
+    var toFull = !shortEl.hidden;
+    shortEl.hidden = toFull; fullEl.hidden = !toFull;
+  });
+
+  function locateMap(idStr){
+    var idx = MAPS.findIndex(function(m){ return String(m[0]) === String(idStr); });
+    if (idx === -1) {
+      noticeEl.innerHTML = '<p class="kd-note">找不到編號 ' + esc(idStr) + '（可能已從網站移除）</p>';
+      return;
+    }
+    var row = listEl.querySelector('[data-id="' + idStr + '"]');
+    if (!row) return;
+    var cell = row.querySelector('.kd-mobcell');
+    if (cell) {
+      var shortEl = cell.querySelector('.kd-moblist-short'), fullEl = cell.querySelector('.kd-moblist-full');
+      if (fullEl) { fullEl.hidden = false; if (shortEl) shortEl.hidden = true; }
+    }
+    row.classList.add('kd-hl');
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(function(){ row.classList.remove('kd-hl'); }, 2500);
+  }
+
   var t;
   qEl.addEventListener('input', function(){ clearTimeout(t); t = setTimeout(render, 120); });
-  try { var pq = new URLSearchParams(location.search).get('q'); if (pq) qEl.value = pq; } catch(e) {}
+  var targetId = null;
+  try {
+    var params = new URLSearchParams(location.search);
+    var pid = params.get('id');
+    if (pid) { targetId = pid; }
+    else { var pq = params.get('q'); if (pq) qEl.value = pq; }
+  } catch(e) {}
   renderChips();
   render();
+  if (targetId !== null) locateMap(targetId);
 })().catch(function(err){
   document.getElementById('list').innerHTML = '<p class="kd-empty">資料載入失敗，請重新整理頁面。</p>';
   console.error(err);

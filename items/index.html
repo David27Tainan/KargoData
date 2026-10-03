@@ -193,6 +193,10 @@
   .xlink{color:var(--accent-ink);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 40%,transparent);text-underline-offset:2px;}
   .xlink:hover{text-decoration-color:currentColor;}
   .empty{text-align:center;color:var(--text-muted);padding:40px 10px;font-size:.9rem;}
+  .notice{margin:4px 0 0;padding:9px 12px;font-size:.85rem;color:var(--text);background:var(--bronze-weak);border-left:3px solid var(--bronze);border-radius:0 8px 8px 0;}
+  .row{scroll-margin-top:12px;}
+  .row.hl{box-shadow:0 0 0 3px var(--accent);}
+  @media (prefers-reduced-motion:no-preference){ .row.hl{transition:box-shadow .3s;} }
   #load-more{display:block;margin:4px auto 0;background:var(--surface);border:1px dashed var(--accent);color:var(--accent-ink);border-radius:var(--r);padding:10px 18px;font-size:.84rem;cursor:pointer;}
   #load-more:hover{background:var(--accent-weak);}
 
@@ -209,6 +213,7 @@
     <p class="sub">《楓之谷 Classic》客戶端 1.15.3 資料 · 僅收錄客戶端資產裡的欄位，沒有查任何外站數字</p>
     <div class="stats" id="stats"></div>
   </header>
+  <div id="notice"></div>
 
   <div class="toolbar">
     <input id="search" type="search" placeholder="搜尋名稱、編號、說明、掉落怪物、任務…" autocomplete="off">
@@ -390,32 +395,40 @@
       '\');background-position:-' + x + 'px -' + y + 'px;"></div>';
   }
 
-  // 連到其他資料庫頁並預填搜尋
+  // 連到其他資料庫頁並預填搜尋（任務頁不在這張工單範圍，維持用名稱搜尋）
   function xlink(page, name){
     var m = /^（無名怪物 (\d+)）$/.exec(name);  // 沒名字的怪改用編號搜尋
     return '<a class="xlink" href="../' + page + '/?q=' + encodeURIComponent(m ? m[1] : name) + '">' + esc(name) + '</a>';
   }
+  // 掉落怪用編號定位（怪物全部都在網站上，一定能連）
+  function moblink(id, name){
+    return '<a class="xlink" href="../mobs/?id=' + id + '">' + esc(name) + '</a>';
+  }
 
-  // ========== 取得方式 ==========
+  // ========== 取得方式（列表摘要，掉落怪用編號連結；任務頁不在範圍內，維持純文字） ==========
   function obtainSummary(it){
     var ob = it.ob;
-    if (!ob) return '取得方式不明（商店購買或暫無資料）';
+    if (!ob) return esc('取得方式不明（商店購買或暫無資料）');
     var parts = [];
-    if (ob.dr && ob.dr.length){
-      var dr = ob.dr.slice(0, 4).join('、');
+    if (ob.dri && ob.dri.length){
+      var shown = ob.dri.slice(0, 4).map(function(p){ return moblink(p[0], p[1]); }).join('、');
+      parts.push('掉落：' + shown + (ob.dri.length > 4 ? '等 ' + ob.dri.length + ' 隻' : ''));
+    } else if (ob.dr && ob.dr.length){
+      var dr = ob.dr.slice(0, 4).map(esc).join('、');
       parts.push('掉落：' + dr + (ob.dr.length > 4 ? '等 ' + ob.dr.length + ' 隻' : ''));
     }
     if (ob.qr && ob.qr.length){
-      var qr = ob.qr.slice(0, 3).join('、');
+      var qr = ob.qr.slice(0, 3).map(esc).join('、');
       parts.push('任務給：' + qr + (ob.qr.length > 3 ? '等 ' + ob.qr.length + ' 個' : ''));
     }
-    return parts.length ? parts.join('／') : '僅見於任務需求，非掉落或獎勵';
+    return parts.length ? parts.join('／') : esc('僅見於任務需求，非掉落或獎勵');
   }
   function obtainFullHTML(it){
     var ob = it.ob;
     if (!ob) return '<p class="desc">目前資料裡沒有這件道具的掉落怪物或任務記錄（可能是商店購買、活動限定，或客戶端沒有收錄）。</p>';
     var lines = [];
-    if (ob.dr && ob.dr.length) lines.push('<div class="line"><b>掉落怪物（' + ob.dr.length + '）</b>' + ob.dr.map(function(x){ return xlink('mobs', x); }).join('、') + '</div>');
+    if (ob.dri && ob.dri.length) lines.push('<div class="line"><b>掉落怪物（' + ob.dri.length + '）</b>' + ob.dri.map(function(p){ return moblink(p[0], p[1]); }).join('、') + '</div>');
+    else if (ob.dr && ob.dr.length) lines.push('<div class="line"><b>掉落怪物（' + ob.dr.length + '）</b>' + ob.dr.map(function(x){ return xlink('mobs', x); }).join('、') + '</div>');
     if (ob.qr && ob.qr.length) lines.push('<div class="line"><b>任務獎勵（' + ob.qr.length + '）</b>' + ob.qr.map(function(x){ return xlink('quests', x); }).join('、') + '</div>');
     if (ob.qn && ob.qn.length) lines.push('<div class="line"><b>任務需要繳交／持有（' + ob.qn.length + '）</b>' + ob.qn.map(function(x){ return xlink('quests', x); }).join('、') + '</div>');
     return '<div class="obtain-list">' + lines.join('') + '</div>';
@@ -470,7 +483,7 @@
           '<div class="row-name">' + esc(it.n) + '<span class="row-id">#' + it.i + '</span></div>' +
           '<div class="row-tags">' + tagsHtml + '</div>' +
         '</div>' +
-        '<div class="row-obtain">' + esc(obtainSummary(it)) + '</div>' +
+        '<div class="row-obtain">' + obtainSummary(it) + '</div>' +
         '<div class="row-stats">' + statsHtml + '</div>' +
       '</button>' +
       '<div class="detail" hidden></div>';
@@ -525,6 +538,7 @@
   }
 
   listEl.addEventListener('click', function(ev){
+    if (ev.target.closest('a')) return;  // 列表摘要裡的掉落怪連結自己導頁，不要連帶觸發展開/收合
     var btn = ev.target.closest('.row-main');
     if (!btn) return;
     var row = btn.closest('.row');
@@ -681,16 +695,42 @@
   }
 
   // ========== 啟動 ==========
-  // 網址 ?q= 預填搜尋
+  // 網址 ?q= 預填搜尋／?id= 清空篩選＋定位展開
+  var targetId = null;
   try {
-    var pq = new URLSearchParams(location.search).get('q');
-    if (pq){ searchEl.value = pq; state.q = pq.trim().toLowerCase(); }
+    var params = new URLSearchParams(location.search);
+    var pid = params.get('id');
+    if (pid){ targetId = pid; }
+    else { var pq = params.get('q'); if (pq){ searchEl.value = pq; state.q = pq.trim().toLowerCase(); } }
   } catch(e) {}
   renderHeaderStats();
   renderCatChips();
   renderSubChips();
   renderExtraChips();
   renderReset();
+  if (targetId !== null) locateById(targetId);
+
+  function locateById(idStr){
+    var idx0 = -1;
+    for (var i2 = 0; i2 < N; i2++) if (String(DATA[i2].i) === String(idStr)) { idx0 = i2; break; }
+    if (idx0 === -1){
+      document.getElementById('notice').innerHTML = '<p class="notice">找不到編號 ' + esc(idStr) + '（可能已從網站移除）</p>';
+      return;
+    }
+    var pos = currentList.indexOf(idx0);
+    if (pos === -1) return;  // 篩選已清空，理論上一定找得到
+    while (shown <= pos) renderMore();
+    var row = listEl.querySelector('.row[data-idx="' + idx0 + '"]');
+    if (!row) return;
+    var btn = row.querySelector('.row-main');
+    var detail = row.querySelector('.detail');
+    if (!detailBuilt.has(idx0)){ detail.innerHTML = buildDetailHTML(idx0); detailBuilt.add(idx0); }
+    detail.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    row.classList.add('hl');
+    row.scrollIntoView({ behavior:'smooth', block:'center' });
+    setTimeout(function(){ row.classList.remove('hl'); }, 2500);
+  }
 })().catch(function(err){
   document.getElementById('list').innerHTML = '<p class="empty">資料載入失敗，請重新整理頁面。</p>';
   console.error(err);

@@ -115,7 +115,7 @@
 .kd-group h2{margin:0 0 8px; font-size:15px; font-weight:700; display:flex; gap:8px; align-items:baseline}
 .kd-group h2 small{font-family:var(--kd-mono); font-size:11.5px; color:var(--kd-faint); font-weight:400}
 .kd-rows{list-style:none; margin:0; padding:0; background:var(--kd-surface); border:1px solid var(--kd-line); border-radius:12px; overflow:hidden}
-.kd-rows li{display:flex; gap:12px; align-items:baseline; padding:8px 14px; border-top:1px solid var(--kd-line-soft); font-size:14px}
+.kd-rows li{display:flex; gap:12px; align-items:baseline; padding:8px 14px; border-top:1px solid var(--kd-line-soft); font-size:14px; scroll-margin-top:80px}
 .kd-rows li:first-child{border-top:0}
 .kd-rows code{font-family:var(--kd-mono); font-size:11.5px; color:var(--kd-faint); flex:none; min-width:84px}
 .kd-rows .kd-grow{flex:1; min-width:0}
@@ -127,6 +127,16 @@
   margin:16px 0 0; padding:10px 14px; font-size:13.5px; color:var(--kd-ink);
   background:var(--kd-gold-soft); border-left:3px solid var(--kd-gold); border-radius:0 8px 8px 0;
 }
+
+/* ---------- 5004：編號互連共用（地圖頁出沒怪物清單、高亮、找不到提示） ---------- */
+.kd-mobcell{font-size:13px; color:var(--kd-muted);}
+.kd-morebtn-inline{
+  font:inherit; font-size:12px; color:var(--kd-accent-ink); background:none; border:0;
+  cursor:pointer; padding:6px 4px; margin:-6px 0 -6px -2px; text-decoration:underline; text-underline-offset:2px;
+}
+.kd-morebtn-inline:hover{color:var(--kd-accent);}
+.kd-rows li.kd-hl, .kd-card.kd-hl{outline:2px solid var(--kd-accent); outline-offset:2px;}
+@media (prefers-reduced-motion:no-preference){ .kd-rows li.kd-hl, .kd-card.kd-hl{transition:outline-color .3s;} }
 .kd-sec{margin-top:30px}
 .kd-sec > h2{margin:0 0 4px; font-family:var(--kd-serif); font-size:20px}
 .kd-sec > p{margin:0 0 10px; color:var(--kd-muted); font-size:13px}

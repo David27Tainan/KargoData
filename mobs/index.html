@@ -181,6 +181,10 @@ select {
   background:var(--surface-2); border-left:2px solid var(--accent); border-radius:0 8px 8px 0;
 }
 .empty { padding:50px 0; text-align:center; color:var(--muted); }
+.notice { margin:16px 0 0; padding:10px 14px; font-size:13.5px; color:var(--ink); background:var(--boss-soft); border-left:3px solid var(--boss); border-radius:0 8px 8px 0; }
+.mob { scroll-margin-top:92px; }
+.mob.hl { box-shadow:0 0 0 3px var(--accent), var(--shadow); }
+@media (prefers-reduced-motion:no-preference) { .mob.hl { transition:box-shadow .3s; } }
 .more { display:flex; justify-content:center; padding:18px 0; }
 .morebtn {
   font:inherit; font-size:13px; padding:10px 20px; border-radius:var(--r);
@@ -206,6 +210,7 @@ footer p { margin:4px 0; }
     <div class="stat"><b id="statBoss">-</b><span>BOSS</span></div>
   </div>
 </header>
+<div id="notice"></div>
 
 <div class="bar">
   <div class="search">
@@ -463,11 +468,17 @@ function detailHTML(m){
   const flags = flagDefs.filter(([v]) => v).map(([v,label]) => `<span class="flag">${esc(label || v)}</span>`).join('');
 
   let out = '';
-  if (m.mps && m.mps.length) {
-    out += `<div class="sec"><h3>出沒地圖</h3><div class="pillrow">${m.mps.map(x => /^地圖 \d+$/.test(x) ? `<span class="pill">${esc(x)}</span>` : `<a class="pill link" href="../maps/?q=${encodeURIComponent(x.trim())}">${esc(x)}</a>`).join('')}</div></div>`;
+  const mapPairs = m.mpi || (m.mps || []).map(x => [null, x]);
+  const dropPairs = m.dri || (m.dr || []).map(x => [null, x]);
+  if (mapPairs.length) {
+    out += `<div class="sec"><h3>出沒地圖</h3><div class="pillrow">${mapPairs.map(([id,name]) => id != null
+      ? `<a class="pill link" href="../maps/?id=${id}">${esc(name)}</a>`
+      : `<span class="pill" title="地圖名冊沒有這張地圖，無法連結">${esc(name)}</span>`).join('')}</div></div>`;
   }
-  if (m.dr && m.dr.length) {
-    out += `<div class="sec"><h3>戰利品</h3><div class="pillrow">${m.dr.map(x => `<a class="pill link" href="../items/?q=${encodeURIComponent(x)}">${esc(x)}</a>`).join('')}</div></div>`;
+  if (dropPairs.length) {
+    out += `<div class="sec"><h3>戰利品</h3><div class="pillrow">${dropPairs.map(([id,name]) => id != null
+      ? `<a class="pill link" href="../items/?id=${id}">${esc(name)}</a>`
+      : `<span class="pill" title="這件道具已從網站移除或客戶端沒有資料，無法連結">${esc(name)}</span>`).join('')}</div></div>`;
   }
   if (m.rs && m.rs.length) {
     out += `<div class="sec"><h3>重生時間</h3><div class="pillrow">${m.rs.map(([mp,sec]) => `<span class="pill">${esc(mp)}：${respawnText(sec)}</span>`).join('')}</div></div>`;
@@ -626,9 +637,35 @@ try {
   }
 } catch(e) {}
 
-/* ---------- 網址 ?q= 預填搜尋 ---------- */
-try { const pq = new URLSearchParams(location.search).get('q'); if (pq) q.value = pq; } catch(e) {}
+/* ---------- 網址 ?q= 預填搜尋／?id= 清空篩選＋定位展開 ---------- */
+let targetId = null;
+try {
+  const params = new URLSearchParams(location.search);
+  const pid = params.get('id');
+  if (pid) { targetId = pid; q.value = ''; }
+  else { const pq = params.get('q'); if (pq) q.value = pq; }
+} catch(e) {}
 resetAndRender();
+if (targetId !== null) locateById(targetId);
+
+function locateById(idStr){
+  const idx = filtered.findIndex(m => String(m.i) === String(idStr));
+  if (idx === -1) {
+    document.getElementById('notice').innerHTML = `<p class="notice">找不到編號 ${esc(idStr)}（可能已從網站移除）</p>`;
+    return;
+  }
+  while (shown <= idx) renderMore();
+  const realId = filtered[idx].i;  // 用資料裡的實際編號（保證是數字），不要直接拿網址字串當 CSS 選擇器
+  const card = list.querySelector(`.mob[data-id="${realId}"]`);
+  if (!card) return;
+  const m = MOBS.find(x => x.i === realId);
+  if (m) m._open = true;
+  card.classList.add('open');
+  card.querySelector('.head')?.setAttribute('aria-expanded', 'true');
+  card.classList.add('hl');
+  card.scrollIntoView({ behavior:'smooth', block:'center' });
+  setTimeout(() => card.classList.remove('hl'), 2500);
+}
 })().catch(err => {
   document.getElementById('list').innerHTML = '<p class="empty">資料載入失敗，請重新整理頁面。</p>';
   console.error(err);
