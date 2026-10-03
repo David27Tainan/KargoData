@@ -36,15 +36,15 @@
     if (s) out += (out ? ' ' : '') + s + ' 秒';
     return out || '0 秒';
   }
-  function mobLink(name){ return '<a class="kd-link" href="../mobs/?q=' + encodeURIComponent(name) + '">' + esc(name) + '</a>'; }
-  function mapLink(name){ return '<a class="kd-link" href="../maps/?q=' + encodeURIComponent(name) + '">' + esc(name) + '</a>'; }
+  function mobLink(id, name){ return '<a class="kd-link" href="../mobs/?id=' + id + '">' + esc(name) + '</a>'; }
+  function mapLink(id, name){ return '<a class="kd-link" href="../maps/?id=' + id + '">' + esc(name) + '</a>'; }
 
   function respawnTable(rows){
     return '<div class="kd-tablewrap"><table class="kd-table"><thead><tr><th>怪物</th><th>重生</th><th class="r">等級</th><th class="r">HP</th><th class="r">經驗</th><th>地圖</th><th class="r">刷怪點</th></tr></thead><tbody>' +
       rows.map(function(r){
-        return '<tr><td>' + mobLink(r.name) + (r.boss ? ' <span class="kd-tag boss">BOSS</span>' : '') + '</td>' +
+        return '<tr><td>' + mobLink(r.mob, r.name) + (r.boss ? ' <span class="kd-tag boss">BOSS</span>' : '') + '</td>' +
           '<td class="kd-time">' + dur(r.sec) + '</td><td class="r">' + num(r.level) + '</td><td class="r">' + num(r.hp) + '</td><td class="r">' + num(r.exp) + '</td>' +
-          '<td class="wrap">' + mapLink(r.mapname) + '</td><td class="r">' + r.spots + '</td></tr>';
+          '<td class="wrap">' + mapLink(r.map, r.mapname) + '</td><td class="r">' + r.spots + '</td></tr>';
       }).join('') + '</tbody></table></div>';
   }
 
@@ -56,16 +56,16 @@
   if (D.timeMob && D.timeMob.length){
     h += '<section class="kd-sec"><h2>時段出現的怪</h2><p>地圖設定成只在特定時段出現的怪（時間為伺服器時間）。</p><div class="kd-tablewrap"><table class="kd-table"><thead><tr><th>怪物</th><th>出現時段</th><th>地圖</th></tr></thead><tbody>' +
       D.timeMob.map(function(t){
-        return '<tr><td>' + mobLink(t.name) + '</td><td class="kd-time">' + t.startHour + ':00 ～ ' + t.endHour + ':00</td><td class="wrap">' + mapLink(t.mapname) + '</td></tr>';
+        return '<tr><td>' + mobLink(t.mob, t.name) + '</td><td class="kd-time">' + t.startHour + ':00 ～ ' + t.endHour + ':00</td><td class="wrap">' + mapLink(t.map, t.mapname) + '</td></tr>';
       }).join('') + '</tbody></table></div></section>';
   }
   if (D.bossNoTimer && D.bossNoTimer.length){
     h += '<section class="kd-sec"><h2>查不到重生秒數的 BOSS</h2><p>這些 BOSS 的地圖有在客戶端裡，但刷怪點沒有寫秒數（用預設值，或由伺服器腳本叫出來）。</p><div class="kd-tablewrap"><table class="kd-table"><thead><tr><th>怪物</th><th class="r">等級</th></tr></thead><tbody>' +
-      D.bossNoTimer.map(function(b){ return '<tr><td>' + mobLink(b.name) + '</td><td class="r">' + num(b.level) + '</td></tr>'; }).join('') + '</tbody></table></div></section>';
+      D.bossNoTimer.map(function(b){ return '<tr><td>' + mobLink(b.id, b.name) + '</td><td class="r">' + num(b.level) + '</td></tr>'; }).join('') + '</tbody></table></div></section>';
   }
   if (D.bossNoMapData && D.bossNoMapData.length){
     h += '<section class="kd-sec"><h2>沒有地圖資料的 BOSS</h2><p>這些 BOSS 出沒的地圖沒有打包進客戶端，所以看不到重生設定。</p><div class="kd-tablewrap"><table class="kd-table"><thead><tr><th>怪物</th><th class="r">等級</th><th class="r">HP</th><th>出沒地圖</th></tr></thead><tbody>' +
-      D.bossNoMapData.map(function(b){ return '<tr><td>' + mobLink(b.name) + '</td><td class="r">' + num(b.level) + '</td><td class="r">' + num(b.hp) + '</td><td class="wrap">' + (b.maps || []).map(esc).join('、') + '</td></tr>'; }).join('') + '</tbody></table></div></section>';
+      D.bossNoMapData.map(function(b){ return '<tr><td>' + mobLink(b.id, b.name) + '</td><td class="r">' + num(b.level) + '</td><td class="r">' + num(b.hp) + '</td><td class="wrap">' + (b.maps || []).map(esc).join('、') + '</td></tr>'; }).join('') + '</tbody></table></div></section>';
   }
   document.getElementById('content').innerHTML = h;
 })().catch(function(err){
