@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>野王重生時間｜魔龍數據</title>
-<meta name="description" content="《楓之谷 Classic》1.15.3 客戶端內 BOSS 與稀有怪的重生秒數、時段限定出現的怪物。">
+<meta name="description" content="《楓之谷 Classic》1.15.3 客戶端內 BOSS 的重生秒數、時段限定出現的怪物。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
@@ -49,10 +49,8 @@
   }
 
   var bosses = D.respawn.filter(function(r){ return r.boss; });
-  var others = D.respawn.filter(function(r){ return !r.boss; });
   var h = '';
   h += '<section class="kd-sec"><h2>BOSS</h2><p>客戶端有寫重生秒數的 BOSS，共 ' + bosses.length + ' 筆。</p>' + respawnTable(bosses) + '</section>';
-  h += '<section class="kd-sec"><h2>其他稀有刷</h2><p>不是 BOSS、但刷怪點有特別寫重生秒數的怪，共 ' + others.length + ' 筆，依重生時間由長到短。</p>' + respawnTable(others) + '</section>';
   if (D.timeMob && D.timeMob.length){
     h += '<section class="kd-sec"><h2>時段出現的怪</h2><p>地圖設定成只在特定時段出現的怪（時間為伺服器時間）。</p><div class="kd-tablewrap"><table class="kd-table"><thead><tr><th>怪物</th><th>出現時段</th><th>地圖</th></tr></thead><tbody>' +
       D.timeMob.map(function(t){
