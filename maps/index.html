@@ -45,6 +45,21 @@
 
   MAPS.forEach(function(m){ m.hay = (m[0] + ' ' + full(m)).toLowerCase(); });
 
+  // ---------- 5013：搜尋結果名稱優先——分層排序＋第3層理由 ----------
+  function searchTierOf(m, term){
+    var name = m[2].toLowerCase();
+    var idStr = String(m[0]);
+    if (name === term || idStr === term) return 0;
+    if (name.indexOf(term) === 0) return 1;
+    if (name.indexOf(term) !== -1) return 2;
+    return 3;
+  }
+  function searchReasonOf(m, term){
+    var region = (m[1] || '').toLowerCase();
+    if (region.indexOf(term) !== -1) return '區域符合';
+    return '編號符合';
+  }
+
   var tally = {}, order = [];
   MAPS.forEach(function(m){ var r = m[1] || '其他'; if (!tally[r]){ tally[r] = 0; order.push(r); } tally[r]++; });
   var byCount = order.slice().sort(function(a, b){ return tally[b] - tally[a]; });
@@ -90,6 +105,9 @@
       if (region !== null && (m[1] || '其他') !== region) return false;
       return !q || m.hay.indexOf(q) !== -1;
     });
+    if (q) {
+      hits = hits.slice().sort(function(a, b){ return searchTierOf(a, q) - searchTierOf(b, q); });
+    }
     countEl.textContent = hits.length === MAPS.length ? '顯示全部 ' + num(MAPS.length) + ' 張地圖' : '找到 ' + num(hits.length) + ' 張地圖';
     if (!hits.length){ listEl.innerHTML = '<p class="kd-empty">找不到符合的地圖。</p>'; return; }
     var groups = {}, gorder = [];
@@ -97,7 +115,10 @@
     listEl.innerHTML = gorder.map(function(r){
       return '<section class="kd-group"><h2>' + esc(r) + ' <small>' + groups[r].length + ' 張</small></h2><ul class="kd-rows">' +
         groups[r].map(function(m){
-          return '<li data-id="' + m[0] + '"><code>' + m[0] + '</code><span class="kd-grow">' + esc(m[2]) + '</span>' + mobCellHTML(m) + '</li>';
+          var why = (q && searchTierOf(m, q) === 3)
+            ? ' <span style="color:var(--kd-faint);font-size:12px">（' + esc(searchReasonOf(m, q)) + '）</span>'
+            : '';
+          return '<li data-id="' + m[0] + '"><code>' + m[0] + '</code><span class="kd-grow">' + esc(m[2]) + why + '</span>' + mobCellHTML(m) + '</li>';
         }).join('') + '</ul></section>';
     }).join('');
   }

@@ -338,6 +338,21 @@ for (const m of MOBS) {
   m.hay = (m.n + ' ' + m.i + ' ' + (m.dr||[]).join(' ') + ' ' + (m.mps||[]).join(' ')).toLowerCase();
 }
 
+/* ---------- 5013：搜尋結果名稱優先——分層排序＋第3層理由 ---------- */
+function searchTierOf(m, term){
+  const name = m.n.toLowerCase();
+  const idStr = String(m.i);
+  if (name === term || idStr === term) return 0;
+  if (name.indexOf(term) === 0) return 1;
+  if (name.indexOf(term) !== -1) return 2;
+  return 3;
+}
+function searchReasonOf(m, term){
+  if ((m.dr||[]).some(s => s.toLowerCase().includes(term))) return '掉落符合';
+  if ((m.mps||[]).some(s => s.toLowerCase().includes(term))) return '地圖符合';
+  return '其他符合';
+}
+
 /* ---------- 頂部統計（全資料，不受篩選影響） ---------- */
 $('#statTotal').textContent = num(MOBS.length);
 $('#statBook').textContent = num(MOBS.filter(m => m.bk).length);
@@ -448,7 +463,7 @@ function mobCard(m, meState){
         ${thumbHTML(m.i)}
         <div class="who">
           <h2>${esc(m.n)} <code>#${m.i}</code> ${hitRateTag}</h2>
-          <div class="tags">${tags}</div>
+          <div class="tags">${tags}${m._matchReason ? `<span style="color:var(--faint);font-size:11.5px">（${esc(m._matchReason)}）</span>` : ''}</div>
         </div>
       </div>
       <div class="statgrid">${stats}${pushedHTML(m)}</div>
@@ -531,12 +546,19 @@ function currentFilter(){
     return true;
   });
   const s = sortSel.value;
-  out = out.slice().sort(
+  const cmp =
     s === 'lv' ? (a,b) => (a.lv||0)-(b.lv||0) || a.i-b.i :
     s === '-lv' ? (a,b) => (b.lv||0)-(a.lv||0) || a.i-b.i :
     s === '-hp' ? (a,b) => (b.hp||0)-(a.hp||0) :
     s === '-e' ? (a,b) => (b.e||0)-(a.e||0) :
-    (a,b) => a.i-b.i);
+    (a,b) => a.i-b.i;
+  if (term) {
+    out = out.slice().sort((a,b) => searchTierOf(a,term)-searchTierOf(b,term) || cmp(a,b));
+    for (const m of out) m._matchReason = searchTierOf(m, term) === 3 ? searchReasonOf(m, term) : null;
+  } else {
+    out = out.slice().sort(cmp);
+    for (const m of out) m._matchReason = null;
+  }
   return out;
 }
 

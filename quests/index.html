@@ -264,6 +264,33 @@
     r._lvBucket = lvBucketOf(r);
   });
 
+  // ---------- 5013：搜尋結果名稱優先——分層排序＋第3層理由 ----------
+  function searchTierOf(r, term){
+    var name = r.n.toLowerCase();
+    var idStr = String(r.i);
+    if (name === term || idStr === term) return 0;
+    if (name.indexOf(term) === 0) return 1;
+    if (name.indexOf(term) !== -1) return 2;
+    return 3;
+  }
+  function searchReasonOf(r, term){
+    function has(s){ return s != null && String(s).toLowerCase().indexOf(term) !== -1; }
+    if (has(r.sn) || has(r.en)) return 'NPC符合';
+    if ((r.mo||[]).some(function(x){ return has(x[0]); })) return '怪物符合';
+    if ((r.ni||[]).concat(r.gi||[]).some(function(x){ return has(x[0]); })) return '道具符合';
+    var rewardNames = [];
+    ['ra','rc'].forEach(function(k){
+      var a = r[k]; if (!a) return;
+      (a.g||[]).forEach(function(x){ rewardNames.push(x[0]); });
+      (a.t||[]).forEach(function(x){ rewardNames.push(x[0]); });
+      (a.k||[]).forEach(function(x){ rewardNames.push(x); });
+    });
+    if (rewardNames.some(has)) return '獎勵符合';
+    if (has(r.d)) return '說明符合';
+    if (has(r.s) || has(r.a)) return '系列／分類符合';
+    return '其他符合';
+  }
+
   var STATS = [
     ['任務總數', ROWS.length],
     ['有經驗獎勵', ROWS.filter(function(r){ return expOf(r) > 0; }).length],
@@ -498,10 +525,20 @@
       return !q || r._s.indexOf(q) !== -1;
     });
 
-    if (sort === 'exp') hits.sort(function(a,b){ return expOf(b) - expOf(a) || a.i - b.i; });
-    else if (sort === 'lv') hits.sort(function(a,b){ return (a.lv||0) - (b.lv||0) || a.i - b.i; });
-    else if (sort === 'name') hits.sort(function(a,b){ return a.n.localeCompare(b.n, 'zh-Hant'); });
-    else hits.sort(function(a,b){ return a.i - b.i; });
+    var cmp =
+      sort === 'exp' ? function(a,b){ return expOf(b) - expOf(a) || a.i - b.i; } :
+      sort === 'lv' ? function(a,b){ return (a.lv||0) - (b.lv||0) || a.i - b.i; } :
+      sort === 'name' ? function(a,b){ return a.n.localeCompare(b.n, 'zh-Hant'); } :
+      function(a,b){ return a.i - b.i; };
+    if (q) {
+      hits.sort(function(a,b){
+        var ta = searchTierOf(a, q), tb = searchTierOf(b, q);
+        if (ta !== tb) return ta - tb;
+        return cmp(a, b);
+      });
+    } else {
+      hits.sort(cmp);
+    }
 
     countEl.textContent = hits.length === ROWS.length
       ? '顯示全部 ' + num(ROWS.length) + ' 個任務'
@@ -541,6 +578,12 @@
 
         var mid = document.createElement('span');
         var t = document.createElement('span'); t.className = 'title'; t.appendChild(mark(r.n, q));
+        if (q && searchTierOf(r, q) === 3) {
+          var why = document.createElement('span');
+          why.style.color = 'var(--faint)'; why.style.fontSize = '11.5px'; why.style.marginLeft = '6px';
+          why.textContent = '（' + searchReasonOf(r, q) + '）';
+          t.appendChild(why);
+        }
         mid.appendChild(t);
         var meta = document.createElement('span'); meta.className = 'meta';
         var parts = [];

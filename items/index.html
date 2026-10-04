@@ -276,6 +276,26 @@
     searchStr[i] = s.toLowerCase();
   }
 
+  // ---------- 5013：搜尋結果名稱優先——分層排序＋第3層理由 ----------
+  function searchTierOf(idx, term){
+    var name = DATA[idx].n.toLowerCase();
+    var idStr = String(DATA[idx].i);
+    if (name === term || idStr === term) return 0;
+    if (name.indexOf(term) === 0) return 1;
+    if (name.indexOf(term) !== -1) return 2;
+    return 3;
+  }
+  function searchReasonOf(idx, term){
+    var it = DATA[idx], ob = it.ob;
+    if (ob){
+      if (ob.dr && ob.dr.some(function(x){ return x.toLowerCase().indexOf(term) !== -1; })) return '掉落怪符合';
+      if (ob.qr && ob.qr.some(function(x){ return x.toLowerCase().indexOf(term) !== -1; })) return '任務獎勵符合';
+      if (ob.qn && ob.qn.some(function(x){ return x.toLowerCase().indexOf(term) !== -1; })) return '任務需求符合';
+    }
+    if (it.d && it.d.toLowerCase().indexOf(term) !== -1) return '說明符合';
+    return '其他符合';
+  }
+
   // ---------- 分類排序偏好（只影響 chip 顯示順序，資料仍然是從實際值產生，不是寫死分類） ----------
   var CAT_ORDER = ['裝備','消耗','其他','特殊'];
   var SLOT_ORDER = ['帽子','上衣','套服','褲裙','鞋子','手套','披風','盾牌','戒指','眼飾','臉飾','耳環','墜飾','腰帶','勳章'];
@@ -355,7 +375,17 @@
   function computeList(){
     var out = [];
     for (var idx = 0; idx < N; idx++) if (matches(idx)) out.push(idx);
-    out.sort(COMPARATORS[state.sort] || COMPARATORS['id-asc']);
+    var cmp = COMPARATORS[state.sort] || COMPARATORS['id-asc'];
+    var term = state.q;
+    if (term) {
+      out.sort(function(a, b){
+        var ta = searchTierOf(a, term), tb = searchTierOf(b, term);
+        if (ta !== tb) return ta - tb;
+        return cmp(a, b);
+      });
+    } else {
+      out.sort(cmp);
+    }
     return out;
   }
 
@@ -475,12 +505,17 @@
       return '<span class="stag"><em>' + esc(t[0]) + '</em><b>' + esc(t[1]) + '</b></span>';
     }).join('');
 
+    var whyHtml = '';
+    if (state.q && searchTierOf(idx, state.q) === 3){
+      whyHtml = '<span class="row-id">（' + esc(searchReasonOf(idx, state.q)) + '）</span>';
+    }
+
     wrap.innerHTML =
       '<button class="row-main" type="button" aria-expanded="false">' +
         '<div class="row-icon">' + iconHTML(idx) + '</div>' +
         '<div class="row-lv mono">Lv.' + lvl[idx] + '</div>' +
         '<div class="row-main-info">' +
-          '<div class="row-name">' + esc(it.n) + '<span class="row-id">#' + it.i + '</span></div>' +
+          '<div class="row-name">' + esc(it.n) + '<span class="row-id">#' + it.i + '</span>' + whyHtml + '</div>' +
           '<div class="row-tags">' + tagsHtml + '</div>' +
         '</div>' +
         '<div class="row-obtain">' + obtainSummary(it) + '</div>' +
