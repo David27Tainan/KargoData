@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>職業技能｜魔龍數據</title>
+<meta name="description" content="《楓之谷 Classic》1.15.3 冒險家、皇家騎士團、狂狼勇士、龍魔導士職業樹與技能數值、技能書對照。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<link rel="stylesheet" href="../assets/site.css?v=4adfe4d6">
+<style>
+:root {
+  color-scheme: light dark;
+  --bg:#EFEDE9; --surface:#FFFFFF; --surface-2:#F7F5F2; --sunk:#E5E1DB;
+  --ink:#1A1714; --muted:#615A52; --faint:#8C847A;
+  --line:#DDD7CF; --line-soft:#E9E4DD;
+  --accent:#9B3B2B; --accent-soft:#F6E4DF; --accent-ink:#83301F;
+  --boss:#8A6516; --boss-soft:#F6EAD0;
+  --shadow:0 1px 2px rgba(26,23,20,.06), 0 10px 26px -18px rgba(26,23,20,.35);
+  --r:10px;
+  --serif: "Noto Serif TC","Noto Sans TC","PingFang TC","Microsoft JhengHei",serif;
+  --sans: "Noto Sans TC","PingFang TC","Microsoft JhengHei","Hiragino Sans TC",
+          system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, monospace;
+  /* 職業系主題色：只用在職業樹選中狀態、分頁底線、技能卡左邊框 */
+  --job-beginner:#746A5E; --job-swordman:#B1352C; --job-mage:#3A5FA8; --job-archer:#3F7D43;
+  --job-rogue:#7B4FA6; --job-pirate:#8A6020; --job-cygnus:#1F7A8C; --job-aran:#B2451C; --job-evan:#5B4FC4;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg:#131110; --surface:#1C1917; --surface-2:#221E1B; --sunk:#171412;
+    --ink:#EDE8E2; --muted:#A39A90; --faint:#7C736A;
+    --line:#302B26; --line-soft:#26221E;
+    --accent:#E07A5F; --accent-soft:#33201A; --accent-ink:#EE9678;
+    --boss:#DBAB48; --boss-soft:#2E2512;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -18px rgba(0,0,0,.85);
+    --job-beginner:#B3AAA0; --job-swordman:#E4736A; --job-mage:#8FA8E0; --job-archer:#7FC488;
+    --job-rogue:#C7A8EA; --job-pirate:#D9A857; --job-cygnus:#6FD3E0; --job-aran:#F0A36E; --job-evan:#ADA3F2;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:#131110; --surface:#1C1917; --surface-2:#221E1B; --sunk:#171412;
+  --ink:#EDE8E2; --muted:#A39A90; --faint:#7C736A;
+  --line:#302B26; --line-soft:#26221E;
+  --accent:#E07A5F; --accent-soft:#33201A; --accent-ink:#EE9678;
+  --boss:#DBAB48; --boss-soft:#2E2512;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -18px rgba(0,0,0,.85);
+  --job-beginner:#B3AAA0; --job-swordman:#E4736A; --job-mage:#8FA8E0; --job-archer:#7FC488;
+  --job-rogue:#C7A8EA; --job-pirate:#D9A857; --job-cygnus:#6FD3E0; --job-aran:#F0A36E; --job-evan:#ADA3F2;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.55; -webkit-font-smoothing:antialiased; }
+.wrap { max-width:1100px; margin:0 auto; padding:0 16px 80px; }
+header { padding:40px 0 20px; }
+h1 { margin:0; font-family:var(--serif); font-size:clamp(26px,5vw,42px); font-weight:900; letter-spacing:-.01em; text-wrap:balance; }
+.lede { margin:8px 0 0; color:var(--muted); max-width:66ch; font-size:14px; }
+.linkbtn { font:inherit; font-size:13px; color:var(--accent-ink); background:none; border:0; padding:0; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+.linkbtn:hover { color:var(--accent); }
+.empty { padding:30px 0; text-align:center; color:var(--muted); font-size:13.5px; }
+
+/* ---------- 搜尋框（跨職業搜技能名） ---------- */
+.searchbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:6px; }
+input[type=search] {
+  font:inherit; color:var(--ink); padding:10px 12px; background:var(--surface);
+  border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); flex:1; min-width:200px;
+}
+input[type=search]::placeholder { color:var(--faint); }
+input[type=search]:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.searchcount { color:var(--muted); font-size:12.5px; font-variant-numeric:tabular-nums; }
+
+/* ---------- 職業群分頁 ---------- */
+.grouptabs { display:flex; gap:6px; flex-wrap:wrap; margin:18px 0 4px; }
+.grouptab {
+  font:inherit; font-size:13.5px; padding:8px 16px; border-radius:999px; border:1px solid var(--line);
+  background:var(--surface); color:var(--muted); cursor:pointer;
+}
+.grouptab:hover { color:var(--ink); border-color:var(--faint); }
+.grouptab[aria-selected="true"] { background:var(--accent-soft); border-color:var(--accent); color:var(--accent-ink); font-weight:700; }
+
+/* ---------- 職業選擇：兩層（系別按鈕列 → 該系分支，不再畫整棵樹） ---------- */
+.jobnode {
+  display:inline-flex; flex-direction:row; align-items:center; gap:7px; padding:7px 12px 7px 7px;
+  background:var(--surface); border:1px solid var(--line); border-radius:999px; cursor:pointer;
+  font:inherit; color:var(--ink); box-shadow:var(--shadow); max-width:100%;
+}
+.jobnode:hover { border-color:var(--jc, var(--faint)); }
+.jobnode.sel { border-color:var(--jc); background:var(--surface-2); color:var(--jc); font-weight:700; box-shadow:0 0 0 2px color-mix(in srgb, var(--jc) 35%, transparent), var(--shadow); }
+.jobnode .jname { font-size:12.5px; line-height:1.25; white-space:nowrap; }
+.jicon { width:26px; height:30px; display:inline-flex; position:relative; overflow:hidden; flex:none; }
+.jicon i { position:absolute; left:0; top:0; background-repeat:no-repeat; }
+.jicon.noimg { align-items:center; justify-content:center; color:var(--faint); font-size:11px; background:var(--sunk); border-radius:4px; }
+.treehint { margin:4px 0 0; font-size:12.5px; color:var(--faint); }
+
+/* 第一層：系別按鈕列，一行可換行 */
+.systemrow { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 0; }
+
+/* 第二層：該系的分支，每條分支自己一行；放不下就「那一行」自己換行，不整塊橫捲 */
+.branches { display:flex; flex-direction:column; gap:10px; margin:14px 0 0; padding:14px; background:var(--surface-2); border:1px solid var(--line-soft); border-radius:var(--r); }
+.branchrow { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+.branchrow .jobnode { border-radius:10px; padding:6px 10px 6px 6px; }
+.branchrow .jname { white-space:normal; }
+.branch-arrow { color:var(--faint); font-size:13px; padding:0 2px; flex:none; }
+
+/* ---------- 路線：麵包屑、轉次分頁、技能格線 ---------- */
+.routehead { display:flex; flex-wrap:wrap; align-items:baseline; gap:10px; margin-top:22px; }
+.routehead h2 { margin:0; font-size:16px; font-weight:700; }
+.tiertabs { display:flex; gap:4px; flex-wrap:wrap; margin-top:10px; border-bottom:1px solid var(--line-soft); }
+.tiertab {
+  font:inherit; font-size:13px; padding:8px 14px 9px; border:0; border-bottom:3px solid transparent;
+  background:none; color:var(--muted); cursor:pointer; text-align:center;
+}
+.tiertab small { display:block; font-size:10.5px; color:var(--faint); font-weight:400; margin-top:1px; }
+.tiertab[aria-selected="true"] { border-bottom-color:var(--jc); color:var(--jc); font-weight:700; }
+
+.skillgrid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px; }
+@media (min-width:680px) { .skillgrid { grid-template-columns:repeat(4,1fr); } }
+.skillcard {
+  background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--jc, var(--line));
+  border-radius:12px; overflow:hidden; box-shadow:var(--shadow);
+}
+.skillcard.open { grid-column:1 / -1; }
+.schead {
+  display:grid; grid-template-columns:40px 1fr; gap:3px 10px; width:100%; text-align:left;
+  font:inherit; color:inherit; background:none; border:0; cursor:pointer; padding:10px 12px; align-items:start;
+}
+.schead .sicon { grid-row:1 / 3; }
+.sname { font-size:13.5px; font-weight:700; display:block; }
+/* 標籤同一行小字（主動・最高 30・需技能書），不要每個獨占一行——卡片才不會被撐高 */
+.stagline { display:block; font-size:11px; color:var(--faint); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.stagline .need { color:var(--boss); font-weight:700; }
+.sdesc1 { grid-column:2; font-size:11.5px; color:var(--faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sicon { position:relative; overflow:hidden; display:inline-flex; flex:none; border-radius:8px; background:var(--surface-2); align-items:center; justify-content:center; }
+.sicon i { position:absolute; left:0; top:0; background-repeat:no-repeat; }
+.sicon.noimg { color:var(--faint); font-size:14px; }
+
+.sbody { display:none; padding:0 14px 16px; border-top:1px solid var(--line-soft); margin-top:4px; }
+.skillcard.open .sbody { display:block; }
+.sfulldesc { margin:12px 0 0; font-size:13px; color:var(--muted); white-space:normal; max-width:70ch; }
+.ssec { margin-top:14px; }
+.ssec h4 { margin:0 0 7px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); font-weight:700; }
+.spillrow { display:flex; flex-wrap:wrap; gap:6px; }
+.spill { font-size:12px; padding:4px 10px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); color:var(--muted); }
+.spill.link, .spill.reqlink { color:var(--accent-ink); background:var(--surface); text-decoration:none; }
+.spill.reqlink { font:inherit; cursor:pointer; }
+.spill.reqlink:hover, .spill.link:hover { border-color:var(--accent); background:var(--accent-soft); }
+.sbooknote { margin:0; font-size:12.5px; color:var(--muted); line-height:1.7; }
+
+.tablewrap { overflow-x:auto; margin-top:6px; border:1px solid var(--line); border-radius:10px; }
+table.lvtable { border-collapse:collapse; font-size:12px; width:100%; }
+table.lvtable th, table.lvtable td { padding:5px 10px; border-top:1px solid var(--line-soft); text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+table.lvtable thead th { border-top:0; background:var(--surface-2); color:var(--faint); font-weight:700; font-size:10.5px; }
+table.lvtable th.lvcell, table.lvtable td.lvcell { position:sticky; left:0; background:var(--surface); text-align:center; font-weight:700; }
+table.lvtable thead th.lvcell { background:var(--surface-2); }
+table.lvtable td.efcell, table.lvtable th.efcell { text-align:left; white-space:normal; min-width:220px; color:var(--muted); font-variant-numeric:normal; }
+.lvlwrap .full { display:none; }
+.lvlwrap.show-full .full { display:block; }
+.lvlwrap.show-full .compact { display:none; }
+.lvtoggle { margin-top:8px; display:inline-block; }
+
+.hiddenbox { margin-top:16px; }
+.hiddenbox summary { cursor:pointer; font-size:13px; color:var(--muted); padding:8px 0; }
+.hiddenlist { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:6px; }
+.hiddenlist li { font-size:12px; padding:4px 10px; border-radius:999px; background:var(--sunk); color:var(--muted); border:1px solid var(--line); }
+
+.pagenote { margin:28px 0 0; font-size:12.5px; color:var(--faint); }
+@media (prefers-reduced-motion:no-preference) { .skillcard { transition:border-color .15s; } .skillcard.hl{ transition:box-shadow .3s; } }
+.skillcard.hl { box-shadow:0 0 0 3px var(--accent), var(--shadow); }
+</style>
+</head>
+<body>
+<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../skills/" aria-current="page">職業技能</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a><a class="kd-ext" href="https://maplestockdata.vercel.app/?i=maple-sidesria&amp;tf=1h&amp;type=area" target="_blank" rel="noopener">楓股數據 ↗</a><a class="kd-mail" href="mailto:maplestockdata@gmail.com">聯絡我：maplestockdata@gmail.com</a></div></div>
+<div class="wrap">
+<header>
+  <h1>職業技能</h1>
+  <p class="lede">《楓之谷 Classic》客戶端 1.15.3 全部職業技能。先選職業樹上的一個職業（可以只選到 1 轉或 2 轉），再切換轉次分頁看技能格線；點技能卡展開完整說明、前置技能、技能書與每級數值。</p>
+</header>
+
+<div class="searchbar">
+  <input type="search" id="q" placeholder="搜尋技能名稱（跨職業）…" autocomplete="off">
+  <div class="searchcount" id="searchCount"></div>
+</div>
+
+<div id="searchResults" hidden></div>
+
+<div id="treeArea">
+  <div class="grouptabs" id="groupTabs"></div>
+  <div class="systemrow" id="systemRow"><p class="empty" id="loading">資料載入中…</p></div>
+  <div class="branches" id="branchArea" hidden></div>
+  <p class="treehint">先選一個系別；該系有分支的話，下面會列出每條分支（2 轉 → 3 轉 → 4 轉），點到哪一轉就顯示到那一轉為止。</p>
+</div>
+
+<div id="routeArea" hidden>
+  <div class="routehead">
+    <h2 id="routeName"></h2>
+    <button type="button" class="linkbtn" id="clearRoute">收起路線</button>
+  </div>
+  <div class="tiertabs" id="tierTabs"></div>
+  <div class="skillgrid" id="skillGrid"></div>
+  <div class="hiddenbox" id="hiddenBox"></div>
+</div>
+
+<p class="pagenote">技能數值欄位名稱對照客戶端資料；技能圖示縮小/放大顯示，非原始像素大小。</p>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+/* ---------- 每級數值欄位顯示順序（label 仍以 data/skills/jobs.json 的 _.fields 為準） ---------- */
+const FIELD_ORDER = ['mpCon','hpCon','itemCon','itemConNo','itemConsume','bulletConsume','bulletCount','moneyCon',
+  'time','cooltime','damage','damagepc','fixdamage','criticalDamage','mad','pad','pdd','mdd','acc','eva',
+  'speed','jump','hp','mp','str','prop','mastery','mobCount','attackCount','range','lt','rb','morph','action',
+  'dateExpire','x','y','z'];
+
+const GROUPS = ['冒險家','皇家騎士團','狂狼勇士','龍魔導士'];
+
+let JOBMETA = null, JOBATLAS = null;
+let jobsById = new Map(), childrenOf = new Map(), skillToJob = new Map();
+let currentGroup = '冒險家';
+let routeIds = new Set();
+let currentChain = null;
+const groupDataCache = {};
+const groupPromises = {};
+let skillAtlasPromise = null;
+
+const systemRowEl = $('#systemRow'), branchAreaEl = $('#branchArea'), groupTabsEl = $('#groupTabs'), routeArea = $('#routeArea');
+const routeNameEl = $('#routeName'), tierTabsEl = $('#tierTabs'), skillGrid = $('#skillGrid'), hiddenBox = $('#hiddenBox');
+const searchResultsEl = $('#searchResults'), searchCountEl = $('#searchCount'), qInput = $('#q'), treeArea = $('#treeArea');
+
+/* ---------- 韓文佔位名稱（含 [TW] 或韓文字元）一律不顯示 ---------- */
+function isKorean(name){
+  return /\[TW\]/.test(name || '') || /[ᄀ-ᇿ㄰-㆏가-힣]/.test(name || '');
+}
+/* 皇家騎士團／狂狼勇士／龍魔導士有不少技能「名稱」已翻成中文，但 desc／每級 text 還是
+   韓文原文＋[TW] 佔位（跟技能名稱是不是韓文無關，是另一批還沒翻譯的欄位）。名稱過關的
+   技能還是要顯示（規格只講名稱），但說明文字不能直接把韓文印出來，改顯示一句提示。 */
+function cleanText(s){ return isKorean(s) ? '（此技能目前沒有繁體中文說明）' : (s || ''); }
+function oneLineDesc(desc){ return cleanText(desc).split('\n')[0]; }
+
+/* ---------- 職業系主題色 ---------- */
+function colorKeyOf(job){
+  if (!job) return 'beginner';
+  if (job.group === '皇家騎士團') return 'cygnus';
+  if (job.group === '狂狼勇士') return 'aran';
+  if (job.group === '龍魔導士') return 'evan';
+  let j = job;
+  while (j.adv > 1) j = jobsById.get(j.parent);
+  const map = {0:'beginner',100:'swordman',200:'mage',300:'archer',400:'rogue',500:'pirate'};
+  return map[j.id] || 'beginner';
+}
+
+/* ---------- 職業圖示（job_atlas.json + job_0.png，一開頁就載） ---------- */
+function jobIconHTML(id){
+  const p = JOBATLAS && JOBATLAS.pos[String(id)];
+  if (!p) return `<span class="jicon noimg">?</span>`;
+  const [sheet,x,y,w,h] = p;
+  return `<span class="jicon"><i style="width:${w}px;height:${h}px;background-image:url('../assets/${esc(JOBATLAS.sheets[sheet])}');background-position:-${x}px -${y}px"></i></span>`;
+}
+
+/* ---------- 技能圖示：展開前先放淡色空格，第一次顯示技能卡才 fetch skill_atlas.json + skill_0.png ---------- */
+function ensureSkillAtlas(){
+  if (!skillAtlasPromise) {
+    skillAtlasPromise = fetch('../data/skill_atlas.json').then(r => {
+      if (!r.ok) throw new Error('skill_atlas ' + r.status);
+      return r.json();
+    });
+  }
+  return skillAtlasPromise;
+}
+function skillIconHTML(id, atlas){
+  if (!atlas) return `<span class="sicon ph" data-skill-icon="${id}" style="width:40px;height:40px"></span>`;
+  const p = atlas.pos[String(id)];
+  if (!p) return `<span class="sicon noimg" style="width:40px;height:40px">?</span>`;
+  const [sheet,x,y,w,h] = p;
+  const S = 40 / 32;
+  const cw = Math.round(w * S), ch = Math.round(h * S);
+  return `<span class="sicon" style="width:${cw}px;height:${ch}px"><i style="width:${w}px;height:${h}px;` +
+    `background-image:url('../assets/${esc(atlas.sheets[sheet])}');background-position:-${x}px -${y}px;` +
+    `transform:scale(${S});transform-origin:0 0"></i></span>`;
+}
+function patchPendingSkillIcons(root){
+  ensureSkillAtlas().then(atlas => {
+    root.querySelectorAll('.sicon.ph[data-skill-icon]').forEach(el => {
+      el.outerHTML = skillIconHTML(el.dataset.skillIcon, atlas);
+    });
+  }).catch(err => console.error('skill_atlas 載入失敗', err));
+}
+
+/* ---------- 職業群/路線資料：選了某群才載該群技能 json ---------- */
+function ensureGroupLoaded(groupName){
+  if (groupDataCache[groupName]) return Promise.resolve(groupDataCache[groupName]);
+  if (!groupPromises[groupName]) {
+    const g = JOBMETA.groups.find(x => x.name === groupName);
+    groupPromises[groupName] = fetch('../data/skills/' + g.file).then(r => {
+      if (!r.ok) throw new Error(g.file + ' ' + r.status);
+      return r.json();
+    }).then(d => { groupDataCache[groupName] = d; return d; });
+  }
+  return groupPromises[groupName];
+}
+function ensureAllGroupsLoaded(){ return Promise.all(GROUPS.map(ensureGroupLoaded)); }
+
+/* ---------- 職業選擇：兩層（系別按鈕列 → 該系分支） ---------- */
+function rootOfGroup(groupName){
+  return JOBMETA.jobs.find(j => j.group === groupName && j.parent === null);
+}
+/* 第一層「系」：冒險家＝初心者（可點，只顯示到 adv0）＋ 5 系；其他三群＝那一群的 1 轉職業本身 */
+function systemsOfGroup(groupName){
+  const root = rootOfGroup(groupName);
+  if (!root) return [];
+  const kids = (childrenOf.get(root.id) || []).map(id => jobsById.get(id));
+  return groupName === '冒險家' ? [root, ...kids] : kids;
+}
+function jobNodeHTML(job, extraClass){
+  const sel = routeIds.has(job.id) ? ' sel' : '';
+  const jc = colorKeyOf(job);
+  return `<button type="button" class="jobnode${extraClass ? ' ' + extraClass : ''}${sel}" data-job="${job.id}" style="--jc:var(--job-${jc})">` +
+    `${jobIconHTML(job.id)}<span class="jname">${esc(job.name)}</span></button>`;
+}
+function renderSystems(groupName){
+  const systems = systemsOfGroup(groupName);
+  systemRowEl.innerHTML = systems.length ? systems.map(j => jobNodeHTML(j)).join('')
+    : '<p class="empty">找不到這個職業群。</p>';
+}
+/* 第二層「分支」：該系每個子職業各自一行，往下走到底（每個節點最多 1 個子職業）；
+   龍魔導士（10 次轉職）沒有分支可言，裁定把系本身（第1次）也算進這一行，一行列出第 1～10 次。 */
+function branchesOfSystem(system){
+  const kids = childrenOf.get(system.id) || [];
+  const includeSelf = system.group === '龍魔導士';
+  if (!kids.length) return includeSelf ? [[system]] : [];
+  return kids.map(kidId => {
+    const chain = includeSelf ? [system] : [];
+    let cur = jobsById.get(kidId);
+    while (cur) {
+      chain.push(cur);
+      const nextId = (childrenOf.get(cur.id) || [])[0];
+      cur = nextId !== undefined ? jobsById.get(nextId) : null;
+    }
+    return chain;
+  });
+}
+function renderBranchRow(chain){
+  return `<div class="branchrow">${chain.map((j, i) =>
+    (i > 0 ? '<span class="branch-arrow">→</span>' : '') + jobNodeHTML(j, 'branchnode')
+  ).join('')}</div>`;
+}
+function renderBranchesForCurrent(){
+  const system = currentChain ? currentChain[0] : null;
+  if (!system || system.parent === null) { branchAreaEl.hidden = true; branchAreaEl.innerHTML = ''; return; }
+  const branches = branchesOfSystem(system);
+  if (!branches.length) { branchAreaEl.hidden = true; branchAreaEl.innerHTML = ''; return; }
+  branchAreaEl.hidden = false;
+  branchAreaEl.innerHTML = branches.map(renderBranchRow).join('');
+}
+function renderGroupTabs(active){
+  groupTabsEl.innerHTML = GROUPS.map(g =>
+    `<button type="button" class="grouptab" data-group="${esc(g)}" aria-selected="${g === active}">${esc(g)}</button>`
+  ).join('');
+}
+
+function switchGroup(name){
+  currentGroup = name;
+  routeIds = new Set();
+  currentChain = null;
+  routeArea.hidden = true;
+  branchAreaEl.hidden = true;
+  branchAreaEl.innerHTML = '';
+  renderGroupTabs(name);
+  renderSystems(name);
+}
+
+/* ---------- 選路線：點一個職業＝從初心者到那一轉的完整路線（可以只到 1/2 轉，也可以點初心者本身） ---------- */
+async function selectRoute(jobId){
+  const job = jobsById.get(Number(jobId));
+  if (!job) return;
+  if (job.group !== currentGroup) {
+    currentGroup = job.group;
+    renderGroupTabs(currentGroup);
+  }
+  await ensureGroupLoaded(currentGroup);
+  let chain;
+  if (job.parent === null) {
+    chain = [job];
+  } else {
+    chain = [];
+    let cur = job;
+    while (cur && cur.parent !== null) { chain.unshift(cur); cur = jobsById.get(cur.parent); }
+  }
+  routeIds = new Set(chain.map(j => j.id));
+  currentChain = chain;
+  renderSystems(currentGroup);
+  renderBranchesForCurrent();
+  routeNameEl.textContent = chain.map(j => j.name).join(' → ');
+  renderTierTabs(chain, job.id);
+  routeArea.hidden = false;
+}
+function clearRoute(){
+  routeArea.hidden = true;
+  branchAreaEl.hidden = true;
+  branchAreaEl.innerHTML = '';
+  routeIds = new Set();
+  currentChain = null;
+  renderSystems(currentGroup);
+}
+
+/* ---------- 轉次分頁 ---------- */
+function tierLabel(job){ return job.stage ? `第${job.stage}次` : `${job.adv}轉`; }
+function renderTierTabs(chain, activeJobId){
+  tierTabsEl.innerHTML = chain.map(j => {
+    const jc = colorKeyOf(j);
+    return `<button type="button" class="tiertab" data-job="${j.id}" aria-selected="${j.id === activeJobId}" style="--jc:var(--job-${jc})">` +
+      `${esc(tierLabel(j))}<small>${esc(j.name)}</small></button>`;
+  }).join('');
+  renderSkillGrid(jobsById.get(activeJobId));
+}
+function activateTier(jobId){
+  if (!currentChain) return;
+  renderTierTabs(currentChain, jobId);
+}
+
+/* ---------- 技能格線（隔開：正常顯示 / 需技能書 / 隱藏收合 / 韓文不顯示） ---------- */
+function renderSkillGrid(job){
+  const data = groupDataCache[job.group] || {};
+  const ids = job.skills || [];
+  const visible = [], hidden = [];
+  for (const id of ids) {
+    const sk = data[String(id)];
+    if (!sk) continue;
+    if (isKorean(sk.name)) continue;
+    if (sk.invisible && !(sk.books && sk.books.length)) { hidden.push(sk); continue; }
+    visible.push(sk);
+  }
+  skillGrid.innerHTML = visible.length ? visible.map(sk => skillCardHTML(sk, false)).join('')
+    : `<p class="empty">這一轉沒有可顯示的技能。</p>`;
+  renderHiddenBox(hidden);
+  patchPendingSkillIcons(skillGrid);
+}
+function renderHiddenBox(hidden){
+  if (!hidden.length) { hiddenBox.innerHTML = ''; return; }
+  hiddenBox.innerHTML = `<details><summary>其他隱藏技能（${hidden.length}）▾</summary>` +
+    `<ul class="hiddenlist">${hidden.map(sk => `<li>${esc(sk.name)}（最高 ${sk.maxLevel}）</li>`).join('')}</ul></details>`;
+}
+
+/* ---------- 技能卡 ---------- */
+function skillCardHTML(sk, withJob){
+  const jc = colorKeyOf(jobsById.get(sk.job));
+  const lvLabel = sk.masterLevel ? `預設 ${sk.masterLevel}／最高 ${sk.maxLevel}` : `最高 ${sk.maxLevel}`;
+  const needBook = sk.invisible && sk.books && sk.books.length;
+  const jobName = withJob ? (jobsById.get(sk.job) || {}).name || '' : '';
+  /* 標籤同一行小字，用間隔號連接，不用每個獨立膠囊各佔一行（手機卡片才不會被撐高） */
+  const parts = [esc(sk.type), esc(lvLabel)];
+  if (needBook) parts.push('<span class="need">需技能書</span>');
+  if (jobName) parts.push(esc(jobName));
+  return `<article class="skillcard" data-skill="${sk.id}" style="--jc:var(--job-${jc})">
+    <button type="button" class="schead" aria-expanded="false">
+      ${skillIconHTML(sk.id, null)}
+      <span class="sname">${esc(sk.name)}</span>
+      <span class="stagline">${parts.join('・')}</span>
+      <span class="sdesc1">${esc(oneLineDesc(sk.desc))}</span>
+    </button>
+    <div class="sbody">${skillDetailHTML(sk)}</div>
+  </article>`;
+}
+function findSkillById(id){
+  for (const g of GROUPS) {
+    const d = groupDataCache[g];
+    if (d && d[String(id)]) return d[String(id)];
+  }
+  return null;
+}
+function skillDetailHTML(sk){
+  let out = `<p class="sfulldesc">${esc(cleanText(sk.desc)).replace(/\n/g, '<br>')}</p>`;
+  if (sk.req && sk.req.length) {
+    /* 前置技能有少數指到「名稱還是韓文」的技能（那種技能本身整頁都不顯示、也不能跳過去）；
+       這種前置不給連結、名稱也不要把韓文印出來，改顯示中性提示文字。 */
+    out += `<div class="ssec"><h4>前置技能</h4><div class="spillrow">${sk.req.map(r => {
+      const rsk = findSkillById(r.id);
+      if (!rsk || isKorean(rsk.name)) {
+        return `<span class="spill">（未翻譯技能）Lv${r.level}</span>`;
+      }
+      return `<button type="button" class="spill reqlink" data-skill="${r.id}">${esc(rsk.name)} Lv${r.level}</button>`;
+    }).join('')}</div></div>`;
+  }
+  if (sk.books && sk.books.length) {
+    out += `<div class="ssec"><h4>技能書</h4><p class="sbooknote">需技能書提升上限：${sk.books.map(b => {
+      const extra = `（可提升至 ${b.masterLevel}${b.reqSkillLevel ? `，需 Lv${b.reqSkillLevel}` : ''}${b.success != null ? `，成功率 ${b.success}%` : ''}）`;
+      const link = b.valid ? `<a class="spill link" href="../items/?id=${b.item}">${esc(b.name)}</a>` : `<span class="spill">${esc(b.name)}</span>`;
+      return link + extra;
+    }).join('、')}</p></div>`;
+  }
+  out += levelTableHTML(sk);
+  return out;
+}
+function fmtVal(v){
+  if (v === undefined || v === null) return '—';
+  if (Array.isArray(v)) return `(${v[0]}, ${v[1]})`;
+  if (typeof v === 'boolean') return v ? '是' : '否';
+  return String(v);
+}
+function levelTableHTML(sk){
+  const levels = sk.levels || [];
+  if (!levels.length) return '';
+  const keysPresent = new Set();
+  levels.forEach(lv => { for (const k in lv) { if (k !== 'lv' && k !== 'text') keysPresent.add(k); } });
+  const cols = FIELD_ORDER.filter(k => keysPresent.has(k));
+  keysPresent.forEach(k => { if (!cols.includes(k)) cols.push(k); });
+  const fields = (JOBMETA._ && JOBMETA._.fields) || {};
+  const labels = cols.map(k => fields[k] || k);
+  const head = `<tr><th class="lvcell">等級</th>${labels.map(l => `<th>${esc(l)}</th>`).join('')}<th class="efcell">效果</th></tr>`;
+  function row(lv){
+    const cells = cols.map(k => `<td>${esc(fmtVal(lv[k]))}</td>`).join('');
+    return `<tr><td class="lvcell">${lv.lv}</td>${cells}<td class="efcell">${esc(cleanText(lv.text))}</td></tr>`;
+  }
+  const maxLv = levels[levels.length - 1].lv;
+  const needToggle = levels.length > 10;
+  const rowsCompact = needToggle ? levels.filter(lv => lv.lv === 1 || lv.lv % 5 === 0 || lv.lv === maxLv) : levels;
+  let html = `<div class="ssec"><h4>每級數值</h4><div class="lvlwrap">`;
+  html += `<div class="tablewrap compact"><table class="lvtable"><thead>${head}</thead><tbody>${rowsCompact.map(row).join('')}</tbody></table></div>`;
+  if (needToggle) {
+    html += `<div class="tablewrap full"><table class="lvtable"><thead>${head}</thead><tbody>${levels.map(row).join('')}</tbody></table></div>`;
+    html += `<button type="button" class="linkbtn lvtoggle">顯示全部等級</button>`;
+  }
+  html += `</div></div>`;
+  return html;
+}
+
+function toggleCard(card){
+  const open = !card.classList.contains('open');
+  card.classList.toggle('open', open);
+  card.querySelector('.schead').setAttribute('aria-expanded', String(open));
+  if (open) patchPendingSkillIcons(card);
+}
+function openCard(card){
+  card.classList.add('open');
+  card.querySelector('.schead').setAttribute('aria-expanded', 'true');
+}
+function flashHighlight(card){
+  card.classList.add('hl');
+  setTimeout(() => card.classList.remove('hl'), 2500);
+}
+
+/* ---------- 技能前置／搜尋結果：跳到該職業路線那一轉並展開這張卡 ---------- */
+async function jumpToSkill(skillId){
+  const jobId = skillToJob.get(Number(skillId));
+  if (jobId == null) return;
+  exitSearch({ keepQuery:false });
+  await selectRoute(jobId);
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const card = skillGrid.querySelector(`.skillcard[data-skill="${skillId}"]`);
+  if (card) {
+    openCard(card);
+    patchPendingSkillIcons(card);
+    card.scrollIntoView({ behavior:'smooth', block:'center' });
+    flashHighlight(card);
+  }
+}
+
+/* ---------- 跨職業搜尋技能名 ---------- */
+let searchTimer;
+function runSearch(){
+  const term = qInput.value.trim().toLowerCase();
+  if (!term) { exitSearch({ keepQuery:true }); return; }
+  treeArea.hidden = true;
+  routeArea.hidden = true;
+  searchResultsEl.hidden = false;
+  searchResultsEl.innerHTML = '<p class="empty">搜尋中…</p>';
+  ensureAllGroupsLoaded().then(() => {
+    const matches = [];
+    for (const g of GROUPS) {
+      const data = groupDataCache[g];
+      for (const id in data) {
+        const sk = data[id];
+        if (isKorean(sk.name)) continue;
+        if (sk.invisible && !(sk.books && sk.books.length)) continue;
+        if (sk.name.toLowerCase().includes(term)) matches.push(sk);
+      }
+    }
+    matches.sort((a, b) => {
+      const an = a.name.toLowerCase(), bn = b.name.toLowerCase();
+      const ea = an === term ? 0 : an.indexOf(term) === 0 ? 1 : 2;
+      const eb = bn === term ? 0 : bn.indexOf(term) === 0 ? 1 : 2;
+      return ea - eb || a.id - b.id;
+    });
+    searchCountEl.textContent = `找到 ${matches.length} 個技能`;
+    searchResultsEl.innerHTML = matches.length
+      ? `<div class="skillgrid">${matches.map(sk => skillCardHTML(sk, true)).join('')}</div>`
+      : '<p class="empty">找不到符合的技能。</p>';
+    patchPendingSkillIcons(searchResultsEl);
+  }).catch(err => {
+    searchResultsEl.innerHTML = '<p class="empty">搜尋資料載入失敗。</p>';
+    console.error(err);
+  });
+}
+function exitSearch(opts){
+  searchResultsEl.hidden = true;
+  searchResultsEl.innerHTML = '';
+  searchCountEl.textContent = '';
+  if (!opts || !opts.keepQuery) qInput.value = '';
+  treeArea.hidden = false;
+  routeArea.hidden = !currentChain;
+}
+
+/* ---------- 事件委派 ---------- */
+document.addEventListener('click', e => {
+  const jobBtn = e.target.closest('.jobnode:not([disabled])');
+  if (jobBtn) { selectRoute(Number(jobBtn.dataset.job)); return; }
+  const tabBtn = e.target.closest('.tiertab');
+  if (tabBtn) { activateTier(Number(tabBtn.dataset.job)); return; }
+  const grpBtn = e.target.closest('.grouptab');
+  if (grpBtn) { switchGroup(grpBtn.dataset.group); return; }
+  const head = e.target.closest('.schead');
+  if (head) { toggleCard(head.closest('.skillcard')); return; }
+  const reqBtn = e.target.closest('.reqlink');
+  if (reqBtn) { jumpToSkill(Number(reqBtn.dataset.skill)); return; }
+  const lvBtn = e.target.closest('.lvtoggle');
+  if (lvBtn) {
+    const wrap = lvBtn.closest('.lvlwrap');
+    const show = wrap.classList.toggle('show-full');
+    lvBtn.textContent = show ? '收起等級' : '顯示全部等級';
+    return;
+  }
+  if (e.target.closest('#clearRoute')) { clearRoute(); return; }
+});
+qInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 200); });
+
+/* ---------- 初始化：一開頁只載 jobs.json 與 job_0.png（經 job_atlas.json 定位） ---------- */
+(async function init(){
+  const [jm, ja] = await Promise.all([
+    fetch('../data/skills/jobs.json').then(r => { if (!r.ok) throw new Error('jobs ' + r.status); return r.json(); }),
+    fetch('../data/job_atlas.json').then(r => { if (!r.ok) throw new Error('job_atlas ' + r.status); return r.json(); }),
+  ]);
+  JOBMETA = jm; JOBATLAS = ja;
+  for (const j of JOBMETA.jobs) {
+    jobsById.set(j.id, j);
+    if (j.parent !== null) {
+      if (!childrenOf.has(j.parent)) childrenOf.set(j.parent, []);
+      childrenOf.get(j.parent).push(j.id);
+    }
+    for (const sid of (j.skills || [])) skillToJob.set(sid, j.id);
+  }
+  document.getElementById('loading')?.remove();
+  renderGroupTabs(currentGroup);
+  renderSystems(currentGroup);
+
+  const params = new URLSearchParams(location.search);
+  const skillParam = params.get('skill');
+  const jobParam = params.get('job');
+  if (skillParam) await jumpToSkill(Number(skillParam));
+  else if (jobParam) await selectRoute(Number(jobParam));
+})().catch(err => {
+  systemRowEl.innerHTML = '<p class="empty">資料載入失敗，請重新整理頁面。</p>';
+  console.error(err);
+});
+})();
+</script>
+<div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 1.15.3 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理 ・ 聯絡：<a href="mailto:maplestockdata@gmail.com">maplestockdata@gmail.com</a></div>
+</body>
+</html>
