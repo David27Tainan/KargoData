@@ -179,6 +179,8 @@
   .detail{border-top:1px solid var(--border-soft);padding:12px 14px 14px;background:var(--surface-2);font-size:.86rem;display:flex;flex-direction:column;gap:10px;}
   .detail p.desc{margin:0;padding:9px 12px;background:var(--surface);border-left:2px solid var(--accent);border-radius:0 8px 8px 0;color:var(--text-muted);line-height:1.6;}
   .detail h4{font-size:.78rem;color:var(--faint);margin:0 0 6px;font-weight:600;letter-spacing:.03em;}
+  /* 5024：無名稱技能書補名說明小字 */
+  .skbnote{margin:0 0 6px;font-size:.72rem;color:var(--faint);}
   .kvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;}
   .kv{display:flex;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--border-soft);border-radius:6px;padding:5px 8px;font-size:.78rem;}
   .kv span{color:var(--faint);}
@@ -539,6 +541,19 @@
     return wrap;
   }
 
+  // 5024：無名稱技能書補的名字是用技能資料組出來的，不是遊戲原文，說明區加一行淡色小字說明，
+  // 另外列出可學技能／最高等級／需求技能等級／成功率（這些欄位原始 items.json 有、但 items_web.json
+  // 一般道具的 st 不會留，只有這批特別補在 it.skb 裡）。
+  function skillbookHTML(it){
+    if (!it.skb) return '';
+    var sk = it.skb;
+    var rows = '<div class="kv"><span>可學技能</span><b>' + sk.sk.map(esc).join('、') + '</b></div>';
+    if (sk.ml != null) rows += '<div class="kv"><span>最高等級</span><b>' + sk.ml + '</b></div>';
+    if (sk.rl != null) rows += '<div class="kv"><span>需求技能等級</span><b>' + sk.rl + '</b></div>';
+    if (sk.sr != null) rows += '<div class="kv"><span>成功率</span><b>' + sk.sr + '%</b></div>';
+    return '<p class="skbnote">名稱由遊戲技能資料組合，非官方名稱</p><div class="kvgrid">' + rows + '</div>';
+  }
+
   function buildDetailHTML(idx){
     var it = DATA[idx], st = it.st || {};
     var kv = Object.keys(st).map(function(k){
@@ -557,6 +572,7 @@
 
     return (
       (it.d ? '<p class="desc">' + esc(it.d) + '</p>' : '<p class="desc">（客戶端沒有這件道具的說明文字）</p>') +
+      skillbookHTML(it) +
       '<div><h4>全部欄位</h4><div class="kvgrid">' + meta.join('') + kv + '</div></div>' +
       '<div><h4>完整取得方式</h4>' + obtainFullHTML(it) + '</div>'
     );
