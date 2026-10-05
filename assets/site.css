@@ -211,3 +211,6 @@
 .kd-pt-pt-s{background:#7B4FA6; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%)}
 .kd-pt-pt-h{background:transparent; border:2px solid #C8791E; border-radius:50%; box-sizing:border-box}
 .kd-pt-pt-i{background:transparent; border:2px dashed #8C847A; box-sizing:border-box}
+
+/* 首頁主視覺 */
+.kd-hero-img{display:block;width:100%;max-width:880px;height:auto;margin:20px 0 8px;border-radius:14px;border:1px solid var(--kd-line, rgba(0,0,0,.08))}
