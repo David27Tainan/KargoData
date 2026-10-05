@@ -441,7 +441,7 @@
       '\');background-position:-' + x + 'px -' + y + 'px;"></div>';
   }
 
-  // 連到其他資料庫頁並預填搜尋（任務頁不在這張工單範圍，維持用名稱搜尋）
+  // 連到其他資料庫頁並預填搜尋（任務頁維持用名稱搜尋）
   function xlink(page, name){
     var m = /^（無名怪物 (\d+)）$/.exec(name);  // 沒名字的怪改用編號搜尋
     return '<a class="xlink" href="../' + page + '/?q=' + encodeURIComponent(m ? m[1] : name) + '">' + esc(name) + '</a>';
