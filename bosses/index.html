@@ -4,53 +4,66 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>野王重生時間｜魔龍數據</title>
-<meta name="description" content="《楓之谷 Classic》1.15.3 客戶端內 BOSS 的重生秒數、時段限定出現的怪物。">
+<meta name="description" content="《楓之谷 Classic》1.15.3 野王重生時間：客戶端設定與玩家觀察重生時間。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
 <link rel="stylesheet" href="../assets/site.css">
 </head>
 <body class="kd-body">
-<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../bosses/" aria-current="page">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a></div></div>
+<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../bosses/" aria-current="page">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a><a class="kd-ext" href="https://maplestockdata.vercel.app/?i=maple-sidesria&amp;tf=1h&amp;type=area" target="_blank" rel="noopener">楓股數據 ↗</a><a class="kd-mail" href="mailto:maplestockdata@gmail.com">聯絡我：maplestockdata@gmail.com</a></div></div>
 <main class="kd-wrap">
   <div class="kd-hero">
     <p class="kd-eyebrow">MapleStory Classic · 1.15.3</p>
     <h1>野王重生時間</h1>
-    <p class="kd-lede">地圖刷怪點上寫的重生秒數（<code>mobTime</code>）。同一隻怪在不同地圖會分開列出；「刷怪點」是那張地圖上有幾個這種設定的位置。點怪物名可以看完整資料。</p>
-    <p class="kd-note">重生時間以伺服器為準，此為客戶端設定值。實際出現時間可能因伺服器設定、頻道或活動而不同。</p>
+    <p class="kd-lede">每隻野王一張卡，同一隻王有多個地點就在卡內分行列出。點怪物名、地點可以看完整資料。</p>
+    <p class="kd-note">玩家觀察為玩家實際擊殺記錄推算的參考值，會因伺服器而不同；客戶端設定為遊戲檔案內的數值。實際重生由伺服器決定。</p>
   </div>
   <div id="content"><p class="kd-empty">資料載入中…</p></div>
 </main>
-<div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 1.15.3 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理</div>
+<div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 1.15.3 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理 ・ 聯絡：<a href="mailto:maplestockdata@gmail.com">maplestockdata@gmail.com</a></div>
 <script>
 (async function(){
-  var resp = await fetch('../data/respawn.json');
-  if (!resp.ok) throw new Error('respawn ' + resp.status);
-  var D = await resp.json();
+  var results = await Promise.all([
+    fetch('../data/respawn.json').then(function(r){ if (!r.ok) throw new Error('respawn ' + r.status); return r.json(); }),
+    fetch('../data/mob_atlas.json').then(function(r){ if (!r.ok) throw new Error('mob_atlas ' + r.status); return r.json(); })
+  ]);
+  var D = results[0], MOB_ATLAS = results[1];
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function num(n){ return n == null ? '—' : Number(n).toLocaleString('zh-Hant'); }
-  function dur(sec){
-    var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60, out = '';
-    if (h) out += h + ' 小時';
-    if (m) out += (out ? ' ' : '') + m + ' 分';
-    if (s) out += (out ? ' ' : '') + s + ' 秒';
-    return out || '0 秒';
-  }
   function mobLink(id, name){ return '<a class="kd-link" href="../mobs/?id=' + id + '">' + esc(name) + '</a>'; }
-  function mapLink(id, name){ return '<a class="kd-link" href="../maps/?id=' + id + '">' + esc(name) + '</a>'; }
+  function mapLink(id, name){ return id ? '<a class="kd-link" href="../maps/?id=' + id + '">' + esc(name) + '</a>' : esc(name); }
 
-  function respawnTable(rows){
-    return '<div class="kd-tablewrap"><table class="kd-table"><thead><tr><th>怪物</th><th>重生</th><th class="r">等級</th><th class="r">HP</th><th class="r">經驗</th><th>地圖</th><th class="r">刷怪點</th></tr></thead><tbody>' +
-      rows.map(function(r){
-        return '<tr><td>' + mobLink(r.mob, r.name) + (r.boss ? ' <span class="kd-tag boss">BOSS</span>' : '') + '</td>' +
-          '<td class="kd-time">' + dur(r.sec) + '</td><td class="r">' + num(r.level) + '</td><td class="r">' + num(r.hp) + '</td><td class="r">' + num(r.exp) + '</td>' +
-          '<td class="wrap">' + mapLink(r.map, r.mapname) + '</td><td class="r">' + r.spots + '</td></tr>';
-      }).join('') + '</tbody></table></div>';
+  // 這頁筆數少（9 張卡），直接顯示 mob atlas 小圖，不做懶載入
+  function mobImgHTML(id){
+    var p = MOB_ATLAS.pos[String(id)];
+    if (!p) return '';
+    var sheet = p[0], x = p[1], y = p[2], w = p[3], h = p[4];
+    var src = MOB_ATLAS.sheets[sheet];
+    return '<img src="../assets/' + esc(src) + '" alt="" style="width:' + w + 'px;height:' + h + 'px;' +
+      'object-fit:none;object-position:-' + x + 'px -' + y + 'px">';
   }
 
-  var bosses = D.respawn.filter(function(r){ return r.boss; });
+  function bossCard(c){
+    var rows = c.rows.map(function(r){
+      return '<li class="kd-boss-loc">' +
+        '<div class="kd-boss-where">' + mapLink(r.map_id, r.loc) + '</div>' +
+        '<div class="kd-boss-vals">玩家觀察 <b>' + esc(r.obs) + '</b></div>' +
+        '<div class="kd-boss-vals">客戶端設定 <b>' + esc(r.client) + '</b></div>' +
+      '</li>';
+    }).join('');
+    return '<article class="kd-boss-card">' +
+      '<div class="kd-boss-img">' + mobImgHTML(c.mob) + '</div>' +
+      '<div class="kd-boss-body">' +
+        '<h3>' + mobLink(c.mob, c.name) + '</h3>' +
+        '<p class="kd-boss-lv">Lv. ' + num(c.level) + '</p>' +
+        '<ul class="kd-boss-locs">' + rows + '</ul>' +
+      '</div></article>';
+  }
+
   var h = '';
-  h += '<section class="kd-sec"><h2>BOSS</h2><p>客戶端有寫重生秒數的 BOSS，共 ' + bosses.length + ' 筆。</p>' + respawnTable(bosses) + '</section>';
+  h += '<section class="kd-sec"><h2>BOSS</h2><p>共 ' + (D.cards || []).length + ' 張卡。</p>' +
+    '<div class="kd-boss-grid">' + (D.cards || []).map(bossCard).join('') + '</div></section>';
   if (D.timeMob && D.timeMob.length){
     h += '<section class="kd-sec"><h2>時段出現的怪</h2><p>地圖設定成只在特定時段出現的怪（時間為伺服器時間）。</p><div class="kd-tablewrap"><table class="kd-table"><thead><tr><th>怪物</th><th>出現時段</th><th>地圖</th></tr></thead><tbody>' +
       D.timeMob.map(function(t){

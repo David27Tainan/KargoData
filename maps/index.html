@@ -11,12 +11,12 @@
 <link rel="stylesheet" href="../assets/site.css">
 </head>
 <body class="kd-body">
-<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/" aria-current="page">地圖</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a></div></div>
+<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/" aria-current="page">地圖</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a><a class="kd-ext" href="https://maplestockdata.vercel.app/?i=maple-sidesria&amp;tf=1h&amp;type=area" target="_blank" rel="noopener">楓股數據 ↗</a><a class="kd-mail" href="mailto:maplestockdata@gmail.com">聯絡我：maplestockdata@gmail.com</a></div></div>
 <main class="kd-wrap">
   <div class="kd-hero">
     <p class="kd-eyebrow">MapleStory Classic · 1.15.3</p>
     <h1>地圖名冊</h1>
-    <p class="kd-lede">客戶端裡每一張有名字的地圖，依區域分組。點地圖名稱可以展開小地圖，看傳送點、NPC、怪物重生點的實際位置；下面另外列出沒怪物（點名字可以跳到怪物資料庫）、NPC、傳送點清單。</p>
+    <p class="kd-lede">客戶端裡每一張有名字的地圖，依區域分組。點地圖卡片可以展開小地圖，看傳送點、NPC、怪物重生點的實際位置；下面另外列出沒怪物（點名字可以跳到怪物資料庫）、NPC、傳送點清單。</p>
     <div class="kd-stats" id="stats"></div>
   </div>
   <div id="notice"></div>
@@ -27,7 +27,7 @@
   </div>
   <div id="list"><p class="kd-empty">資料載入中…</p></div>
 </main>
-<div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 1.15.3 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理</div>
+<div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 1.15.3 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理 ・ 聯絡：<a href="mailto:maplestockdata@gmail.com">maplestockdata@gmail.com</a></div>
 <script>
 (async function(){
   async function fetchJson(url){
@@ -253,15 +253,38 @@
     return html;
   }
 
-  function mapMetaHTML(m){
-    var resolved = resolveLayout(m[0]);
-    if (!resolved) return '<div class="kd-map-meta kd-faint">客戶端沒有這張地圖的配置資料。</div>';
+  // 5030：卡片收合時的摘要行——只用 map_layout 的筆數算，不會為了這行觸發任何圖片載入。
+  // 「種」＝相異怪物／NPC 編號數（不是重生點/出現次數），傳送點數沿用 visiblePortals() 過濾後的筆數，
+  // 跟展開後三份清單、疊圖點數維持一致。完全沒有 map_layout 資料時回傳 null，卡片顯示「無配置資料」且不能展開。
+  function summaryOf(resolved){
+    if (!resolved) return null;
     var entry = resolved.entry;
-    var nMob = (entry.m || []).length, nNpc = (entry.n || []).length, nPortal = visiblePortals(entry.p).length;
-    var openLabel = entry.mm ? '顯示地圖與配置 ▾' : '顯示配置清單 ▾（這張地圖沒有小地圖）';
-    return '<div class="kd-map-meta">怪物 ' + nMob + '・NPC ' + nNpc + '・傳送點 ' + nPortal +
-      '　<button type="button" class="kd-map-toggle" data-id="' + m[0] + '" data-open-label="' + esc(openLabel) + '">' + esc(openLabel) + '</button></div>' +
-      '<div class="kd-map-detail" id="kd-detail-' + m[0] + '" hidden></div>';
+    var mobIds = {}, npcIds = {};
+    (entry.m || []).forEach(function(p){ mobIds[p[2]] = 1; });
+    (entry.n || []).forEach(function(p){ npcIds[p[2]] = 1; });
+    var nMob = Object.keys(mobIds).length, nNpc = Object.keys(npcIds).length;
+    var nPortal = visiblePortals(entry.p).length;
+    return '怪物 ' + nMob + ' 種・NPC ' + nNpc + '・傳送點 ' + nPortal;
+  }
+
+  // 5030：一張地圖一張卡片（跟怪物／道具頁卡片同一套外觀），收合時只顯示名稱／區域／編號／摘要行，
+  // 完全沒有 map_layout 資料的地圖用 <div> 不是 <button>，點了沒反應（原本就沒東西可以展開）。
+  function mapCardHTML(m, why){
+    var resolved = resolveLayout(m[0]);
+    var summary = summaryOf(resolved);
+    var canOpen = !!resolved;
+    var tag = canOpen ? 'button' : 'div';
+    var attrs = canOpen ? ' type="button" aria-expanded="false"' : ' aria-disabled="true"';
+    var whyHTML = why ? ' <span class="kd-faint" style="font-size:12px">（' + esc(why) + '）</span>' : '';
+    return '<li class="kd-map-card' + (canOpen ? '' : ' kd-map-card-static') + '" data-id="' + m[0] + '">' +
+      '<' + tag + ' class="kd-map-head' + (canOpen ? '' : ' kd-map-head-static') + '"' + attrs + '>' +
+        '<span class="kd-map-headline"><span class="kd-map-name">' + esc(m[2]) + '</span>' +
+        (m[1] ? '<span class="kd-map-tag">' + esc(m[1]) + '</span>' : '') +
+        '<code>' + m[0] + '</code>' + whyHTML + '</span>' +
+        '<span class="kd-map-summary' + (canOpen ? '' : ' kd-faint') + '">' + esc(summary || '無配置資料') + '</span>' +
+      '</' + tag + '>' +
+      '<div class="kd-map-body"></div>' +
+    '</li>';
   }
 
   function renderChips(){
@@ -302,39 +325,37 @@
     var groups = {}, gorder = [];
     hits.forEach(function(m){ var r = m[1] || '其他'; if (!groups[r]){ groups[r] = []; gorder.push(r); } groups[r].push(m); });
     listEl.innerHTML = gorder.map(function(r){
-      return '<section class="kd-group"><h2>' + esc(r) + ' <small>' + groups[r].length + ' 張</small></h2><ul class="kd-rows">' +
+      return '<section class="kd-group"><h2>' + esc(r) + ' <small>' + groups[r].length + ' 張</small></h2><ul class="kd-map-cards">' +
         groups[r].map(function(m){
-          var why = (q && searchTierOf(m, q) === 3)
-            ? ' <span style="color:var(--kd-faint);font-size:12px">（' + esc(searchReasonOf(m, q)) + '）</span>'
-            : '';
-          return '<li data-id="' + m[0] + '"><code>' + m[0] + '</code><span class="kd-grow">' + esc(m[2]) + why + mapMetaHTML(m) + '</span></li>';
+          var why = (q && searchTierOf(m, q) === 3) ? searchReasonOf(m, q) : null;
+          return mapCardHTML(m, why);
         }).join('') + '</ul></section>';
     }).join('');
   }
 
-  function openDetail(id, m, btn){
-    var detail = document.getElementById('kd-detail-' + id);
-    if (!detail) return;
-    detail.hidden = false;
-    if (!detail.dataset.loaded) {
-      detail.innerHTML = buildDetailHTML(id, m[4]);
-      detail.dataset.loaded = '1';
+  // 5030：拿掉「顯示地圖與配置」按鈕，改成點卡片本身（收合狀態下可見的那一塊）展開／收合；
+  // 展開內容（小地圖＋三份清單）放在卡片按鈕範圍之外，裡面的連結點了會正常跳轉、不會連帶收合卡片。
+  function openCard(card, headBtn, id, m){
+    card.classList.add('open');
+    headBtn.setAttribute('aria-expanded', 'true');
+    var body = card.querySelector('.kd-map-body');
+    if (body && !body.dataset.loaded) {
+      body.innerHTML = buildDetailHTML(id, m && m[4]);
+      body.dataset.loaded = '1';
     }
-    if (btn) btn.textContent = '收合 ▴';
   }
-  function closeDetail(id, btn){
-    var detail = document.getElementById('kd-detail-' + id);
-    if (detail) detail.hidden = true;
-    if (btn) btn.textContent = btn.getAttribute('data-open-label');
+  function closeCard(card, headBtn){
+    card.classList.remove('open');
+    headBtn.setAttribute('aria-expanded', 'false');
   }
 
   listEl.addEventListener('click', function(e){
-    var toggle = e.target.closest('.kd-map-toggle');
-    if (toggle) {
-      var id = toggle.getAttribute('data-id');
-      var detail = document.getElementById('kd-detail-' + id);
+    var head = e.target.closest('.kd-map-head');
+    if (head && !head.classList.contains('kd-map-head-static')) {
+      var card = head.closest('.kd-map-card');
+      var id = card.getAttribute('data-id');
       var m = MAP_BY_ID[Number(id)] || MAP_BY_ID[id];
-      if (detail && !detail.hidden) { closeDetail(id, toggle); } else { openDetail(id, m, toggle); }
+      if (card.classList.contains('open')) { closeCard(card, head); } else { openCard(card, head, id, m); }
       return;
     }
     var pt = e.target.closest('.kd-pt');
@@ -362,12 +383,10 @@
     var m = MAPS[idx];
     countEl.textContent = '';
     var banner = '<div class="kd-onlyline">只顯示編號 <b>' + m[0] + '</b>｜<button type="button" id="showAllBtn" class="kd-linkbtn">顯示全部結果</button></div>';
-    listEl.innerHTML = banner + '<section class="kd-group"><ul class="kd-rows">' +
-      '<li data-id="' + m[0] + '"><code>' + m[0] + '</code><span class="kd-grow">' + esc(m[2]) + mapMetaHTML(m) + '</span></li>' +
-      '</ul></section>';
-    var row = listEl.querySelector('[data-id="' + idStr + '"]');
-    var toggle = row.querySelector('.kd-map-toggle');
-    if (toggle) openDetail(idStr, m, toggle);  // 5016/5017：小地圖懶載入照常觸發（展開才 fetch）
+    listEl.innerHTML = banner + '<section class="kd-group"><ul class="kd-map-cards">' + mapCardHTML(m, null) + '</ul></section>';
+    var row = listEl.querySelector('.kd-map-card[data-id="' + idStr + '"]');
+    var head = row.querySelector('.kd-map-head');
+    if (head && !head.classList.contains('kd-map-head-static')) openCard(row, head, idStr, m);  // 5016/5017：小地圖懶載入照常觸發（展開才 fetch）
     document.getElementById('showAllBtn').addEventListener('click', function(){
       try { history.replaceState(null, '', location.pathname); } catch(e) {}
       render();

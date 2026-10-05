@@ -187,6 +187,31 @@
 .kd-map-ntags{display:flex; flex-wrap:wrap; gap:6px 12px; font-size:12.5px}
 .kd-map-ntag{display:inline-flex; align-items:center; gap:4px; white-space:nowrap}
 
+/* 5030：地圖頁改成跟怪物／道具頁一樣的卡片——拿掉「顯示地圖與配置」按鈕，點卡片本身（收合狀態下可見的那一塊）
+   展開／收合；展開內容在卡片按鈕範圍之外，裡面的連結點了正常跳轉、不會連帶收合卡片。
+   邊框／圓角／陰影沿用全站既有的卡片 token（跟 .kd-card 同一套），hover 與展開時的強調邊框也借同一套視覺語言。 */
+.kd-map-cards{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px}
+.kd-map-card{
+  background:var(--kd-surface); border:1px solid var(--kd-line); border-radius:14px;
+  box-shadow:var(--kd-shadow); overflow:hidden; scroll-margin-top:80px;
+}
+.kd-map-card:not(.kd-map-card-static):hover{border-color:var(--kd-accent)}
+.kd-map-card.open{border-color:var(--kd-accent); box-shadow:0 0 0 2px var(--kd-accent-soft), var(--kd-shadow)}
+@media (prefers-reduced-motion:no-preference){ .kd-map-card{transition:border-color .15s, box-shadow .15s} }
+.kd-map-head{
+  width:100%; display:flex; flex-direction:column; gap:4px; text-align:left;
+  font:inherit; color:inherit; background:none; border:0; cursor:pointer; padding:14px 16px;
+}
+.kd-map-head-static{cursor:default}
+.kd-map-head:focus-visible{outline:2px solid var(--kd-accent); outline-offset:2px}
+.kd-map-headline{display:flex; flex-wrap:wrap; align-items:baseline; gap:8px}
+.kd-map-name{font-size:15px; font-weight:700}
+.kd-map-tag{font-family:var(--kd-mono); font-size:11px; padding:2px 8px; border-radius:999px; background:var(--kd-sunk); color:var(--kd-muted); border:1px solid var(--kd-line); white-space:nowrap}
+.kd-map-headline code{font-family:var(--kd-mono); font-size:11.5px; color:var(--kd-faint)}
+.kd-map-summary{font-size:12.5px; color:var(--kd-muted)}
+.kd-map-body{display:none; margin:0 16px 16px; padding:14px; background:var(--kd-surface-2); border:1px solid var(--kd-line); border-radius:12px}
+.kd-map-card.open .kd-map-body{display:block}
+
 /* 小地圖底圖＋疊圖：容器跟著寬度縮小（手機 360px 也完整看到整張），點位用百分比定位 */
 .kd-mm-wrap{position:relative; margin:0 auto 12px; width:100%}
 .kd-mm-img{display:block; width:100%; height:auto; border-radius:6px; background:var(--kd-sunk)}
@@ -214,3 +239,31 @@
 
 /* 首頁主視覺 */
 .kd-hero-img{display:block;width:100%;max-width:880px;height:auto;margin:20px 0 8px;border-radius:14px;border:1px solid var(--kd-line, rgba(0,0,0,.08))}
+
+/* 5031：野王頁一隻王一張卡（地點／玩家觀察／客戶端設定用堆疊的標籤列，不用表格——
+   客戶端設定值可能很長，例如「1 小時（時段限定 22:00～14:00）」，表格欄位會被其他欄擠到
+   每行只容得下一個字；改成區塊式排版，文字自然換行不會被卡片邊界切掉） */
+.kd-boss-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; margin-top:8px}
+.kd-boss-card{
+  display:flex; gap:14px; padding:16px; background:var(--kd-surface); border:1px solid var(--kd-line);
+  border-radius:14px; box-shadow:var(--kd-shadow);
+}
+.kd-boss-img{
+  flex:none; width:60px; height:60px; display:flex; align-items:center; justify-content:center;
+  background:var(--kd-surface-2); border-radius:10px; overflow:hidden;
+}
+.kd-boss-img img{max-width:52px; max-height:52px; image-rendering:pixelated}
+.kd-boss-body{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px}
+.kd-boss-body h3{margin:0; font-size:16px; line-height:1.3}
+.kd-boss-lv{margin:0; font-size:12px; color:var(--kd-faint); font-family:var(--kd-mono)}
+.kd-boss-locs{list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:8px}
+.kd-boss-loc{padding-top:8px; border-top:1px solid var(--kd-line-soft)}
+.kd-boss-loc:first-child{padding-top:0; border-top:0}
+.kd-boss-where{font-size:13px}
+.kd-boss-vals{display:flex; flex-wrap:wrap; gap:2px 10px; margin-top:3px; font-size:12.5px; color:var(--kd-faint)}
+.kd-boss-vals b{font-weight:700; color:var(--kd-accent-ink)}
+
+/* 選單右側：外部網站與聯絡信箱 */
+.kd-nav a.kd-ext{margin-left:auto; color:var(--kd-nav-ink)}
+.kd-nav a.kd-mail{font-size:12.5px}
+.kd-foot a{color:inherit}
