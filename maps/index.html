@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>地圖名冊｜魔龍數據</title>
-<meta name="description" content="《楓之谷 Classic》1.15.3 全部地圖名稱與編號，依區域分組，可查每張地圖出現的怪物。">
+<meta name="description" content="《楓之谷 Classic》1.15.3 全部地圖名稱與編號，依區域分組；點開地圖可看小地圖、傳送點／NPC／怪物重生點位置。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
@@ -16,7 +16,7 @@
   <div class="kd-hero">
     <p class="kd-eyebrow">MapleStory Classic · 1.15.3</p>
     <h1>地圖名冊</h1>
-    <p class="kd-lede">客戶端裡每一張有名字的地圖，依區域分組。每張地圖出沒的怪都列在後面，點名字可以跳到怪物資料庫看那一隻。</p>
+    <p class="kd-lede">客戶端裡每一張有名字的地圖，依區域分組。點地圖名稱可以展開小地圖，看傳送點、NPC、怪物重生點的實際位置；下面另外列出沒怪物（點名字可以跳到怪物資料庫）、NPC、傳送點清單。</p>
     <div class="kd-stats" id="stats"></div>
   </div>
   <div id="notice"></div>
@@ -30,20 +30,35 @@
 <div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 1.15.3 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理</div>
 <script>
 (async function(){
-  var resp = await fetch('../data/maps.json');
-  if (!resp.ok) throw new Error('maps ' + resp.status);
-  var MAPS = await resp.json();   // [[地圖編號, 區域, 名稱, 出沒怪物數, [[怪物編號,怪物名稱], …]], …]
+  async function fetchJson(url){
+    var r = await fetch(url);
+    if (!r.ok) throw new Error(url + ' ' + r.status);
+    return r.json();
+  }
+  var results = await Promise.all([
+    fetchJson('../data/maps.json'),        // [[地圖編號, 區域, 名稱, 出沒怪物數, [[怪物編號,怪物名稱], …]], …]
+    fetchJson('../data/map_layout.json'),  // 5016/5017：{"_": {...}, "<地圖id>": {"mm":…,"p":…,"n":…,"m":…} 或 {"ln": 目標id}}
+    fetchJson('../data/mob_atlas.json'),
+    fetchJson('../data/npc_atlas.json')
+  ]);
+  var MAPS = results[0], LAYOUT = results[1], MOB_ATLAS = results[2], NPC_ATLAS = results[3];
+  var MOB_NAME = LAYOUT._.mobName || {};
+  var NPC_NAME = LAYOUT._.npcName || {};
+  var PT_DEF = LAYOUT._.pt || {};          // {"0":["StartPoint","x"], …}
+  var PT_GRP_LABEL = LAYOUT._['pt分組'] || {};  // {"v":"一般可見", …}
+
   var listEl = document.getElementById('list'), qEl = document.getElementById('q');
   var chipsEl = document.getElementById('chips'), countEl = document.getElementById('count');
   var noticeEl = document.getElementById('notice');
   var region = null;
-  var MOB_SUMMARY_N = 6;
+  var isTouch = (function(){ try { return matchMedia('(hover: none)').matches; } catch(e) { return false; } })();
 
   function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function num(n){ return Number(n).toLocaleString('zh-Hant'); }
   function full(m){ return m[1] ? m[1] + ' ' + m[2] : m[2]; }
 
-  MAPS.forEach(function(m){ m.hay = (m[0] + ' ' + full(m)).toLowerCase(); });
+  var MAP_BY_ID = {};
+  MAPS.forEach(function(m){ m.hay = (m[0] + ' ' + full(m)).toLowerCase(); MAP_BY_ID[m[0]] = m; });
 
   // ---------- 5013：搜尋結果名稱優先——分層排序＋第3層理由 ----------
   function searchTierOf(m, term){
@@ -69,20 +84,184 @@
     '<div class="kd-stat"><b>' + num(order.length) + '</b><span>區域</span></div>' +
     '<div class="kd-stat"><b>' + num(MAPS.filter(function(m){ return m[3]; }).length) + '</b><span>查得到怪物</span></div>';
 
-  function mobCellHTML(m){
-    var mobs = m[4] || [];
-    if (!mobs.length) return '';
-    var mobLink = function(p){ return '<a href="../mobs/?id=' + p[0] + '">' + esc(p[1]) + '</a>'; };
-    var shortHTML = mobs.slice(0, MOB_SUMMARY_N).map(mobLink).join('、');
-    var extra = mobs.length - MOB_SUMMARY_N;
-    if (extra <= 0) {
-      return '<span class="kd-mobcell">' + shortHTML + '</span>';
+  // ---------- 5017：地圖頁小地圖與配置 ----------
+  // {"ln": id} 是空殼地圖，跟著去拿那張的圖和配置；只跟一層，若目標也是 ln 再跟，最多 3 層防無窮迴圈。
+  function resolveLayout(id){
+    var cur = id, depth = 0;
+    while (depth < 3) {
+      var e = LAYOUT[String(cur)];
+      if (!e) return null;
+      if (e.ln !== undefined && e.ln !== null) { cur = e.ln; depth++; continue; }
+      return { entry: e, rootId: cur };
     }
-    var fullHTML = mobs.map(mobLink).join('、');
-    return '<span class="kd-mobcell" data-map="' + m[0] + '">' +
-      '<span class="kd-moblist-short">' + shortHTML + ' <button type="button" class="kd-morebtn-inline">等 ' + extra + ' 隻 ▾</button></span>' +
-      '<span class="kd-moblist-full" hidden>' + fullHTML + ' <button type="button" class="kd-morebtn-inline">收合 ▴</button></span>' +
-      '</span>';
+    return null;
+  }
+
+  // 固定高度（hpx）縮小顯示 atlas 裡的一張小圖，用 CSS transform 縮放（背景圖技巧沒辦法直接縮，改縮整個方塊）
+  function sizedIconHTML(atlas, id, hpx, cls){
+    var p = atlas.pos[String(id)];
+    if (!p) return '<span class="kd-pt-ico kd-pt-noimg ' + cls + '" style="width:' + hpx + 'px;height:' + hpx + 'px">？</span>';
+    var sheet = p[0], x = p[1], y = p[2], w = p[3], h = p[4];
+    var scale = h > 0 ? (hpx / h) : 1;
+    var wpx = Math.max(1, Math.round(w * scale));
+    var src = atlas.sheets[sheet];
+    return '<span class="kd-pt-ico ' + cls + '" style="width:' + wpx + 'px;height:' + hpx + 'px">' +
+      '<i style="width:' + w + 'px;height:' + h + 'px;background-image:url(\'../assets/' + esc(src) + '\');' +
+      'background-position:-' + x + 'px -' + y + 'px;transform:scale(' + scale + ')"></i></span>';
+  }
+
+  // 5019：「看不見」（i）又沒有目的地的傳送點（gm00～gm04、tutorial8…）不顯示，地圖上和清單都算雜訊；
+  // 有目的地的看不見傳送點照常顯示。疊圖、清單、meta 的傳送點數都用這份過濾後的清單，三處數字才會一致。
+  function visiblePortals(pArr){
+    return (pArr || []).filter(function(p){
+      var grp = (PT_DEF[String(p[2])] || ['', 'i'])[1];
+      var hasDest = p[3] !== null && p[3] !== undefined;
+      return !(grp === 'i' && !hasDest);
+    });
+  }
+
+  function mobNameOf(id, secondary){
+    if (MOB_NAME[id]) return MOB_NAME[id];
+    var hit = (secondary || []).find(function(p){ return p[0] === id; });
+    return hit ? hit[1] : ('怪物 ' + id);
+  }
+
+  // 任務2：出沒怪物清單——以 map_layout 的實際重生點為主，原本反查清單（m[4]）裡重生點沒有的怪附在後面標「（無重生點資料）」
+  function buildMobRows(mArr, secondary){
+    var counts = {}, order = [];
+    (mArr || []).forEach(function(p){
+      var id = p[2];
+      if (!(id in counts)) { counts[id] = 0; order.push(id); }
+      counts[id]++;
+    });
+    var rows = order.map(function(id){ return { id: id, name: mobNameOf(id, secondary), count: counts[id], has: true }; });
+    rows.sort(function(a, b){ return (b.count - a.count) || (a.id - b.id); });
+    var inPrimary = {}; order.forEach(function(id){ inPrimary[id] = 1; });
+    (secondary || []).forEach(function(p){ if (!inPrimary[p[0]]) rows.push({ id: p[0], name: p[1], count: null, has: false }); });
+    return rows;
+  }
+
+  function mobRowsHTML(rows){
+    if (!rows.length) return '<p class="kd-map-empty">這張地圖查不到怪物。</p>';
+    return '<ul class="kd-map-list">' + rows.map(function(r){
+      return '<li>' + sizedIconHTML(MOB_ATLAS, r.id, 24, 'kd-ico-mob') +
+        '<a href="../mobs/?id=' + r.id + '">' + esc(r.name) + '</a>' +
+        (r.has ? ' <span class="kd-map-sub">× ' + r.count + ' 個重生點</span>'
+               : ' <span class="kd-map-sub kd-faint">（無重生點資料）</span>') +
+        '</li>';
+    }).join('') + '</ul>';
+  }
+
+  // 5019：NPC 改成橫向流動的小標籤（圖 20px＋名字一行，自動換行），不要一個一行置中
+  function npcRowsHTML(nArr){
+    if (!nArr || !nArr.length) return '<p class="kd-map-empty">這張地圖查不到 NPC。</p>';
+    var counts = {}, limited = {}, order = [];
+    nArr.forEach(function(p){
+      var id = p[2];
+      if (!(id in counts)) { counts[id] = 0; order.push(id); }
+      counts[id]++;
+      if (p[3] === 1) limited[id] = true;
+    });
+    return '<div class="kd-map-ntags">' + order.map(function(id){
+      var name = NPC_NAME[id] || ('NPC ' + id);
+      return '<span class="kd-map-ntag' + (limited[id] ? ' kd-pt-limited' : '') + '"' + (limited[id] ? ' title="活動限定 NPC"' : '') + '>' +
+        sizedIconHTML(NPC_ATLAS, id, 20, 'kd-ico-npc') + esc(name) +
+        (counts[id] > 1 ? ' ×' + counts[id] : '') +
+        (limited[id] ? ' <span class="kd-faint">（活動限定）</span>' : '') +
+        '</span>';
+    }).join('') + '</div>';
+  }
+
+  // 5019：一行一個「記號 往 目的地（種類）」，不顯示傳送點內部名（in03/gm00…）；pArr 要先用 visiblePortals() 過濾過
+  function portalRowsHTML(pArr){
+    if (!pArr || !pArr.length) return '<p class="kd-map-empty">這張地圖查不到傳送點。</p>';
+    return '<ul class="kd-map-list">' + pArr.map(function(p){
+      var pt = p[2], target = p[3];
+      var grp = (PT_DEF[String(pt)] || ['', 'i'])[1];
+      var label = PT_GRP_LABEL[grp] || grp;
+      var destRow = (target !== null && target !== undefined) ? MAP_BY_ID[target] : null;
+      var destHTML = destRow ? '<a href="../maps/?id=' + target + '">' + esc(destRow[2]) + '</a>'
+                   : (target !== null && target !== undefined ? '<span title="地圖名冊沒有這張地圖，無法連結">地圖 ' + target + '</span>' : '（沒有固定目的地）');
+      return '<li><span class="kd-pt-shape kd-pt-pt-' + grp + '" aria-hidden="true"></span>' +
+        '往 ' + destHTML + ' <span class="kd-map-sub">（' + esc(label) + '）</span></li>';
+    }).join('') + '</ul>';
+  }
+
+  // 5019：圖例只列這張地圖實際有的類別
+  function legendHTML(entry, vp){
+    var grpSet = {};
+    vp.forEach(function(p){ grpSet[(PT_DEF[String(p[2])] || ['', 'i'])[1]] = true; });
+    var items = [];
+    if (entry.m && entry.m.length) items.push(sizedIconHTML(MOB_ATLAS, entry.m[0][2], 18, 'kd-ico-mob') + '怪物重生點（實際用該怪物圖）');
+    if (entry.n && entry.n.length) items.push(sizedIconHTML(NPC_ATLAS, entry.n[0][2], 18, 'kd-ico-npc') + 'NPC（半透明＝活動限定）');
+    ['v', 's', 'h', 'i'].forEach(function(g){
+      if (grpSet[g]) items.push('<span class="kd-pt-shape kd-pt-pt-' + g + '" aria-hidden="true"></span>' + esc(PT_GRP_LABEL[g] || g));
+    });
+    if (!items.length) return '';
+    return '<div class="kd-mm-legend">' + items.map(function(i){ return '<span>' + i + '</span>'; }).join('') + '</div>';
+  }
+
+  // 5019：小地圖放大到容器寬度（上限 4 倍原生尺寸、容器寬度上限約 900px，平滑縮放不用 pixelated）；
+  // 疊圖怪物／NPC 圖示跟著放大後的地圖寬度成比例，限制在 14～28px 高，不然小地圖被圖示整個蓋掉。
+  function overlayHTML(entry, rootId, vp){
+    var w = entry.mm[0], h = entry.mm[1];
+    var renderW = Math.min(w * 4, 900);
+    var iconH = Math.max(14, Math.min(28, Math.round(renderW / 40)));
+    var html = '<div class="kd-mm-wrap" style="max-width:' + renderW + 'px"><img class="kd-mm-img" src="../assets/minimap/' + rootId + '.png" width="' + w + '" height="' + h + '" alt="" loading="lazy">';
+    (entry.m || []).forEach(function(p){
+      var left = (p[0] / w * 100).toFixed(2), top = (p[1] / h * 100).toFixed(2);
+      var mobId = p[2], mobTime = p[3];
+      var timeTxt = mobTime === -1 ? '只出現一次' : (mobTime > 0 ? ('重生 ' + mobTime + ' 秒') : '');
+      var name = mobNameOf(mobId, null);
+      var tip = name + (timeTxt ? '・' + timeTxt : '');
+      html += '<button type="button" class="kd-pt kd-pt-mob" style="left:' + left + '%;top:' + top + '%" ' +
+        'data-tip="' + esc(tip) + '" data-href="../mobs/?id=' + mobId + '">' + sizedIconHTML(MOB_ATLAS, mobId, iconH, 'kd-ico-mob') + '</button>';
+    });
+    (entry.n || []).forEach(function(p){
+      var left = (p[0] / w * 100).toFixed(2), top = (p[1] / h * 100).toFixed(2);
+      var npcId = p[2], limited = p[3] === 1;
+      var name = NPC_NAME[npcId] || ('NPC ' + npcId);
+      var tip = name + (limited ? '（活動限定）' : '');
+      html += '<button type="button" class="kd-pt kd-pt-npc' + (limited ? ' kd-pt-limited' : '') + '" style="left:' + left + '%;top:' + top + '%" ' +
+        'data-tip="' + esc(tip) + '">' + sizedIconHTML(NPC_ATLAS, npcId, iconH, 'kd-ico-npc') + '</button>';
+    });
+    vp.forEach(function(p){
+      var left = (p[0] / w * 100).toFixed(2), top = (p[1] / h * 100).toFixed(2);
+      var pt = p[2], target = p[3];
+      var grp = (PT_DEF[String(pt)] || ['', 'i'])[1];
+      var destRow = (target !== null && target !== undefined) ? MAP_BY_ID[target] : null;
+      var tip = '往 ' + (destRow ? destRow[2] : (target !== null && target !== undefined ? ('地圖 ' + target) : '（沒有固定目的地）'));
+      html += '<button type="button" class="kd-pt kd-pt-portal" style="left:' + left + '%;top:' + top + '%" data-tip="' + esc(tip) + '"' +
+        (destRow ? ' data-href="../maps/?id=' + target + '"' : '') + '><span class="kd-pt-shape kd-pt-pt-' + grp + '" aria-hidden="true"></span></button>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function buildDetailHTML(mapId, secondaryMobs){
+    var resolved = resolveLayout(mapId);
+    if (!resolved) return '<p class="kd-map-empty">客戶端沒有這張地圖的配置資料。</p>';
+    var entry = resolved.entry, rootId = resolved.rootId;
+    var vp = visiblePortals(entry.p);
+    var html = '';
+    if (entry.mm) html += legendHTML(entry, vp) + overlayHTML(entry, rootId, vp);
+    html += '<div class="kd-map-sections">' +
+      '<section><h3>出沒怪物</h3>' + mobRowsHTML(buildMobRows(entry.m, secondaryMobs)) + '</section>' +
+      '<section><h3>NPC</h3>' + npcRowsHTML(entry.n) + '</section>' +
+      '<section><h3>傳送點</h3>' + portalRowsHTML(vp) + '</section>' +
+      '</div>';
+    return html;
+  }
+
+  function mapMetaHTML(m){
+    var resolved = resolveLayout(m[0]);
+    if (!resolved) return '<div class="kd-map-meta kd-faint">客戶端沒有這張地圖的配置資料。</div>';
+    var entry = resolved.entry;
+    var nMob = (entry.m || []).length, nNpc = (entry.n || []).length, nPortal = visiblePortals(entry.p).length;
+    var openLabel = entry.mm ? '顯示地圖與配置 ▾' : '顯示配置清單 ▾（這張地圖沒有小地圖）';
+    return '<div class="kd-map-meta">怪物 ' + nMob + '・NPC ' + nNpc + '・傳送點 ' + nPortal +
+      '　<button type="button" class="kd-map-toggle" data-id="' + m[0] + '" data-open-label="' + esc(openLabel) + '">' + esc(openLabel) + '</button></div>' +
+      '<div class="kd-map-detail" id="kd-detail-' + m[0] + '" hidden></div>';
   }
 
   function renderChips(){
@@ -99,8 +278,18 @@
     renderChips(); render();
   });
 
+  // ---------- 5020：未搜尋時不列清單（搜尋字或選了區域 chip 都算「搜尋」） ----------
+  function hasActiveSearch(){
+    return !!qEl.value.trim() || region !== null;
+  }
+
   function render(){
     var q = qEl.value.trim().toLowerCase();
+    if (!hasActiveSearch()){
+      countEl.textContent = '';
+      listEl.innerHTML = '<p class="kd-empty">輸入名稱或選擇篩選條件開始查詢（共 ' + num(MAPS.length) + ' 筆）</p>';
+      return;
+    }
     var hits = MAPS.filter(function(m){
       if (region !== null && (m[1] || '其他') !== region) return false;
       return !q || m.hay.indexOf(q) !== -1;
@@ -118,35 +307,71 @@
           var why = (q && searchTierOf(m, q) === 3)
             ? ' <span style="color:var(--kd-faint);font-size:12px">（' + esc(searchReasonOf(m, q)) + '）</span>'
             : '';
-          return '<li data-id="' + m[0] + '"><code>' + m[0] + '</code><span class="kd-grow">' + esc(m[2]) + why + '</span>' + mobCellHTML(m) + '</li>';
+          return '<li data-id="' + m[0] + '"><code>' + m[0] + '</code><span class="kd-grow">' + esc(m[2]) + why + mapMetaHTML(m) + '</span></li>';
         }).join('') + '</ul></section>';
     }).join('');
   }
 
-  listEl.addEventListener('click', function(e){
-    var b = e.target.closest('.kd-morebtn-inline'); if (!b) return;
-    var cell = b.closest('.kd-mobcell');
-    var shortEl = cell.querySelector('.kd-moblist-short'), fullEl = cell.querySelector('.kd-moblist-full');
-    var toFull = !shortEl.hidden;
-    shortEl.hidden = toFull; fullEl.hidden = !toFull;
-  });
+  function openDetail(id, m, btn){
+    var detail = document.getElementById('kd-detail-' + id);
+    if (!detail) return;
+    detail.hidden = false;
+    if (!detail.dataset.loaded) {
+      detail.innerHTML = buildDetailHTML(id, m[4]);
+      detail.dataset.loaded = '1';
+    }
+    if (btn) btn.textContent = '收合 ▴';
+  }
+  function closeDetail(id, btn){
+    var detail = document.getElementById('kd-detail-' + id);
+    if (detail) detail.hidden = true;
+    if (btn) btn.textContent = btn.getAttribute('data-open-label');
+  }
 
-  function locateMap(idStr){
+  listEl.addEventListener('click', function(e){
+    var toggle = e.target.closest('.kd-map-toggle');
+    if (toggle) {
+      var id = toggle.getAttribute('data-id');
+      var detail = document.getElementById('kd-detail-' + id);
+      var m = MAP_BY_ID[Number(id)] || MAP_BY_ID[id];
+      if (detail && !detail.hidden) { closeDetail(id, toggle); } else { openDetail(id, m, toggle); }
+      return;
+    }
+    var pt = e.target.closest('.kd-pt');
+    if (pt) {
+      var href = pt.getAttribute('data-href');
+      if (!href) { if (isTouch) toggleActive(pt); return; }
+      if (!isTouch) { location.href = href; return; }
+      if (pt.classList.contains('kd-pt-active')) { location.href = href; }
+      else { clearActivePts(); pt.classList.add('kd-pt-active'); }
+    }
+  });
+  function clearActivePts(){ listEl.querySelectorAll('.kd-pt-active').forEach(function(x){ x.classList.remove('kd-pt-active'); }); }
+  function toggleActive(pt){ var was = pt.classList.contains('kd-pt-active'); clearActivePts(); if (!was) pt.classList.add('kd-pt-active'); }
+  document.addEventListener('click', function(e){ if (!e.target.closest('.kd-pt')) clearActivePts(); });
+
+  // 5022：?id= 打開時不要把整份清單畫出來再捲過去（手機深連結會捲不到，見 5021 回報）。
+  // 改成只渲染那一張地圖、直接展開，上面補一行「只顯示編號 N｜顯示全部結果」。
+  function showOnlyMap(idStr){
     var idx = MAPS.findIndex(function(m){ return String(m[0]) === String(idStr); });
     if (idx === -1) {
       noticeEl.innerHTML = '<p class="kd-note">找不到編號 ' + esc(idStr) + '（可能已從網站移除）</p>';
+      render();  // 找不到就照 5020 的未搜尋狀態處理
       return;
     }
+    var m = MAPS[idx];
+    countEl.textContent = '';
+    var banner = '<div class="kd-onlyline">只顯示編號 <b>' + m[0] + '</b>｜<button type="button" id="showAllBtn" class="kd-linkbtn">顯示全部結果</button></div>';
+    listEl.innerHTML = banner + '<section class="kd-group"><ul class="kd-rows">' +
+      '<li data-id="' + m[0] + '"><code>' + m[0] + '</code><span class="kd-grow">' + esc(m[2]) + mapMetaHTML(m) + '</span></li>' +
+      '</ul></section>';
     var row = listEl.querySelector('[data-id="' + idStr + '"]');
-    if (!row) return;
-    var cell = row.querySelector('.kd-mobcell');
-    if (cell) {
-      var shortEl = cell.querySelector('.kd-moblist-short'), fullEl = cell.querySelector('.kd-moblist-full');
-      if (fullEl) { fullEl.hidden = false; if (shortEl) shortEl.hidden = true; }
-    }
-    row.classList.add('kd-hl');
-    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(function(){ row.classList.remove('kd-hl'); }, 2500);
+    var toggle = row.querySelector('.kd-map-toggle');
+    if (toggle) openDetail(idStr, m, toggle);  // 5016/5017：小地圖懶載入照常觸發（展開才 fetch）
+    document.getElementById('showAllBtn').addEventListener('click', function(){
+      try { history.replaceState(null, '', location.pathname); } catch(e) {}
+      render();
+    });
   }
 
   var t;
@@ -159,8 +384,8 @@
     else { var pq = params.get('q'); if (pq) qEl.value = pq; }
   } catch(e) {}
   renderChips();
-  render();
-  if (targetId !== null) locateMap(targetId);
+  if (targetId !== null) showOnlyMap(targetId);
+  else render();
 })().catch(function(err){
   document.getElementById('list').innerHTML = '<p class="kd-empty">資料載入失敗，請重新整理頁面。</p>';
   console.error(err);

@@ -194,11 +194,20 @@
   .xlink:hover{text-decoration-color:currentColor;}
   .empty{text-align:center;color:var(--text-muted);padding:40px 10px;font-size:.9rem;}
   .notice{margin:4px 0 0;padding:9px 12px;font-size:.85rem;color:var(--text);background:var(--bronze-weak);border-left:3px solid var(--bronze);border-radius:0 8px 8px 0;}
+  /* 5022：?id= 只顯示那一件時，上面這行告知使用者目前是縮小範圍、怎麼回到完整清單 */
+  .onlyline{margin:0 0 10px;padding:9px 12px;font-size:.82rem;color:var(--text-muted);background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .onlyline b{color:var(--text);font-family:'IBM Plex Mono',monospace;}
+  .linkbtn{font:inherit;font-size:.82rem;color:var(--accent-ink);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+  .linkbtn:hover{color:var(--accent);}
   .row{scroll-margin-top:12px;}
   .row.hl{box-shadow:0 0 0 3px var(--accent);}
   @media (prefers-reduced-motion:no-preference){ .row.hl{transition:box-shadow .3s;} }
   #load-more{display:block;margin:4px auto 0;background:var(--surface);border:1px dashed var(--accent);color:var(--accent-ink);border-radius:var(--r);padding:10px 18px;font-size:.84rem;cursor:pointer;}
   #load-more:hover{background:var(--accent-weak);}
+  /* 5020：#load-more{display:block} 的 ID 選擇器優先度比瀏覽器內建的 [hidden]{display:none} 高，
+     hidden 屬性其實從來沒真的生效過（搜尋結果不夠多、不需要「載入更多」時按鈕還是一直顯示，只是沒人注意到）。
+     這次「未搜尋不列清單」會把這顆按鈕設成 hidden，才看得出這個舊坑，補一條更高優先度的規則修掉 */
+  #load-more[hidden]{display:none;}
 
   .credits{margin-top:30px;padding-top:16px;border-top:1px solid var(--border-soft);font-size:.78rem;color:var(--faint);display:flex;flex-direction:column;gap:4px;}
   .credits p{margin:0;}
@@ -371,6 +380,11 @@
     'price-asc':  function(a, b){ return (price[a] - price[b]) || (DATA[a].i - DATA[b].i); },
     'name': function(a, b){ return DATA[a].n.localeCompare(DATA[b].n, 'zh-Hant'); }
   };
+
+  // ---------- 5020：未搜尋時不列清單（搜尋字／任一分類 chip／職業／等級區間都算「搜尋」） ----------
+  function hasActiveSearch(){
+    return !!state.q || state.cat !== null || state.sub !== null || state.job !== null || state.lvlBucket != null;
+  }
 
   function computeList(){
     var out = [];
@@ -563,10 +577,21 @@
   }
 
   function renderReset(){
-    currentList = computeList();
     shown = 0;
     listEl.innerHTML = '';
     detailBuilt.clear();
+    if (!hasActiveSearch()){
+      // 5020：currentList 保持空陣列，不只是畫面上看不到——IntersectionObserver 用
+      // 「shown < currentList.length」判斷要不要補渲染，currentList 若還是完整清單，
+      // sentinel 一進視窗就會把清單偷偷補回來，繞過這個「未搜尋不列清單」的門檻。
+      currentList = [];
+      emptyEl.hidden = true;
+      loadMoreBtn.hidden = true;
+      resultCountEl.textContent = '';
+      listEl.innerHTML = '<p class="empty">輸入名稱或選擇篩選條件開始查詢（共 ' + N.toLocaleString('zh-Hant') + ' 筆）</p>';
+      return;
+    }
+    currentList = computeList();
     emptyEl.hidden = currentList.length !== 0;
     resultCountEl.textContent = '符合條件：' + currentList.length.toLocaleString('zh-Hant') + ' 件';
     renderMore();
@@ -730,7 +755,7 @@
   }
 
   // ========== 啟動 ==========
-  // 網址 ?q= 預填搜尋／?id= 清空篩選＋定位展開
+  // 網址 ?q= 預填搜尋／?id= 只顯示那一筆（5022：不用捲動，見下方 showOnlyId）
   var targetId = null;
   try {
     var params = new URLSearchParams(location.search);
@@ -742,29 +767,42 @@
   renderCatChips();
   renderSubChips();
   renderExtraChips();
-  renderReset();
-  if (targetId !== null) locateById(targetId);
+  if (targetId !== null) showOnlyId(targetId);
+  else renderReset();
 
-  function locateById(idStr){
+  // 5022：?id= 打開時不要把整份清單畫出來再捲過去（手機深連結會捲不到，見 5021 回報）。
+  // 改成只渲染那一件、直接展開，上面補一行「只顯示編號 N｜顯示全部結果」。
+  function showOnlyId(idStr){
     var idx0 = -1;
     for (var i2 = 0; i2 < N; i2++) if (String(DATA[i2].i) === String(idStr)) { idx0 = i2; break; }
     if (idx0 === -1){
       document.getElementById('notice').innerHTML = '<p class="notice">找不到編號 ' + esc(idStr) + '（可能已從網站移除）</p>';
+      renderReset();  // 找不到就照 5020 的未搜尋狀態處理
       return;
     }
-    var pos = currentList.indexOf(idx0);
-    if (pos === -1) return;  // 篩選已清空，理論上一定找得到
-    while (shown <= pos) renderMore();
-    var row = listEl.querySelector('.row[data-idx="' + idx0 + '"]');
-    if (!row) return;
+    currentList = [idx0];
+    shown = 1;
+    detailBuilt.clear();
+    emptyEl.hidden = true;
+    loadMoreBtn.hidden = true;
+    resultCountEl.textContent = '';
+    var row = buildRow(idx0);
+    listEl.innerHTML = '';
+    var banner = document.createElement('div');
+    banner.className = 'onlyline';
+    banner.innerHTML = '只顯示編號 <b>' + esc(DATA[idx0].i) + '</b>｜<button type="button" id="showAllBtn" class="linkbtn">顯示全部結果</button>';
+    listEl.appendChild(banner);
+    listEl.appendChild(row);
     var btn = row.querySelector('.row-main');
     var detail = row.querySelector('.detail');
-    if (!detailBuilt.has(idx0)){ detail.innerHTML = buildDetailHTML(idx0); detailBuilt.add(idx0); }
+    detail.innerHTML = buildDetailHTML(idx0);
+    detailBuilt.add(idx0);
     detail.hidden = false;
     btn.setAttribute('aria-expanded', 'true');
-    row.classList.add('hl');
-    row.scrollIntoView({ behavior:'smooth', block:'center' });
-    setTimeout(function(){ row.classList.remove('hl'); }, 2500);
+    document.getElementById('showAllBtn').addEventListener('click', function(){
+      try { history.replaceState(null, '', location.pathname); } catch(e) {}
+      renderReset();
+    });
   }
 })().catch(function(err){
   document.getElementById('list').innerHTML = '<p class="empty">資料載入失敗，請重新整理頁面。</p>';

@@ -509,9 +509,24 @@
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  function render(){
+  // ---------- 5020：未搜尋時不列清單（搜尋字／任一篩選 chip／下拉排序以外的篩選都算「搜尋」） ----------
+  function hasActiveSearch(){
+    if (qEl.value.trim()) return true;
+    if (filterRegion !== null || filterLv !== null || filterTeam !== null) return true;
+    for (var k in flags) if (flags[k]) return true;
+    return false;
+  }
+
+  function render(opts){
+    var forceList = opts && opts.forceList;
     var q = qEl.value.trim().toLowerCase();
     clearEl.hidden = !qEl.value;
+
+    if (!forceList && !hasActiveSearch()){
+      countEl.textContent = '';
+      listEl.innerHTML = '<p class="empty">輸入名稱或選擇篩選條件開始查詢（共 ' + num(ROWS.length) + ' 筆）</p>';
+      return;
+    }
 
     var hits = ROWS.filter(function(r){
       if (filterRegion !== null && r._region !== filterRegion) return false;

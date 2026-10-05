@@ -115,10 +115,15 @@
 .kd-group h2{margin:0 0 8px; font-size:15px; font-weight:700; display:flex; gap:8px; align-items:baseline}
 .kd-group h2 small{font-family:var(--kd-mono); font-size:11.5px; color:var(--kd-faint); font-weight:400}
 .kd-rows{list-style:none; margin:0; padding:0; background:var(--kd-surface); border:1px solid var(--kd-line); border-radius:12px; overflow:hidden}
-.kd-rows li{display:flex; gap:12px; align-items:baseline; padding:8px 14px; border-top:1px solid var(--kd-line-soft); font-size:14px; scroll-margin-top:80px}
-.kd-rows li:first-child{border-top:0}
+.kd-rows > li{display:flex; gap:12px; align-items:flex-start; padding:8px 14px; border-top:1px solid var(--kd-line-soft); font-size:14px; scroll-margin-top:80px}
+.kd-rows > li:first-child{border-top:0}
 .kd-rows code{font-family:var(--kd-mono); font-size:11.5px; color:var(--kd-faint); flex:none; min-width:84px}
 .kd-rows .kd-grow{flex:1; min-width:0}
+/* 5017：窄螢幕（手機）讓編號跟內容分行，展開的小地圖與配置才有完整寬度可用，不被 84px 的編號欄位擠壓 */
+@media (max-width:480px){
+  .kd-rows > li{flex-direction:column; gap:2px}
+  .kd-rows code{min-width:0}
+}
 .kd-rows a, .kd-link{color:var(--kd-accent-ink); text-underline-offset:2px}
 .kd-tag{font-family:var(--kd-mono); font-size:11px; padding:2px 8px; border-radius:999px; background:var(--kd-sunk); color:var(--kd-muted); border:1px solid var(--kd-line); white-space:nowrap}
 .kd-tag.boss{background:var(--kd-gold-soft); color:var(--kd-gold); border-color:var(--kd-gold)}
@@ -128,6 +133,19 @@
   background:var(--kd-gold-soft); border-left:3px solid var(--kd-gold); border-radius:0 8px 8px 0;
 }
 
+/* 5022：?id= 只顯示那一筆時，上面這行告知使用者目前是縮小範圍、怎麼回到完整清單（地圖頁用） */
+.kd-onlyline{
+  margin:0 0 12px; padding:10px 14px; font-size:13px; color:var(--kd-muted);
+  background:var(--kd-surface-2); border:1px solid var(--kd-line); border-radius:10px;
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+}
+.kd-onlyline b{color:var(--kd-ink); font-variant-numeric:tabular-nums}
+.kd-linkbtn{
+  font:inherit; font-size:13px; color:var(--kd-accent-ink); background:none; border:0;
+  padding:0; cursor:pointer; text-decoration:underline; text-underline-offset:2px;
+}
+.kd-linkbtn:hover{color:var(--kd-accent)}
+
 /* ---------- 5004：編號互連共用（地圖頁出沒怪物清單、高亮、找不到提示） ---------- */
 .kd-mobcell{font-size:13px; color:var(--kd-muted);}
 .kd-morebtn-inline{
@@ -135,8 +153,8 @@
   cursor:pointer; padding:6px 4px; margin:-6px 0 -6px -2px; text-decoration:underline; text-underline-offset:2px;
 }
 .kd-morebtn-inline:hover{color:var(--kd-accent);}
-.kd-rows li.kd-hl, .kd-card.kd-hl{outline:2px solid var(--kd-accent); outline-offset:2px;}
-@media (prefers-reduced-motion:no-preference){ .kd-rows li.kd-hl, .kd-card.kd-hl{transition:outline-color .3s;} }
+.kd-rows > li.kd-hl, .kd-card.kd-hl{outline:2px solid var(--kd-accent); outline-offset:2px;}
+@media (prefers-reduced-motion:no-preference){ .kd-rows > li.kd-hl, .kd-card.kd-hl{transition:outline-color .3s;} }
 .kd-sec{margin-top:30px}
 .kd-sec > h2{margin:0 0 4px; font-family:var(--kd-serif); font-size:20px}
 .kd-sec > p{margin:0 0 10px; color:var(--kd-muted); font-size:13px}
@@ -147,3 +165,49 @@
 .kd-table td.r, .kd-table th.r{text-align:right; font-family:var(--kd-mono); font-variant-numeric:tabular-nums}
 .kd-table td.wrap{white-space:normal; min-width:180px}
 .kd-table .kd-time{font-weight:700; color:var(--kd-accent-ink)}
+
+/* ---------- 5017：地圖頁小地圖與配置（點位標記顏色是新增的輔助色，不動既有 --kd- 配色 token） ---------- */
+.kd-faint{color:var(--kd-faint)}
+.kd-map-meta{margin-top:4px; font-size:12.5px; color:var(--kd-muted)}
+.kd-map-toggle{
+  font:inherit; font-size:12.5px; color:var(--kd-accent-ink); background:none; border:0;
+  cursor:pointer; padding:2px 4px; text-decoration:underline; text-underline-offset:2px;
+}
+.kd-map-toggle:hover{color:var(--kd-accent)}
+.kd-map-detail{margin:10px 0 2px; padding:14px; background:var(--kd-surface-2); border:1px solid var(--kd-line); border-radius:12px}
+.kd-map-empty{margin:0; color:var(--kd-muted); font-size:13px}
+.kd-map-sections{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-top:12px}
+.kd-map-sections h3{margin:0 0 6px; font-size:13px; color:var(--kd-faint); font-weight:700; letter-spacing:.04em}
+.kd-map-list{list-style:none; margin:0; padding:0; font-size:13px}
+.kd-map-list li{display:flex; align-items:center; gap:6px; padding:3px 0}
+.kd-map-list a{color:var(--kd-accent-ink)}
+.kd-map-sub{color:var(--kd-muted); font-size:11.5px}
+.kd-pt-limited{opacity:.55}
+/* 5019：NPC 改成橫向流動的小標籤，不要一個一行置中 */
+.kd-map-ntags{display:flex; flex-wrap:wrap; gap:6px 12px; font-size:12.5px}
+.kd-map-ntag{display:inline-flex; align-items:center; gap:4px; white-space:nowrap}
+
+/* 小地圖底圖＋疊圖：容器跟著寬度縮小（手機 360px 也完整看到整張），點位用百分比定位 */
+.kd-mm-wrap{position:relative; margin:0 auto 12px; width:100%}
+.kd-mm-img{display:block; width:100%; height:auto; border-radius:6px; background:var(--kd-sunk)}
+.kd-mm-legend{display:flex; flex-wrap:wrap; gap:10px 14px; margin-bottom:10px; font-size:11.5px; color:var(--kd-muted); align-items:center}
+.kd-mm-legend span{display:inline-flex; align-items:center; gap:5px}
+
+.kd-pt-ico{position:relative; display:inline-block; overflow:hidden; vertical-align:middle; flex:none}
+.kd-pt-ico i{position:absolute; left:0; top:0; transform-origin:0 0; image-rendering:pixelated}
+.kd-pt-ico.kd-pt-noimg{display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--kd-faint); background:var(--kd-sunk); border-radius:4px}
+
+.kd-pt{position:absolute; transform:translate(-50%,-50%); border:0; background:none; padding:0; margin:0; cursor:pointer; line-height:0; z-index:1; scroll-margin-top:90px}
+.kd-pt-mob, .kd-pt-npc{transform:translate(-50%,-100%)}
+.kd-pt::after{
+  content:attr(data-tip); position:absolute; left:50%; bottom:100%; transform:translate(-50%,-4px);
+  background:var(--kd-ink); color:var(--kd-bg); font-size:11px; line-height:1.4; padding:3px 7px; border-radius:6px;
+  white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .12s; z-index:6;
+}
+.kd-pt:hover::after, .kd-pt:focus-visible::after, .kd-pt.kd-pt-active::after{opacity:1}
+.kd-pt-shape{display:block; width:13px; height:13px}
+.kd-pt-portal{z-index:2}
+.kd-pt-pt-v{background:#3B6FA6; clip-path:polygon(50% 0%,0% 100%,100% 100%)}
+.kd-pt-pt-s{background:#7B4FA6; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%)}
+.kd-pt-pt-h{background:transparent; border:2px solid #C8791E; border-radius:50%; box-sizing:border-box}
+.kd-pt-pt-i{background:transparent; border:2px dashed #8C847A; box-sizing:border-box}

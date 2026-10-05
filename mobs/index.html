@@ -120,20 +120,42 @@ select {
 
 .list { display:flex; flex-direction:column; gap:10px; margin-top:18px; }
 .mob { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; }
+/* 5021：收合＝縮圖＋名稱一列、數值/屬性/命中需求各自整行（跟改之前一樣）。
+   展開＝左欄換成原圖（懶載入前先顯示縮圖）、右欄放名稱＋數值＋屬性＋命中需求。
+   用同一份 DOM、靠 grid-template-areas 依 .mob.open 切兩種排法，不用另外複製一份 HTML。 */
 .head {
-  display:flex; flex-direction:column; gap:10px; width:100%; text-align:left;
+  display:grid; grid-template-columns:72px 1fr; column-gap:12px; row-gap:8px;
+  grid-template-areas:"img who" "stat stat" "elems elems" "hitreq hitreq";
+  width:100%; text-align:left;
   font:inherit; color:inherit; background:none; border:0; cursor:pointer; padding:14px 16px;
 }
-.toprow { display:flex; gap:12px; align-items:center; }
+.mob.open .head {
+  grid-template-columns:fit-content(240px) 1fr;
+  grid-template-areas:"img who" "img stat" "img elems" "img hitreq";
+  align-items:start;
+}
+@media (max-width:560px) {
+  .mob.open .head { grid-template-columns:1fr; grid-template-areas:"img" "who" "stat" "elems" "hitreq"; }
+  .mob.open .himg { justify-self:center; }
+}
+.himg { grid-area:img; }
 .thumb {
-  flex:none; width:60px; height:60px; border-radius:10px; background:var(--surface-2);
+  /* 5018：72px＝圖集單格實際大小。改成跟單格一樣大，圖就不會被這個框裁到——
+     裁切原因是這裡以前是 60px，小於單格裡實際存的素材大小（最大到 72px）。 */
+  flex:none; width:72px; height:72px; border-radius:10px; background:var(--surface-2);
   border:1px solid var(--line); display:flex; align-items:center; justify-content:center; overflow:hidden;
 }
 .thumb i { display:block; background-repeat:no-repeat; image-rendering:pixelated; }
-.thumb.noimg { color:var(--faint); font-size:20px; }
-.who { min-width:0; flex:1; }
-.who h2 { margin:0; font-size:16px; font-weight:700; display:flex; flex-wrap:wrap; gap:6px; align-items:baseline; }
-.who h2 code { font-family:var(--mono); font-size:11.5px; color:var(--muted); font-weight:400; }
+.thumb.noimg { color:var(--faint); font-size:22px; }
+/* 5021：展開後才懶載入的原圖（沿用 5018 的 loadOnExpand）。載入完成前 .himg 裡還是只有
+   上面的 .thumb（當佔位縮圖）；img 的 load 事件觸發後 JS 幫 .mob 加 .bigloaded，這裡才切換顯示。
+   太大的原圖等比縮到 240px 內，小圖不強制放大（沒設最小寬高）。 */
+.himg .bigimg { display:none; max-width:240px; max-height:240px; border-radius:10px; background:var(--surface-2); border:1px solid var(--line); image-rendering:pixelated; }
+.mob.open.bigloaded .himg .thumb { display:none; }
+.mob.open.bigloaded .himg .bigimg { display:block; }
+.hwho { grid-area:who; min-width:0; }
+.hwho h2 { margin:0; font-size:16px; font-weight:700; display:flex; flex-wrap:wrap; gap:6px; align-items:baseline; }
+.hwho h2 code { font-family:var(--mono); font-size:11.5px; color:var(--muted); font-weight:400; }
 .tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:5px; }
 .tag {
   font-family:var(--mono); font-size:11px; padding:2px 8px; border-radius:999px;
@@ -144,24 +166,26 @@ select {
 .tag.boss { background:var(--boss-soft); color:var(--boss); border-color:var(--boss); font-weight:500; }
 .tag.hit { background:var(--accent-soft); color:var(--accent-ink); border-color:var(--accent); font-weight:500; }
 
-.statgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:6px; }
-.s { background:var(--surface-2); border:1px solid var(--line-soft); border-radius:8px; padding:6px 4px; text-align:center; }
-.s b { display:block; font-family:var(--mono); font-size:13px; font-variant-numeric:tabular-nums; font-weight:500; }
-.s span { font-size:10px; color:var(--faint); letter-spacing:.04em; }
+/* 5018：格子縮小成跟內容一樣大——改用 flex-wrap 讓每格依內容自然寬度排列，
+   不再用 grid auto-fill(...,1fr) 把剩餘空間平均撐開成一大塊 */
+.statgrid { grid-area:stat; display:flex; flex-wrap:wrap; gap:6px; }
+.s { background:var(--surface-2); border:1px solid var(--line-soft); border-radius:8px; padding:3px 7px; text-align:center; flex:0 0 auto; }
+.s b { display:block; font-family:var(--mono); font-size:12px; font-variant-numeric:tabular-nums; font-weight:500; white-space:nowrap; }
+.s span { font-size:9.5px; color:var(--faint); letter-spacing:.04em; white-space:nowrap; }
 .s.hp b { color:var(--hp); }
 .s.exp b { color:var(--exp); }
 .s.pushed0 b { cursor:help; border-bottom:1px dotted var(--faint); }
 
-.elems { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
-@media (min-width:560px) { .elems { grid-template-columns:repeat(6,1fr); } }
-.el { border-radius:8px; padding:6px 4px; text-align:center; font-size:11px; border:1px solid transparent; }
-.el b { display:block; font-size:12px; }
+/* 5020：跟 5018 的 .statgrid 同一種風格——格子只包住內容，不要撐滿整列 */
+.elems { grid-area:elems; display:flex; flex-wrap:wrap; gap:6px; }
+.el { border-radius:8px; padding:3px 8px; text-align:center; font-size:10.5px; border:1px solid transparent; flex:0 0 auto; white-space:nowrap; }
+.el b { display:block; font-size:11px; }
 .el.lv3 { background:var(--good-soft); color:var(--good); }
 .el.lv2 { background:var(--neutral-soft); color:var(--neutral); }
 .el.lv1 { background:var(--bad-soft); color:var(--bad); }
 .el.lv0 { background:var(--none-soft); color:var(--none); text-decoration:line-through; }
 
-.hitreq { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); }
+.hitreq { grid-area:hitreq; display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); }
 .hitreq b { color:var(--ink); font-variant-numeric:tabular-nums; }
 .hitreq .src { font-size:10.5px; color:var(--faint); }
 
@@ -174,18 +198,30 @@ select {
 .pill.link:hover { border-color:var(--accent); background:var(--accent-soft); }
 .pagenote { margin:28px 0 0; font-size:12.5px; color:var(--faint); }
 .pill { font-size:12.5px; padding:5px 10px; border-radius:8px; background:var(--surface); border:1px solid var(--line); }
-.flags { display:flex; flex-wrap:wrap; gap:6px; }
-.flag { font-size:11.5px; padding:4px 9px; border-radius:999px; background:var(--mark-soft); color:var(--mark); border:1px solid var(--accent); }
+/* 5018：戰利品道具圖示——展開才 fetch item_atlas/item_0.png（見 script 的 ensureItemAtlas），
+   這裡先放淡色空格；查不到圖（排除或無資產）就維持空格，不顯示壞圖示 */
+.pill-ic { display:inline-flex; align-items:center; gap:5px; }
+.pill-icon { width:16px; height:16px; border-radius:3px; flex:none; background-repeat:no-repeat; image-rendering:pixelated; }
+.pill-icon.ph { background:var(--sunk); opacity:.6; }
 .desc {
   margin:0; padding:10px 13px; font-size:13.5px; color:var(--muted); white-space:pre-wrap; max-width:70ch;
   background:var(--surface-2); border-left:2px solid var(--accent); border-radius:0 8px 8px 0;
 }
 .empty { padding:50px 0; text-align:center; color:var(--muted); }
 .notice { margin:16px 0 0; padding:10px 14px; font-size:13.5px; color:var(--ink); background:var(--boss-soft); border-left:3px solid var(--boss); border-radius:0 8px 8px 0; }
+/* 5022：?id= 只顯示那一筆時，上面這行告知使用者目前是縮小範圍、怎麼回到完整清單 */
+.onlyline { margin:0 0 12px; padding:10px 14px; font-size:13px; color:var(--muted); background:var(--surface-2); border:1px solid var(--line); border-radius:10px; display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.onlyline b { color:var(--ink); font-variant-numeric:tabular-nums; }
+.linkbtn { font:inherit; font-size:13px; color:var(--accent-ink); background:none; border:0; padding:0; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+.linkbtn:hover { color:var(--accent); }
 .mob { scroll-margin-top:92px; }
 .mob.hl { box-shadow:0 0 0 3px var(--accent), var(--shadow); }
 @media (prefers-reduced-motion:no-preference) { .mob.hl { transition:box-shadow .3s; } }
 .more { display:flex; justify-content:center; padding:18px 0; }
+/* 5020：.more{display:flex} 的優先度跟瀏覽器內建的 [hidden]{display:none} 打平，源碼順序後面的贏，
+   這裡的 .more 在後面，原本的 hidden 屬性其實從來沒真的生效過（搜尋結果 <150 筆時「載入更多」一直都在，
+   只是沒人注意到）。這次「未搜尋不列清單」會把 moreWrap 設成 hidden，才看得出這個舊坑，補一條更高優先度的規則修掉 */
+.more[hidden] { display:none; }
 .morebtn {
   font:inherit; font-size:13px; padding:10px 20px; border-radius:var(--r);
   border:1px dashed var(--accent); background:var(--surface); color:var(--accent-ink); cursor:pointer;
@@ -457,14 +493,15 @@ function mobCard(m, meState){
   }
 
   const open = m._open ? ' open' : '';
+  // 5021：左欄（展開時）要放原圖，懶載入沿用 5018 的 loadOnExpand；只有 ATLAS.pos 裡有
+  // 這隻怪（客戶端有素材）才放 <img>，沒有素材的怪收合/展開都只會看到縮圖或「？」。
+  const bigImgTag = ATLAS.pos[String(m.i)] ? `<img class="bigimg" alt="${esc(m.n)} 原始素材圖">` : '';
   return `<article class="mob${open}" data-id="${m.i}">
     <button class="head" aria-expanded="${!!m._open}">
-      <div class="toprow">
-        ${thumbHTML(m.i)}
-        <div class="who">
-          <h2>${esc(m.n)} <code>#${m.i}</code> ${hitRateTag}</h2>
-          <div class="tags">${tags}${m._matchReason ? `<span style="color:var(--faint);font-size:11.5px">（${esc(m._matchReason)}）</span>` : ''}</div>
-        </div>
+      <div class="himg">${thumbHTML(m.i)}${bigImgTag}</div>
+      <div class="hwho">
+        <h2>${esc(m.n)} <code>#${m.i}</code> ${hitRateTag}</h2>
+        <div class="tags">${tags}${m._matchReason ? `<span style="color:var(--faint);font-size:11.5px">（${esc(m._matchReason)}）</span>` : ''}</div>
       </div>
       <div class="statgrid">${stats}${pushedHTML(m)}</div>
       ${elemsHTML(m.ee)}
@@ -476,12 +513,6 @@ function mobCard(m, meState){
 
 /* ---------- 展開內容 ---------- */
 function detailHTML(m){
-  const flagDefs = [
-    [m.fa,'先攻'], [m.ba,'碰撞傷害'], [m.iv,'無敵'], [m.fd ? `固定傷害 ${m.fd}` : null, null],
-    [m.pr,'共享獎勵'], [m.xr,'爆發式掉寶'], [m.dm,'會被其他怪打'], [m.na,'不主動攻擊'],
-  ];
-  const flags = flagDefs.filter(([v]) => v).map(([v,label]) => `<span class="flag">${esc(label || v)}</span>`).join('');
-
   let out = '';
   const mapPairs = m.mpi || (m.mps || []).map(x => [null, x]);
   const dropPairs = m.dri || (m.dr || []).map(x => [null, x]);
@@ -491,18 +522,18 @@ function detailHTML(m){
       : `<span class="pill" title="地圖名冊沒有這張地圖，無法連結">${esc(name)}</span>`).join('')}</div></div>`;
   }
   if (dropPairs.length) {
+    /* 5018：戰利品加道具圖示——先放淡色空格（.pill-icon.ph），展開時才 fetch item_atlas/item_0.png
+       填進去（見 loadOnExpand／applyItemIconsIn）；沒有 id 或 atlas 查不到都維持空格，不顯示壞圖示 */
     out += `<div class="sec"><h3>戰利品</h3><div class="pillrow">${dropPairs.map(([id,name]) => id != null
-      ? `<a class="pill link" href="../items/?id=${id}">${esc(name)}</a>`
-      : `<span class="pill" title="這件道具已從網站移除或客戶端沒有資料，無法連結">${esc(name)}</span>`).join('')}</div></div>`;
+      ? `<a class="pill link pill-ic" href="../items/?id=${id}"><span class="pill-icon ph" data-item-id="${id}"></span>${esc(name)}</a>`
+      : `<span class="pill pill-ic" title="這件道具已從網站移除或客戶端沒有資料，無法連結"><span class="pill-icon ph"></span>${esc(name)}</span>`).join('')}</div></div>`;
   }
-  if (m.rs && m.rs.length) {
+  if (m.b && m.rs && m.rs.length) {
+    // 5021：重生時間只有 BOSS（m.b）才顯示，小怪不顯示——m.rs 資料本身不動，只在這裡加條件
     out += `<div class="sec"><h3>重生時間</h3><div class="pillrow">${m.rs.map(([mp,sec]) => `<span class="pill">${esc(mp)}：${respawnText(sec)}</span>`).join('')}</div></div>`;
   }
   if (m.rv && m.rv.length) {
     out += `<div class="sec"><h3>死後召喚</h3><div class="pillrow">${m.rv.map(x => `<span class="pill">${esc(x)}</span>`).join('')}</div></div>`;
-  }
-  if (flags) {
-    out += `<div class="sec"><h3>其他旗標</h3><div class="flags">${flags}</div></div>`;
   }
   if (m.d) {
     out += `<div class="sec"><h3>圖鑑說明</h3><p class="desc">${esc(m.d)}</p></div>`;
@@ -518,6 +549,11 @@ const moreWrap = $('#moreWrap'), moreBtn = $('#moreBtn');
 const BATCH = 150;
 let filtered = [];
 let shown = 0;
+
+/* ---------- 5020：未搜尋時不列清單（搜尋字／任一 chip／任一下拉篩選都算「搜尋」） ---------- */
+function hasActiveSearch(){
+  return !!q.value.trim() || boolActive.size > 0 || !!lvSel.value || !!moveSel.value || elemSel.value !== '' || !!regionSel.value;
+}
 
 function currentFilter(){
   const term = q.value.trim().toLowerCase();
@@ -566,6 +602,12 @@ function resetAndRender(){
   filtered = currentFilter();
   shown = 0;
   list.innerHTML = '';
+  if (!hasActiveSearch()) {
+    count.textContent = '';
+    list.innerHTML = `<p class="empty">輸入名稱或選擇篩選條件開始查詢（共 ${num(MOBS.length)} 筆）</p>`;
+    moreWrap.hidden = true;
+    return;
+  }
   count.textContent = `顯示 ${filtered.length} 隻（共 ${MOBS.length} 隻）`;
   if (!filtered.length) { list.innerHTML = `<p class="empty">找不到符合的怪物。</p>`; moreWrap.hidden = true; return; }
   renderMore();
@@ -584,6 +626,47 @@ const sentinel = new IntersectionObserver(entries => {
 }, { rootMargin: '600px' });
 sentinel.observe(moreWrap);
 
+/* ---------- 5018：展開才載入——道具圖示（item_atlas/item_0.png，全站共用只 fetch 一次）
+   與怪物原圖（sprites/mob/<id>.png，每隻怪各自一次）。開頁時都不會碰這兩種資源。 ---------- */
+let itemAtlasPromise = null;
+function ensureItemAtlas(){
+  if (!itemAtlasPromise) {
+    itemAtlasPromise = fetch('../data/item_atlas.json').then(r => {
+      if (!r.ok) throw new Error('item_atlas ' + r.status);
+      return r.json();
+    });
+  }
+  return itemAtlasPromise;
+}
+function applyItemIconsIn(card){
+  ensureItemAtlas().then(atlas => {
+    card.querySelectorAll('.pill-icon.ph[data-item-id]').forEach(el => {
+      const p = atlas.pos[el.dataset.itemId];
+      if (!p) return; // 查不到圖：維持淡色空格，不顯示壞圖示
+      const [sheet,x,y,w,h] = p;
+      el.style.width = w + 'px'; el.style.height = h + 'px';
+      el.style.backgroundImage = `url('../assets/${atlas.sheets[sheet]}')`;
+      el.style.backgroundPosition = `-${x}px -${y}px`;
+      el.classList.remove('ph');
+    });
+  }).catch(err => console.error('item_atlas 載入失敗', err));
+}
+function loadOnExpand(card, m){
+  if (!card.dataset.iconsLoaded) {
+    card.dataset.iconsLoaded = '1';
+    applyItemIconsIn(card);
+  }
+  if (!card.dataset.bigLoaded) {
+    card.dataset.bigLoaded = '1';
+    const img = card.querySelector('.bigimg');
+    if (img && !img.getAttribute('src')) {
+      // 5021：原圖讀完才切成「左欄顯示原圖」，讀之前 .himg 裡還是只有縮圖（loading 佔位）
+      img.addEventListener('load', () => card.classList.add('bigloaded'));
+      img.src = `../assets/mob/${m.i}.png`;
+    }
+  }
+}
+
 list.addEventListener('click', e => {
   const h = e.target.closest('.head'); if (!h) return;
   const card = h.parentElement;
@@ -592,6 +675,7 @@ list.addEventListener('click', e => {
   h.setAttribute('aria-expanded', String(open));
   const m = MOBS.find(x => String(x.i) === card.dataset.id);
   if (m) m._open = open;
+  if (open && m) loadOnExpand(card, m);
 });
 
 let qTimer;
@@ -659,7 +743,7 @@ try {
   }
 } catch(e) {}
 
-/* ---------- 網址 ?q= 預填搜尋／?id= 清空篩選＋定位展開 ---------- */
+/* ---------- 5022：網址 ?q= 預填搜尋／?id= 只顯示那一筆（不用捲動）---------- */
 let targetId = null;
 try {
   const params = new URLSearchParams(location.search);
@@ -667,26 +751,31 @@ try {
   if (pid) { targetId = pid; q.value = ''; }
   else { const pq = params.get('q'); if (pq) q.value = pq; }
 } catch(e) {}
-resetAndRender();
-if (targetId !== null) locateById(targetId);
+if (targetId !== null) showOnlyId(targetId);
+else resetAndRender();
 
-function locateById(idStr){
-  const idx = filtered.findIndex(m => String(m.i) === String(idStr));
-  if (idx === -1) {
+/* 5022：?id= 打開時不要把整份清單都畫出來再捲過去（手機深連結會捲不到，見 5021 回報）。
+   改成只渲染那一隻、直接展開，上面補一行「只顯示編號 N｜顯示全部結果」。 */
+function showOnlyId(idStr){
+  const m = MOBS.find(x => String(x.i) === String(idStr));
+  if (!m) {
     document.getElementById('notice').innerHTML = `<p class="notice">找不到編號 ${esc(idStr)}（可能已從網站移除）</p>`;
+    resetAndRender();  // 找不到就照 5020 的未搜尋狀態處理
     return;
   }
-  while (shown <= idx) renderMore();
-  const realId = filtered[idx].i;  // 用資料裡的實際編號（保證是數字），不要直接拿網址字串當 CSS 選擇器
-  const card = list.querySelector(`.mob[data-id="${realId}"]`);
-  if (!card) return;
-  const m = MOBS.find(x => x.i === realId);
-  if (m) m._open = true;
-  card.classList.add('open');
-  card.querySelector('.head')?.setAttribute('aria-expanded', 'true');
-  card.classList.add('hl');
-  card.scrollIntoView({ behavior:'smooth', block:'center' });
-  setTimeout(() => card.classList.remove('hl'), 2500);
+  m._open = true;
+  filtered = [m];
+  shown = 1;
+  count.textContent = '';
+  moreWrap.hidden = true;
+  list.innerHTML = `<div class="onlyline">只顯示編號 <b>${m.i}</b>｜<button type="button" id="showAllBtn" class="linkbtn">顯示全部結果</button></div>` + mobCard(m, meState);
+  const card = list.querySelector(`.mob[data-id="${m.i}"]`);
+  if (card) loadOnExpand(card, m);  // 5018：懶載入戰利品圖示／原圖照常觸發
+  document.getElementById('showAllBtn').addEventListener('click', () => {
+    try { history.replaceState(null, '', location.pathname); } catch(e) {}
+    m._open = false;
+    resetAndRender();
+  });
 }
 })().catch(err => {
   document.getElementById('list').innerHTML = '<p class="empty">資料載入失敗，請重新整理頁面。</p>';
