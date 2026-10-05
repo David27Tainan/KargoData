@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>任務全錄｜魔龍數據</title>
-<meta name="description" content="《楓之谷 Classic》1.15.3 全部任務的接取條件、要交的道具、要打的怪與獎勵。">
+<title>任務攻略｜魔龍數據</title>
+<meta name="description" content="《楓之谷 Classic》1.15.3 全部任務系列，依接取→目標→交付→獎勵的順序整理成攻略格式。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
@@ -49,7 +49,7 @@
     font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
     font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
   }
-  .wrap{max-width:1080px;margin:0 auto;padding-inline:20px;padding-block:0 72px}
+  .wrap{max-width:980px;margin:0 auto;padding-inline:20px;padding-block:0 72px}
 
   header.top{padding-block:42px 18px}
   .eyebrow{
@@ -62,7 +62,6 @@
     font-size:clamp(28px,4.4vw,40px);line-height:1.2;margin:0;text-wrap:balance;
   }
   .sub{color:var(--muted);margin:10px 0 0;max-width:64ch}
-  .sub b{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
 
   .stats{display:flex;flex-wrap:wrap;gap:8px 26px;margin-top:18px}
   .stat{display:flex;align-items:baseline;gap:7px}
@@ -84,101 +83,108 @@
          color:var(--faint);font:inherit;cursor:pointer;padding:6px 8px;border-radius:8px;line-height:1}
   .clear:hover{color:var(--ink);background:var(--surface-2)}
 
-  /* 篩選區：每一類（區域／等級／個人組隊／其他條件）各一行，手機寬度會自動換行 */
-  .filters{display:flex;flex-direction:column;gap:8px;margin-top:11px}
-  .frow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-  .flabel{
-    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;
-    color:var(--faint);white-space:nowrap;margin-right:2px;
-  }
-  .chip{
-    font:inherit;font-size:13px;cursor:pointer;padding:5px 11px;border-radius:999px;
-    border:1px solid var(--line);background:var(--surface);color:var(--muted);
-    display:inline-flex;align-items:center;gap:6px;
-  }
-  .chip:hover{color:var(--ink);border-color:var(--faint)}
-  .chip .n{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
-  .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
-  .chip[aria-pressed="true"] .n{color:rgba(255,255,255,.78)}
-  .chip.flag[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
-  .chip.flag[aria-pressed="true"] .n{color:var(--accent-ink)}
-  .sep{width:1px;height:20px;background:var(--line);margin-inline:4px}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:11px}
   select{
-    font:inherit;font-size:13px;padding:5px 9px;border-radius:999px;color:var(--muted);
+    font:inherit;font-size:13px;padding:6px 10px;border-radius:999px;color:var(--muted);
     border:1px solid var(--line);background:var(--surface);cursor:pointer;
   }
-  .chip:focus-visible,.clear:focus-visible,select:focus-visible,.q:focus-visible,.pill.jump:focus-visible{
-    outline:2px solid var(--accent);outline-offset:2px;
-  }
+  .chip:focus-visible,.clear:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
   .count{margin:16px 0 6px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .empty{padding:48px 0;text-align:center;color:var(--muted)}
 
-  section.group{margin-top:22px}
-  .ghead{display:flex;align-items:baseline;gap:10px;padding-bottom:7px;border-bottom:2px solid var(--ink)}
-  .ghead h2{font-family:"Noto Serif TC",serif;font-size:17px;font-weight:600;margin:0}
-  .ghead .n{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--faint);margin-left:auto;font-variant-numeric:tabular-nums}
-
-  ul.rows{list-style:none;margin:0;padding:0}
-  li.row{border-bottom:1px solid var(--line-soft)}
-  .q{
+  /* ---------- 系列清單：一列一個系列 ---------- */
+  ul.series{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+  li.srow{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+  .shead{
     width:100%;text-align:left;font:inherit;color:inherit;background:transparent;border:0;cursor:pointer;
-    display:grid;grid-template-columns:86px minmax(0,1fr) auto;gap:14px;align-items:baseline;
-    padding:9px 10px;border-radius:8px;
+    display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;
+    padding:12px 14px;
   }
-  .q:hover{background:var(--surface-2)}
-  .q .id{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums}
-  .title{font-weight:500}
-  .meta{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
-  .meta .dot{color:var(--faint);margin-inline:6px}
-  .tags{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+  .shead:hover{background:var(--surface-2)}
+  .sname{font-weight:600;font-size:15.5px}
+  .smeta{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+  .smeta .dot{color:var(--faint);margin-inline:6px}
+  .stags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
   .tag{
-    font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.02em;
+    /* 數字與中文混排（例如「不限等級」），不能整段用 IBM Plex Mono——那套字型沒有中文字會變空心方塊，
+       只在真的需要等寬數字對齊時另外包 <b> */
+    font-size:11.5px;letter-spacing:.02em;
     padding:2px 7px;border-radius:5px;white-space:nowrap;font-variant-numeric:tabular-nums;
     background:var(--sunk);color:var(--muted);
   }
-  .tag.exp{background:var(--exp-soft);color:var(--exp)}
-  .tag.gold{background:var(--gold-soft);color:var(--gold)}
-  .tag.item{background:var(--accent-soft);color:var(--accent-ink)}
+  .tag b{font-family:"IBM Plex Mono",monospace;font-weight:500}
   .tag.lv{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .sbody{display:none;padding:4px 14px 16px;border-top:1px solid var(--line-soft)}
+  li.srow.open .sbody{display:block}
+  mark{background:var(--accent-soft);color:var(--accent-ink);padding:0 1px;border-radius:2px}
 
-  .detail{padding:2px 10px 16px;display:grid;gap:10px}
-  .desc{
-    margin:0;padding:10px 13px;background:var(--surface-2);border-left:2px solid var(--accent);
-    border-radius:0 8px 8px 0;color:var(--muted);font-size:14px;
+  /* ---------- 圖示：NPC 頭像／道具／怪物小圖，展開才載入，載入前都是淡色佔位 ---------- */
+  .ic{display:inline-block;vertical-align:middle;background:var(--surface-2);border-radius:6px;image-rendering:pixelated;background-repeat:no-repeat}
+  .ic.ph{width:28px;height:28px;opacity:.55}
+  .ic-npc{width:40px;height:40px;border-radius:8px;border:1px solid var(--line);flex:none}
+  .ic-npc.ph{width:40px;height:40px}
+  .ic-mini{width:20px;height:20px;border-radius:4px;flex:none}
+  .ic-mini.ph{width:20px;height:20px}
+
+  /* ---------- 單步小卡 ---------- */
+  .step{background:var(--surface-2);border:1px solid var(--line-soft);border-radius:10px;padding:12px 14px;margin-top:10px}
+  .step h3{margin:0 0 9px;font-size:14.5px;font-weight:700;display:flex;align-items:baseline;gap:7px}
+  .step h3 .stepno{font-size:11.5px;color:var(--accent-ink);background:var(--accent-soft);
+                    padding:2px 8px;border-radius:999px;font-weight:500}
+  .step h3 .stepno b{font-family:"IBM Plex Mono",monospace;font-weight:500}
+  .srow2{display:flex;align-items:flex-start;gap:8px;margin:8px 0}
+  .srow2 .lbl{flex:none;width:52px;font-size:11.5px;color:var(--faint);padding-top:11px}
+  .npcline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .npcwho{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .npcwho .nm{font-weight:500;font-size:14px}
+  .npcwho .mp{font-size:12px;color:var(--muted)}
+  .npcwho .mp a{color:var(--accent-ink);text-decoration:none}
+  .npcwho .mp a:hover{text-decoration:underline}
+  .cond{font-size:12px;color:var(--faint);margin-top:4px}
+
+  .chiprow{display:flex;flex-wrap:wrap;gap:6px}
+  .chip2{
+    display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:4px 10px 4px 4px;
+    border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;
   }
-  dl.kv{display:grid;grid-template-columns:82px minmax(0,1fr);gap:6px 14px;margin:0;font-size:14px}
-  dl.kv dt{color:var(--faint);font-size:12.5px;padding-top:2px}
-  dl.kv dd{margin:0}
-  dl.kv dd b{font-weight:500;font-variant-numeric:tabular-nums}
-  .reward{display:flex;flex-wrap:wrap;gap:6px}
-  .pill{
-    font-size:13px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);
-    background:var(--surface);color:var(--ink);display:inline-flex;align-items:center;
-  }
-  button.pill{font:inherit;margin:0;appearance:none}
+  a.chip2:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .chip2 b{font-weight:500;font-variant-numeric:tabular-nums}
+  .chip2 .sub{color:var(--faint);font-size:11.5px}
+  .scriptnote{font-size:12px;color:var(--faint);margin-top:6px}
+
+  .rewline{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .pill{font-size:13px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:inline-flex;align-items:center}
   .pill.exp{border-color:var(--exp);color:var(--exp);background:var(--exp-soft)}
   .pill.gold{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
-  .pill.take{color:var(--muted);border-style:dashed}
-  /* 前置任務／接續任務：可點擊跳轉，用主色標出來，和不能點的灰色道具 pill 區分 */
-  .pill.jump{cursor:pointer;border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
-  .pill.jump:hover{background:var(--accent);color:#fff}
-  a.pill.link{text-decoration:none;color:var(--accent-ink)}
-  a.pill.link:hover{border-color:var(--accent);background:var(--accent-soft)}
-  .xlink{color:var(--accent-ink);text-underline-offset:2px}
-  .note{font-size:12.5px;color:var(--faint)}
-  mark{background:var(--accent-soft);color:var(--accent-ink);padding:0 1px;border-radius:2px}
-  .empty{padding:48px 0;text-align:center;color:var(--muted)}
+  .pill.fame{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
+  .pool{margin-top:6px;padding:8px 10px;background:var(--surface);border:1px dashed var(--line);border-radius:8px}
+  .pooltitle{font-size:11.5px;color:var(--faint);margin-bottom:5px}
+  .poolrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}
+  .poolrow:first-child{margin-top:0}
+  .pooljob{font-size:11.5px;color:var(--muted);min-width:48px}
+  .acceptgive{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-soft)}
+  .acceptgive .lbl2{font-size:11.5px;color:var(--faint);margin-bottom:5px}
+
+  .descwrap{margin-top:8px}
+  .descwrap summary{cursor:pointer;font-size:12px;color:var(--faint);list-style:none}
+  .descwrap summary::-webkit-details-marker{display:none}
+  .descwrap summary::before{content:"說明 ▸ ";}
+  .descwrap[open] summary::before{content:"說明 ▾ ";}
+  .descwrap p{margin:6px 0 0;padding:9px 12px;background:var(--surface);border-left:2px solid var(--line);
+              border-radius:0 8px 8px 0;color:var(--muted);font-size:13px;white-space:pre-wrap}
 
   .pagenote{margin-top:52px;padding-top:18px;border-top:1px solid var(--line-soft);font-size:12.5px;color:var(--faint)}
-  .pagenote code{font-family:"IBM Plex Mono",monospace;color:var(--muted)}
   .pagenote p{margin:4px 0}
 
   @media (max-width:620px){
-    .q{grid-template-columns:1fr;gap:4px}
-    .q .id{font-size:12px}
-    .tags{justify-content:flex-start}
-    dl.kv{grid-template-columns:70px minmax(0,1fr)}
     .wrap{padding-inline:16px}
+    .shead{grid-template-columns:auto 1fr;grid-template-areas:"av name" "av tags";row-gap:4px}
+    .shead .ic-npc{grid-area:av}
+    .shead .sname-wrap{grid-area:name}
+    .stags{grid-area:tags;justify-content:flex-start}
+    .srow2{flex-direction:column;gap:3px}
+    .srow2 .lbl{width:auto;padding-top:0}
   }
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -188,26 +194,33 @@
 <div class="wrap">
   <header class="top">
     <p class="eyebrow">MapleStory Classic · 1.15.3</p>
-    <h1>任務全錄</h1>
-    <p class="sub">客戶端裡的每一個任務：接取條件、要交的道具、要打的怪，還有接任務與完成時拿到的獎勵。可依等級區間、區域、個人／組隊篩選，搜任務名、NPC、道具、怪物或任務編號都可以。</p>
+    <h1>任務攻略</h1>
+    <p class="sub">客戶端裡的每一個任務系列，依「接取 NPC → 要做的事 → 交給誰 → 拿到什麼」的順序整理。同系列的任務依前置鏈排好步驟，可搜尋系列名、NPC、道具或怪物名稱。</p>
     <div class="stats" id="stats"></div>
   </header>
 
   <div class="bar">
     <label class="search">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input id="q" type="search" placeholder="搜尋任務、NPC、道具、怪物或編號…" autocomplete="off" spellcheck="false">
+      <input id="q" type="search" placeholder="搜尋系列、任務、NPC、道具或怪物…" autocomplete="off" spellcheck="false">
       <button class="clear" id="clear" hidden aria-label="清除搜尋">✕</button>
     </label>
-    <div class="filters" id="filters"></div>
+    <div class="filters">
+      <select id="sort">
+        <option value="id">依編號</option>
+        <option value="name">依名稱</option>
+        <option value="lv">依等級</option>
+        <option value="steps">步數多到少</option>
+      </select>
+    </div>
   </div>
 
   <p class="count" id="count"></p>
   <div id="list"><p class="empty" id="loading">資料載入中…</p></div>
 
   <div class="pagenote">
-    <p>標「走 NPC 腳本」的任務，分支與部分獎勵由伺服器決定，客戶端看不到；<code>9402xxx</code> 這類任務專用 NPC 沒有地點資料。</p>
-    <p>區域取自接取 NPC 所在地圖名稱的第一個詞，查不到地點或只有原始地圖編號的歸「未知」。前置與接續任務可點擊跳轉；道具與怪物可點擊到對應資料庫。</p>
+    <p>系列分組依客戶端的任務系列欄位；沒有系列的任務自己算一個系列（1 步）。同系列的任務依前置任務鏈排序。</p>
+    <p>走 NPC 腳本（劇情對話）決定分支的任務，分支與部分獎勵由伺服器決定，客戶端看不到，步驟說明只會標註「另有劇情對話條件」。NPC／道具／怪物圖片展開系列時才載入。</p>
   </div>
 </div>
 
@@ -215,434 +228,336 @@
 (async function(){
   var resp = await fetch('../data/quests.json');
   if (!resp.ok) throw new Error('quests ' + resp.status);
-  var ROWS = await resp.json();
+  var SERIES = await resp.json();
   var listEl = document.getElementById('list');
   var countEl = document.getElementById('count');
-  var filtersEl = document.getElementById('filters');
   var statsEl = document.getElementById('stats');
   var qEl = document.getElementById('q');
   var clearEl = document.getElementById('clear');
+  var sortEl = document.getElementById('sort');
 
-  function num(n){ return Number(n).toLocaleString('en-US'); }
-  function who(s){ if(!s) return ''; var p = s.split('|'); return p[1] ? p[0] + '（' + p[1] + '）' : p[0]; }
-  function expOf(r){ return (r.rc && r.rc.e || 0) + (r.ra && r.ra.e || 0); }
-  function moneyOf(r){ return (r.rc && r.rc.m || 0) + (r.ra && r.ra.m || 0); }
-  function giveCount(r){ return ((r.rc && r.rc.g) ? r.rc.g.length : 0) + ((r.ra && r.ra.g) ? r.ra.g.length : 0); }
+  function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+  function num(n){ return Number(n || 0).toLocaleString('en-US'); }
 
-  // 區域：從「接取 NPC」的 sn（格式是 NPC名|區域 地圖名）取地圖名的第一個詞。
-  // 有些任務查不到真正的地圖名，questdata 會補一個「地圖 <編號>」的佔位字串，這種也算未知。
-  var RAW_MAP_RE = /^地圖\s+\d+$/;
-  function regionOf(sn){
-    if (!sn) return '未知';
-    var mapPart = (sn.split('|')[1] || '').trim();
-    if (!mapPart) return '未知';
-    if (RAW_MAP_RE.test(mapPart)) return '未知';
-    return mapPart.split(/\s+/)[0];
+  /* ---------- 展開才載入的三種圖集（NPC／道具／怪物），全頁共用、各只 fetch 一次 ---------- */
+  var atlasPromises = {};
+  function ensureAtlas(kind){
+    if (!atlasPromises[kind]) {
+      atlasPromises[kind] = fetch('../data/' + kind + '_atlas.json').then(function(r){
+        if (!r.ok) throw new Error(kind + '_atlas ' + r.status);
+        return r.json();
+      });
+    }
+    return atlasPromises[kind];
+  }
+  function applyIconsIn(root){
+    ['npc','item','mob'].forEach(function(kind){
+      var els = root.querySelectorAll('.ic.ph[data-' + kind + '-id]');
+      if (!els.length) return;
+      ensureAtlas(kind).then(function(atlas){
+        els.forEach(function(el){
+          var p = atlas.pos[el.getAttribute('data-' + kind + '-id')];
+          if (!p) return; // 查不到圖：維持淡色空格，不顯示壞圖示
+          var sheet = p[0], x = p[1], y = p[2], w = p[3], h = p[4];
+          el.style.width = w + 'px'; el.style.height = h + 'px';
+          el.style.backgroundImage = "url('../assets/" + atlas.sheets[sheet] + "')";
+          el.style.backgroundPosition = '-' + x + 'px -' + y + 'px';
+          el.classList.remove('ph');
+        });
+      }).catch(function(err){ console.error(kind + '_atlas 載入失敗', err); });
+    });
   }
 
-  // 等級區間：每 20 級一組（0~19、20~39…），沒有 lv 欄位的歸「不限」(bucket = null)
-  function lvBucketOf(r){ return r.lv ? Math.floor(r.lv / 20) * 20 : null; }
+  /* ---------- NPC／道具／怪物小圖的 HTML 片段（載入前都是淡色佔位） ---------- */
+  function npcIcon(npc){
+    return '<span class="ic ic-npc ph" data-npc-id="' + npc.id + '" aria-hidden="true"></span>';
+  }
+  function itemIcon(id){
+    return '<span class="ic ic-mini ph" data-item-id="' + id + '" aria-hidden="true"></span>';
+  }
+  function mobIcon(id){
+    return '<span class="ic ic-mini ph" data-mob-id="' + id + '" aria-hidden="true"></span>';
+  }
 
-  // 個人／組隊：分類（a）等於「組隊任務」就算組隊
-  function isTeam(r){ return r.a === '組隊任務'; }
+  function mapLink(npc){
+    if (!npc.map) return '';
+    if (npc.mapId != null) return '<a href="../maps/?id=' + npc.mapId + '">' + esc(npc.map) + '</a>';
+    return esc(npc.map);
+  }
 
-  var idMap = {}; // 任務編號 -> 該筆資料，給前置／接續任務點擊跳轉查名字、確認存在
-  ROWS.forEach(function(r){ idMap[r.i] = r; });
+  /* 接取／完成的 NPC 一行：頭像＋名稱＋地圖（可點就連結，查不到地圖 id 就純文字） */
+  function npcLine(npc){
+    if (!npc) return '<span class="npcline">（無資料）</span>';
+    return '<span class="npcline">' + npcIcon(npc) +
+      '<span class="npcwho"><span class="nm">' + esc(npc.name) + '</span>' +
+      (npc.map ? '<span class="mp">' + mapLink(npc) + '</span>' : '') +
+      '</span></span>';
+  }
 
-  // one searchable blob per quest, built once；同時把區域／等級分組也算好存起來，之後篩選不用重算
-  ROWS.forEach(function(r){
-    var bits = [String(r.i), r.n, r.s, r.a, who(r.sn), who(r.en), r.d || ''];
-    ['ni','gi','mo'].forEach(function(k){ (r[k]||[]).forEach(function(x){ bits.push(x[0]); }); });
-    ['ra','rc'].forEach(function(k){
-      var a = r[k]; if(!a) return;
-      (a.g||[]).forEach(function(x){ bits.push(x[0]); });
-      (a.t||[]).forEach(function(x){ bits.push(x[0]); });
-      (a.k||[]).forEach(function(x){ bits.push(x); });
+  /* 5026（5025 的規格補丁）：req.prev 每筆的 state 決定條件文字的動詞——
+     2 已完成、1 進行中、0／null 還沒接（這種的邊方向在產生資料時已經反過來排序了，
+     這裡只負責把文字講對，不影響排序）。同系列內的任務名後面加「（第 N 步）」。 */
+  function prevText(p){
+    var nm = esc(p.name) + (p.step ? '（第 ' + p.step + ' 步）' : '');
+    if (p.state === 2) return '前置：完成' + nm;
+    if (p.state === 1) return '需在' + nm + '進行中接';
+    return '需尚未接' + nm;
+  }
+  function condText(step){
+    var bits = [];
+    if (step.lvmin) bits.push('Lv' + step.lvmin + (step.lvmax ? '～' + step.lvmax : ' 以上'));
+    if (step.jobLabel) bits.push(step.jobLabel);
+    (step.prev || []).forEach(function(p){ bits.push(prevText(p)); });
+    (step.needItems || []).forEach(function(it){
+      bits.push(it.count > 0 ? '需持有：' + esc(it.name) + ' ×' + it.count : '需未持有：' + esc(it.name));  // 接任務條件的道具數量 0 = 身上不能有這個道具
     });
-    r._s = bits.join(' ').toLowerCase();
-    r._region = regionOf(r.sn);
-    r._lvBucket = lvBucketOf(r);
+    return bits.length ? '<div class="cond">' + bits.join('｜') + '</div>' : '';
+  }
+
+  /* ---------- 要做的事：打怪／繳交物品 ---------- */
+  function goalHTML(step){
+    var chips = [];
+    (step.goalMobs || []).forEach(function(m){
+      chips.push('<a class="chip2" href="../mobs/?id=' + m.id + '">' + mobIcon(m.id) +
+        '<span>擊敗 ' + esc(m.name) + (m.lv ? ' <span class="sub">Lv' + m.lv + '</span>' : '') + ' <b>×' + m.count + '</b></span></a>');
+    });
+    (step.goalItems || []).forEach(function(it){
+      chips.push('<a class="chip2" href="../items/?id=' + it.id + '">' + itemIcon(it.id) +
+        '<span>繳交 ' + esc(it.name) + ' <b>×' + it.count + '</b></span></a>');
+    });
+    var out = chips.length ? '<div class="chiprow">' + chips.join('') + '</div>' : '<div class="cond">沒有指定要繳交的物品或要擊敗的怪物（多半是走 NPC 腳本對話完成）。</div>';
+    if (step.goalScript) out += '<div class="scriptnote">另有劇情對話條件（分支由伺服器決定，客戶端看不到）。</div>';
+    // 5026：本步要繳交的道具，有幾個其實是後面幾步才拿得到的獎勵，先提醒要先做那幾步
+    if (step.needFrom && step.needFrom.length) {
+      out += '<div class="scriptnote">需先完成第 ' + step.needFrom.join('、') + ' 步取得</div>';
+    }
+    return out;
+  }
+
+  /* ---------- 獎勵：exp／money／fame／道具，prop===-1 的照 5010 規則依職業分組顯示「選一」 ---------- */
+  var JOB_BIT_NAMES = ['新手', '劍士', '法師', '弓箭手', '盜賊', '海盜'];
+  function jobLabelOf(jobval){
+    if (!jobval) return '不分職業';
+    var m = jobval & 63;
+    if (m === 0 || m === 63) return '不分職業';
+    var labs = [];
+    for (var i = 0; i < 6; i++) if (m & (1 << i)) labs.push(JOB_BIT_NAMES[i]);
+    return labs.join('／');
+  }
+  function giveChip(g){
+    var s = '<a class="chip2" href="../items/?id=' + g.id + '">' + itemIcon(g.id) + '<span>' + esc(g.name) +
+      ' <b>×' + g.count + '</b>' + (g.prop && g.prop !== -1 ? ' <span class="sub">機率 ' + g.prop + '</span>' : '') + '</span></a>';
+    return s;
+  }
+  function actHTML(act){
+    var out = '<div class="rewline">';
+    var any = false;
+    if (act.exp) { out += '<span class="pill exp">經驗 ' + num(act.exp) + '</span>'; any = true; }
+    if (act.money) { out += '<span class="pill gold">楓幣 ' + num(act.money) + '</span>'; any = true; }
+    if (act.pop) { out += '<span class="pill fame">名聲 ' + (act.pop > 0 ? '+' : '') + act.pop + '</span>'; any = true; }
+    var flat = (act.give || []).filter(function(g){ return g.prop !== -1; });
+    var choice = (act.give || []).filter(function(g){ return g.prop === -1; });
+    flat.forEach(function(g){ out += giveChip(g); any = true; });
+    out += '</div>';
+    if (choice.length) {
+      any = true;
+      var hasJob = choice.some(function(g){ return g.job; });
+      var groups = {}, order = [];
+      choice.forEach(function(g){
+        var lab = hasJob ? jobLabelOf(g.job) : '選一';
+        if (!groups[lab]) { groups[lab] = []; order.push(lab); }
+        groups[lab].push(g);
+      });
+      var rows = order.map(function(lab){
+        return '<div class="poolrow">' + (hasJob ? '<span class="pooljob">' + esc(lab) + '</span>' : '') +
+          groups[lab].map(giveChip).join('') + '</div>';
+      }).join('');
+      out += '<div class="pool"><div class="pooltitle">' + (hasJob ? '自選一種（依職業）' : '自選一種') + '</div>' + rows + '</div>';
+    }
+    return any ? out : '<div class="cond">沒有額外獎勵。</div>';
+  }
+
+  function stepHTML(step, idx){
+    var out = '<div class="step" data-qid="' + step.id + '">';
+    out += '<h3><span class="stepno">第 <b>' + (idx + 1) + '</b> 步</span>' + esc(step.name) + '</h3>';
+
+    out += '<div class="srow2"><span class="lbl">接取</span><div>' + npcLine(step.start) + condText(step) + '</div></div>';
+    out += '<div class="srow2"><span class="lbl">要做的事</span><div>' + goalHTML(step) + '</div></div>';
+    out += '<div class="srow2"><span class="lbl">完成</span><div>' + npcLine(step.end) + '</div></div>';
+
+    var rewardBody = actHTML(step.complete);
+    var acceptGive = (step.accept.give || []);
+    if (acceptGive.length || step.accept.exp || step.accept.money || step.accept.pop) {
+      rewardBody += '<div class="acceptgive"><div class="lbl2">接任務時獲得</div>' + actHTML(step.accept) + '</div>';
+    }
+    out += '<div class="srow2"><span class="lbl">獎勵</span><div>' + rewardBody + '</div></div>';
+
+    if (step.info) {
+      out += '<details class="descwrap"><summary></summary><p>' + esc(step.info) + '</p></details>';
+    }
+    out += '</div>';
+    return out;
+  }
+
+  function seriesDetail(s){
+    return s.steps.map(function(step, i){ return stepHTML(step, i); }).join('');
+  }
+
+  /* ---------- 搜尋用字串／分層排序（5013：名稱優先） ---------- */
+  SERIES.forEach(function(s){
+    var bits = [s.name, String(s.sid)];
+    s.steps.forEach(function(step){
+      bits.push(step.name);
+      if (step.start) bits.push(step.start.name);
+      if (step.end) bits.push(step.end.name);
+      (step.goalItems || []).forEach(function(it){ bits.push(it.name); });
+      (step.goalMobs || []).forEach(function(m){ bits.push(m.name); });
+      ['accept', 'complete'].forEach(function(k){
+        (step[k].give || []).forEach(function(g){ bits.push(g.name); });
+      });
+      if (step.info) bits.push(step.info);
+    });
+    s._hay = bits.join(' ').toLowerCase();
   });
 
-  // ---------- 5013：搜尋結果名稱優先——分層排序＋第3層理由 ----------
-  function searchTierOf(r, term){
-    var name = r.n.toLowerCase();
-    var idStr = String(r.i);
-    if (name === term || idStr === term) return 0;
+  function searchTierOf(s, term){
+    var name = s.name.toLowerCase();
+    if (name === term || String(s.sid) === term) return 0;
     if (name.indexOf(term) === 0) return 1;
     if (name.indexOf(term) !== -1) return 2;
     return 3;
   }
-  function searchReasonOf(r, term){
-    function has(s){ return s != null && String(s).toLowerCase().indexOf(term) !== -1; }
-    if (has(r.sn) || has(r.en)) return 'NPC符合';
-    if ((r.mo||[]).some(function(x){ return has(x[0]); })) return '怪物符合';
-    if ((r.ni||[]).concat(r.gi||[]).some(function(x){ return has(x[0]); })) return '道具符合';
-    var rewardNames = [];
-    ['ra','rc'].forEach(function(k){
-      var a = r[k]; if (!a) return;
-      (a.g||[]).forEach(function(x){ rewardNames.push(x[0]); });
-      (a.t||[]).forEach(function(x){ rewardNames.push(x[0]); });
-      (a.k||[]).forEach(function(x){ rewardNames.push(x); });
-    });
-    if (rewardNames.some(has)) return '獎勵符合';
-    if (has(r.d)) return '說明符合';
-    if (has(r.s) || has(r.a)) return '系列／分類符合';
+  function searchReasonOf(s, term){
+    function has(x){ return x != null && String(x).toLowerCase().indexOf(term) !== -1; }
+    if (s.steps.some(function(step){ return has(step.start && step.start.name) || has(step.end && step.end.name); })) return 'NPC符合';
+    if (s.steps.some(function(step){ return (step.goalMobs || []).some(function(m){ return has(m.name); }); })) return '怪物符合';
+    if (s.steps.some(function(step){ return (step.goalItems || []).some(function(it){ return has(it.name); }); })) return '道具符合';
+    if (s.steps.some(function(step){ return has(step.info); })) return '說明符合';
     return '其他符合';
   }
 
+  /* ---------- 統計 ---------- */
+  var totalSteps = SERIES.reduce(function(a, s){ return a + s.n; }, 0);
   var STATS = [
-    ['任務總數', ROWS.length],
-    ['有經驗獎勵', ROWS.filter(function(r){ return expOf(r) > 0; }).length],
-    ['有道具獎勵', ROWS.filter(function(r){ return giveCount(r) > 0; }).length],
-    ['可重複', ROWS.filter(function(r){ return r.iv !== undefined; }).length],
-    ['任務系列', Object.keys(ROWS.reduce(function(a,r){ if(r.s) a[r.s]=1; return a; }, {})).length]
+    ['系列數', SERIES.length],
+    ['涵蓋任務數', totalSteps],
+    ['多步驟系列', SERIES.filter(function(s){ return s.n > 1; }).length],
+    ['有打怪目標', SERIES.filter(function(s){ return s.steps.some(function(st){ return (st.goalMobs || []).length > 0; }); }).length]
   ];
   STATS.forEach(function(s){
     var d = document.createElement('div'); d.className = 'stat';
-    var v = document.createElement('span'); v.className = 'v'; v.textContent = num(s[1]);
-    var l = document.createElement('span'); l.className = 'l'; l.textContent = s[0];
-    d.appendChild(v); d.appendChild(l); statsEl.appendChild(d);
+    d.innerHTML = '<span class="v">' + num(s[1]) + '</span><span class="l">' + s[0] + '</span>';
+    statsEl.appendChild(d);
   });
 
-  // 區域 chip 的統計與排序（按任務數多到少）
-  var regionTally = {};
-  ROWS.forEach(function(r){ regionTally[r._region] = (regionTally[r._region]||0) + 1; });
-  var regionList = Object.keys(regionTally).sort(function(a,b){ return regionTally[b]-regionTally[a]; });
+  /* ---------- 5020：未搜尋時不列清單 ---------- */
+  function hasActiveSearch(){ return !!qEl.value.trim(); }
 
-  // 等級區間 chip：先收集實際出現過的數字區間（由小到大），「不限」放最後
-  var lvTally = {};
-  ROWS.forEach(function(r){ var k = (r._lvBucket===null) ? 'none' : r._lvBucket; lvTally[k] = (lvTally[k]||0)+1; });
-  var lvNumeric = Object.keys(lvTally).filter(function(k){ return k !== 'none'; }).map(Number).sort(function(a,b){ return a-b; });
-  var lvBucketKeys = lvNumeric.concat(lvTally.none ? ['none'] : []);
+  var open = {};
 
-  var teamCount = ROWS.filter(isTeam).length;
-  var soloCount = ROWS.length - teamCount;
-
-  var FLAGS = [
-    ['repeat', '可重複', function(r){ return r.iv !== undefined; }],
-    ['item', '給道具', function(r){ return giveCount(r) > 0; }],
-    ['mob', '要打怪', function(r){ return (r.mo||[]).length > 0; }],
-    ['skill', '給技能', function(r){ return (r.rc && r.rc.k) || (r.ra && r.ra.k); }]
-  ];
-
-  // 篩選狀態：區域／等級／個人組隊都是單選（null = 全部），flags 是可多選的布林條件
-  var filterRegion = null, filterLv = null, filterTeam = null, flags = {}, sort = 'id', open = {};
-
-  function mkChip(label, n, pressed, cls, onClick){
-    var b = document.createElement('button');
-    b.className = 'chip' + (cls ? ' ' + cls : ''); b.type = 'button';
-    b.setAttribute('aria-pressed', pressed ? 'true' : 'false');
-    var s = document.createElement('span'); s.textContent = label; b.appendChild(s);
-    if (n !== null){ var c = document.createElement('span'); c.className = 'n'; c.textContent = n; b.appendChild(c); }
-    b.addEventListener('click', onClick);
-    return b;
-  }
-
-  function frow(label){
-    var row = document.createElement('div'); row.className = 'frow';
-    if (label){ var l = document.createElement('span'); l.className = 'flabel'; l.textContent = label; row.appendChild(l); }
-    return row;
-  }
-
-  function renderFilters(){
-    filtersEl.textContent = '';
-
-    var rowRegion = frow('區域');
-    rowRegion.appendChild(mkChip('全部', ROWS.length, filterRegion === null, null, function(){ filterRegion = null; renderFilters(); render(); }));
-    regionList.forEach(function(a){
-      rowRegion.appendChild(mkChip(a, regionTally[a], filterRegion === a, null, function(){
-        filterRegion = (filterRegion === a) ? null : a; renderFilters(); render();
-      }));
-    });
-    filtersEl.appendChild(rowRegion);
-
-    var rowLv = frow('等級');
-    rowLv.appendChild(mkChip('全部', ROWS.length, filterLv === null, null, function(){ filterLv = null; renderFilters(); render(); }));
-    lvBucketKeys.forEach(function(b){
-      var label = (b === 'none') ? '不限' : (b + '~' + (b + 19));
-      rowLv.appendChild(mkChip(label, lvTally[b], filterLv === b, null, function(){
-        filterLv = (filterLv === b) ? null : b; renderFilters(); render();
-      }));
-    });
-    filtersEl.appendChild(rowLv);
-
-    var rowTeam = frow('類型');
-    rowTeam.appendChild(mkChip('全部', ROWS.length, filterTeam === null, null, function(){ filterTeam = null; renderFilters(); render(); }));
-    rowTeam.appendChild(mkChip('個人任務', soloCount, filterTeam === 'solo', null, function(){ filterTeam = (filterTeam === 'solo') ? null : 'solo'; renderFilters(); render(); }));
-    rowTeam.appendChild(mkChip('組隊任務', teamCount, filterTeam === 'team', null, function(){ filterTeam = (filterTeam === 'team') ? null : 'team'; renderFilters(); render(); }));
-    filtersEl.appendChild(rowTeam);
-
-    var rowFlags = frow(null);
-    FLAGS.forEach(function(f){
-      rowFlags.appendChild(mkChip(f[1], null, !!flags[f[0]], 'flag', function(){
-        flags[f[0]] = !flags[f[0]]; renderFilters(); render();
-      }));
-    });
-    var sep = document.createElement('span'); sep.className = 'sep'; rowFlags.appendChild(sep);
-    var sel = document.createElement('select');
-    sel.id = 'sort';
-    [['id','依編號'],['exp','經驗高→低'],['lv','依等級'],['name','依名稱']].forEach(function(o){
-      var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1];
-      if (o[0] === sort) op.selected = true; sel.appendChild(op);
-    });
-    sel.addEventListener('change', function(){ sort = sel.value; render(); });
-    rowFlags.appendChild(sel);
-    filtersEl.appendChild(rowFlags);
-  }
-
-  function mark(text, needle){
-    var frag = document.createDocumentFragment();
-    if (!needle){ frag.appendChild(document.createTextNode(text)); return frag; }
-    var lower = String(text).toLowerCase(), i = lower.indexOf(needle), from = 0;
-    while (i !== -1){
-      if (i > from) frag.appendChild(document.createTextNode(text.slice(from, i)));
-      var m = document.createElement('mark'); m.textContent = text.slice(i, i + needle.length);
-      frag.appendChild(m); from = i + needle.length; i = lower.indexOf(needle, from);
-    }
-    if (from < text.length) frag.appendChild(document.createTextNode(text.slice(from)));
-    return frag;
-  }
-
-  function tag(cls, text){ var s = document.createElement('span'); s.className = 'tag ' + cls; s.textContent = text; return s; }
-  function pill(cls, text){ var s = document.createElement('span'); s.className = 'pill' + (cls ? ' ' + cls : ''); s.textContent = text; return s; }
-
-  // 可點擊跳轉的 pill：找得到目標任務才做成按鈕，找不到就退回普通的灰色 pill
-  function jumpPill(label, targetId){
-    if (!idMap[targetId]) return pill('', label);
-    var b = document.createElement('button');
-    b.type = 'button'; b.className = 'pill jump'; b.textContent = label;
-    b.addEventListener('click', function(){ jumpTo(targetId); });
-    return b;
-  }
-
-  function rewardPills(a, box){
-    if (!a) return 0;
-    var n = 0;
-    if (a.e){ box.appendChild(pill('exp', '經驗 ' + num(a.e))); n++; }
-    if (a.m){ box.appendChild(pill('gold', '楓幣 ' + num(a.m))); n++; }
-    if (a.p){ box.appendChild(pill('', '人氣 ' + a.p)); n++; }
-    (a.g||[]).forEach(function(x){
-      var s = x[0] + (x[1] > 1 ? ' ×' + x[1] : '');
-      if (x[2] === -1) s += '（擇一）'; else if (x[2]) s += '（機率 ' + x[2] + '）';
-      box.appendChild(xlink('items', x[0], s, 'pill link')); n++;
-    });
-    (a.k||[]).forEach(function(x){ box.appendChild(pill('', '技能：' + x)); n++; });
-    (a.t||[]).forEach(function(x){ box.appendChild(pill('take', '收回 ' + x[0] + ' ×' + x[1])); n++; });
-    if (a.nq){
-      var nr = idMap[a.nq];
-      box.appendChild(jumpPill('接續：' + (nr ? nr.n : '') + '（' + a.nq + '）', a.nq)); n++;
-    }
-    return n;
-  }
-
-  // 連到道具／怪物資料庫並預填搜尋
-  function xlink(page, name, text, cls){
-    var a = document.createElement('a');
-    a.className = cls || 'xlink';
-    a.href = '../' + page + '/?q=' + encodeURIComponent(name);
-    a.textContent = text;
-    return a;
-  }
-  function linkList(arr, page){
-    var f = document.createElement('span');
-    arr.forEach(function(x, i){
-      if (i) f.appendChild(document.createTextNode('、'));
-      f.appendChild(xlink(page, x[0], x[0]));
-      f.appendChild(document.createTextNode(' ×' + x[1]));
-    });
-    return f;
-  }
-
-  function kv(dl, label, node){
-    var dt = document.createElement('dt'); dt.textContent = label;
-    var dd = document.createElement('dd');
-    if (typeof node === 'string') dd.textContent = node; else dd.appendChild(node);
-    dl.appendChild(dt); dl.appendChild(dd);
-  }
-
-  function detail(r){
-    var box = document.createElement('div'); box.className = 'detail';
-    if (r.d){ var p = document.createElement('p'); p.className = 'desc'; p.textContent = r.d; box.appendChild(p); }
-
-    var dl = document.createElement('dl'); dl.className = 'kv';
-    if (r.sn) kv(dl, '接取', who(r.sn));
-    if (r.en) kv(dl, '完成', who(r.en));
-    var cond = [];
-    if (r.lv) cond.push('Lv' + r.lv + (r.lx ? '～' + r.lx : ' 以上'));
-    if (r.j) cond.push(r.j);
-    if (r.iv !== undefined) cond.push('每 ' + num(r.iv) + ' 分鐘可再接一次');
-    if (cond.length) kv(dl, '條件', cond.join('｜'));
-    if (r.pq){
-      var pqBox = document.createElement('div'); pqBox.className = 'reward';
-      r.pq.forEach(function(p){ pqBox.appendChild(jumpPill((p[1] || ('#' + p[0])) + '（' + p[0] + '）', p[0])); });
-      kv(dl, '前置任務', pqBox);
-    }
-    if (r.ni) kv(dl, '需持有', linkList(r.ni, 'items'));
-    if (r.gi) kv(dl, '需繳交', linkList(r.gi, 'items'));
-    if (r.mo) kv(dl, '需擊殺', linkList(r.mo, 'mobs'));
-    if (dl.children.length) box.appendChild(dl);
-
-    [['ra','接取時給'],['rc','完成時給']].forEach(function(pair){
-      var a = r[pair[0]]; if (!a) return;
-      var d2 = document.createElement('dl'); d2.className = 'kv';
-      var rw = document.createElement('div'); rw.className = 'reward';
-      var n = rewardPills(a, rw);
-      if (n) { kv(d2, pair[1], rw); box.appendChild(d2); }
-    });
-
-    if (r.sc){
-      var note = document.createElement('p'); note.className = 'note';
-      note.textContent = '這個任務會走 NPC 腳本，分支與部分獎勵由伺服器決定，客戶端看不到。';
-      box.appendChild(note);
-    }
-    return box;
-  }
-
-  // 點前置／接續任務的 pill：清空篩選條件、把搜尋框填入目標編號，然後捲到那一列
-  function jumpTo(targetId){
-    filterRegion = null; filterLv = null; filterTeam = null; flags = {};
-    qEl.value = String(targetId);
-    renderFilters();
-    render();
-    var el = listEl.querySelector('[data-qid="' + targetId + '"]');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  // ---------- 5020：未搜尋時不列清單（搜尋字／任一篩選 chip／下拉排序以外的篩選都算「搜尋」） ----------
-  function hasActiveSearch(){
-    if (qEl.value.trim()) return true;
-    if (filterRegion !== null || filterLv !== null || filterTeam !== null) return true;
-    for (var k in flags) if (flags[k]) return true;
-    return false;
-  }
-
-  function render(opts){
-    var forceList = opts && opts.forceList;
+  function render(){
     var q = qEl.value.trim().toLowerCase();
     clearEl.hidden = !qEl.value;
 
-    if (!forceList && !hasActiveSearch()){
+    if (!hasActiveSearch()){
       countEl.textContent = '';
-      listEl.innerHTML = '<p class="empty">輸入名稱或選擇篩選條件開始查詢（共 ' + num(ROWS.length) + ' 筆）</p>';
+      listEl.innerHTML = '<p class="empty">輸入名稱或關鍵字開始查詢（共 ' + num(SERIES.length) + ' 個系列）</p>';
       return;
     }
 
-    var hits = ROWS.filter(function(r){
-      if (filterRegion !== null && r._region !== filterRegion) return false;
-      if (filterLv !== null){
-        var key = (r._lvBucket === null) ? 'none' : r._lvBucket;
-        if (key !== filterLv) return false;
-      }
-      if (filterTeam === 'team' && !isTeam(r)) return false;
-      if (filterTeam === 'solo' && isTeam(r)) return false;
-      for (var i = 0; i < FLAGS.length; i++){ if (flags[FLAGS[i][0]] && !FLAGS[i][2](r)) return false; }
-      return !q || r._s.indexOf(q) !== -1;
-    });
+    var hits = SERIES.filter(function(s){ return !q || s._hay.indexOf(q) !== -1; });
 
     var cmp =
-      sort === 'exp' ? function(a,b){ return expOf(b) - expOf(a) || a.i - b.i; } :
-      sort === 'lv' ? function(a,b){ return (a.lv||0) - (b.lv||0) || a.i - b.i; } :
-      sort === 'name' ? function(a,b){ return a.n.localeCompare(b.n, 'zh-Hant'); } :
-      function(a,b){ return a.i - b.i; };
+      sortEl.value === 'name' ? function(a,b){ return a.name.localeCompare(b.name, 'zh-Hant'); } :
+      sortEl.value === 'lv' ? function(a,b){ return (a.lvmin||0) - (b.lvmin||0) || a.sid - b.sid; } :
+      sortEl.value === 'steps' ? function(a,b){ return b.n - a.n || a.sid - b.sid; } :
+      function(a,b){ return a.sid - b.sid; };
     if (q) {
       hits.sort(function(a,b){
         var ta = searchTierOf(a, q), tb = searchTierOf(b, q);
-        if (ta !== tb) return ta - tb;
-        return cmp(a, b);
+        return ta !== tb ? ta - tb : cmp(a, b);
       });
     } else {
       hits.sort(cmp);
     }
 
-    countEl.textContent = hits.length === ROWS.length
-      ? '顯示全部 ' + num(ROWS.length) + ' 個任務'
-      : '找到 ' + num(hits.length) + ' 個任務';
+    countEl.textContent = hits.length === SERIES.length
+      ? '顯示全部 ' + num(SERIES.length) + ' 個系列'
+      : '找到 ' + num(hits.length) + ' 個系列';
 
-    listEl.textContent = '';
     if (!hits.length){
-      var e = document.createElement('p'); e.className = 'empty';
-      e.textContent = '沒有符合的任務。換個關鍵字或篩選條件試試。';
-      listEl.appendChild(e); return;
+      listEl.innerHTML = '<p class="empty">沒有符合的系列。換個關鍵字試試。</p>';
+      return;
     }
 
-    // 依編號排序時照系列分組；其他排序時照分類分組（沿用原頁的規則）
-    var order = [], buckets = {};
-    hits.forEach(function(r){
-      var key = (sort === 'id') ? (r.s || r.a || '單獨任務') : (r.a || '其他');
-      if (!buckets[key]){ buckets[key] = []; order.push(key); }
-      buckets[key].push(r);
-    });
-
-    var frag = document.createDocumentFragment();
-    order.forEach(function(key){
-      var sec = document.createElement('section'); sec.className = 'group';
-      var h = document.createElement('div'); h.className = 'ghead';
-      var h2 = document.createElement('h2'); h2.appendChild(mark(key, q));
-      var n = document.createElement('span'); n.className = 'n'; n.textContent = buckets[key].length + ' 個';
-      h.appendChild(h2); h.appendChild(n); sec.appendChild(h);
-
-      var ul = document.createElement('ul'); ul.className = 'rows';
-      buckets[key].forEach(function(r){
-        var li = document.createElement('li'); li.className = 'row'; li.setAttribute('data-qid', r.i);
-        var btn = document.createElement('button'); btn.className = 'q'; btn.type = 'button';
-        btn.setAttribute('aria-expanded', open[r.i] ? 'true' : 'false');
-
-        var id = document.createElement('span'); id.className = 'id';
-        id.appendChild(mark(String(r.i), q));
-
-        var mid = document.createElement('span');
-        var t = document.createElement('span'); t.className = 'title'; t.appendChild(mark(r.n, q));
-        if (q && searchTierOf(r, q) === 3) {
-          var why = document.createElement('span');
-          why.style.color = 'var(--faint)'; why.style.fontSize = '11.5px'; why.style.marginLeft = '6px';
-          why.textContent = '（' + searchReasonOf(r, q) + '）';
-          t.appendChild(why);
+    var ul = document.createElement('ul'); ul.className = 'series';
+    hits.forEach(function(s){
+      var li = document.createElement('li'); li.className = 'srow'; li.setAttribute('data-sid', s.sid);
+      var lvText = s.lvmin ? ('Lv' + s.lvmin + (s.lvmax && s.lvmax !== s.lvmin ? '～' + s.lvmax : '')) : '不限等級';
+      var mapText = s.start && s.start.map ? s.start.map : '';
+      li.innerHTML =
+        '<button class="shead" type="button" aria-expanded="' + (open[s.sid] ? 'true' : 'false') + '">' +
+          (s.start ? npcIcon(s.start) : '<span class="ic ic-npc ph" aria-hidden="true"></span>') +
+          '<span class="sname-wrap"><span class="sname"></span>' +
+          '<span class="smeta">' + s.n + ' 步<span class="dot">·</span>' + esc(lvText) +
+          (mapText ? '<span class="dot">·</span>' + esc(mapText) : '') + '</span></span>' +
+          '<span class="stags"><span class="tag lv">' + esc(lvText) + '</span></span>' +
+        '</button><div class="sbody"></div>';
+      var nameEl = li.querySelector('.sname');
+      nameEl.textContent = '';
+      if (q) {
+        // 標黃搜尋命中片段
+        var lower = s.name.toLowerCase(), i = lower.indexOf(q);
+        if (i !== -1) {
+          nameEl.appendChild(document.createTextNode(s.name.slice(0, i)));
+          var mk = document.createElement('mark'); mk.textContent = s.name.slice(i, i + q.length);
+          nameEl.appendChild(mk);
+          nameEl.appendChild(document.createTextNode(s.name.slice(i + q.length)));
+        } else {
+          nameEl.textContent = s.name;
         }
-        mid.appendChild(t);
-        var meta = document.createElement('span'); meta.className = 'meta';
-        var parts = [];
-        if (r.sn) parts.push('接：' + who(r.sn));
-        if (r.en && r.en !== r.sn) parts.push('繳：' + who(r.en));
-        if (!parts.length && r.s) parts.push(r.s);
-        parts.forEach(function(p, i){
-          if (i){ var d = document.createElement('span'); d.className = 'dot'; d.textContent = '·'; meta.appendChild(d); }
-          meta.appendChild(mark(p, q));
-        });
-        mid.appendChild(meta);
+      } else {
+        nameEl.textContent = s.name;
+      }
+      if (q && searchTierOf(s, q) === 3) {
+        var why = document.createElement('span');
+        why.style.color = 'var(--faint)'; why.style.fontSize = '11.5px'; why.style.marginLeft = '6px';
+        why.textContent = '（' + searchReasonOf(s, q) + '）';
+        nameEl.parentNode.insertBefore(why, nameEl.nextSibling);
+      }
 
-        var tags = document.createElement('span'); tags.className = 'tags';
-        tags.appendChild(tag('lv', r.lv ? ('Lv' + r.lv) : '—'));
-        var ex = expOf(r), mo = moneyOf(r), gi = giveCount(r);
-        if (ex) tags.appendChild(tag('exp', 'EXP ' + num(ex)));
-        if (mo) tags.appendChild(tag('gold', '楓幣 ' + num(mo)));
-        if (gi) tags.appendChild(tag('item', '道具 ' + gi));
-        if (r.iv !== undefined) tags.appendChild(tag('', '可重複'));
-
-        btn.appendChild(id); btn.appendChild(mid); btn.appendChild(tags);
-        li.appendChild(btn);
-
-        var body = null;
-        function toggle(){
-          if (body){ body.remove(); body = null; open[r.i] = false; btn.setAttribute('aria-expanded','false'); }
-          else { body = detail(r); li.appendChild(body); open[r.i] = true; btn.setAttribute('aria-expanded','true'); }
+      var btn = li.querySelector('.shead');
+      var body = li.querySelector('.sbody');
+      function doExpand(){
+        li.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+        if (!body.dataset.built) {
+          body.dataset.built = '1';
+          body.innerHTML = seriesDetail(s);
         }
-        btn.addEventListener('click', toggle);
-        if (open[r.i]) toggle();
-        ul.appendChild(li);
+        applyIconsIn(li);  // 系列列本身的起始 NPC 頭像、展開內容的道具／怪物圖，都在這裡才載入
+      }
+      btn.addEventListener('click', function(){
+        var willOpen = !li.classList.contains('open');
+        open[s.sid] = willOpen;
+        if (willOpen) { doExpand(); }
+        else { li.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
       });
-      sec.appendChild(ul); frag.appendChild(sec);
+      // 使用者正在重新打字篩選（同一次搜尋過程）時，先前展開過的系列維持展開，不要收合
+      if (open[s.sid]) doExpand();
+
+      ul.appendChild(li);
     });
-    listEl.appendChild(frag);
+    listEl.innerHTML = '';
+    listEl.appendChild(ul);
   }
 
   var t;
   qEl.addEventListener('input', function(){ clearTimeout(t); t = setTimeout(render, 90); });
   clearEl.addEventListener('click', function(){ qEl.value = ''; qEl.focus(); render(); });
+  sortEl.addEventListener('change', render);
 
-  // 網址 ?q= 預填搜尋
   try { var pq = new URLSearchParams(location.search).get('q'); if (pq) qEl.value = pq; } catch(e) {}
-  renderFilters();
   render();
 })().catch(function(err){
   document.getElementById('list').innerHTML = '<p class="empty">資料載入失敗，請重新整理頁面。</p>';
