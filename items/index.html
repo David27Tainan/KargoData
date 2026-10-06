@@ -800,6 +800,8 @@
     if (pid){ targetId = pid; }
     else { var pq = params.get('q'); if (pq){ searchEl.value = pq; state.q = pq.trim().toLowerCase(); } }
   } catch(e) {}
+  // 資料還在載入時就打字的話，輸入框已經有字但還沒套用——載完補套用一次
+  if (targetId === null && !state.q && searchEl.value.trim()) state.q = searchEl.value.trim().toLowerCase();
   renderHeaderStats();
   renderCatChips();
   renderSubChips();
