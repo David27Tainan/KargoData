@@ -755,7 +755,7 @@ if (targetId !== null) showOnlyId(targetId);
 else resetAndRender();
 
 /* 5022：?id= 打開時不要把整份清單都畫出來再捲過去（手機深連結會捲不到，見 5021 回報）。
-   改成只渲染那一隻、直接展開，上面補一行「只顯示編號 N｜顯示全部結果」。 */
+   改成只渲染那一隻、直接展開（不另加說明列）。 */
 function showOnlyId(idStr){
   const m = MOBS.find(x => String(x.i) === String(idStr));
   if (!m) {
@@ -768,14 +768,9 @@ function showOnlyId(idStr){
   shown = 1;
   count.textContent = '';
   moreWrap.hidden = true;
-  list.innerHTML = `<div class="onlyline">只顯示編號 <b>${m.i}</b>｜<button type="button" id="showAllBtn" class="linkbtn">顯示全部結果</button></div>` + mobCard(m, meState);
+  list.innerHTML = mobCard(m, meState);
   const card = list.querySelector(`.mob[data-id="${m.i}"]`);
   if (card) loadOnExpand(card, m);  // 5018：懶載入戰利品圖示／原圖照常觸發
-  document.getElementById('showAllBtn').addEventListener('click', () => {
-    try { history.replaceState(null, '', location.pathname); } catch(e) {}
-    m._open = false;
-    resetAndRender();
-  });
 }
 })().catch(err => {
   document.getElementById('list').innerHTML = '<p class="empty">資料載入失敗，請重新整理頁面。</p>';

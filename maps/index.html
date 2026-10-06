@@ -372,7 +372,7 @@
   document.addEventListener('click', function(e){ if (!e.target.closest('.kd-pt')) clearActivePts(); });
 
   // 5022：?id= 打開時不要把整份清單畫出來再捲過去（手機深連結會捲不到，見 5021 回報）。
-  // 改成只渲染那一張地圖、直接展開，上面補一行「只顯示編號 N｜顯示全部結果」。
+  // 改成只渲染那一張地圖、直接展開（不另加說明列）。
   function showOnlyMap(idStr){
     var idx = MAPS.findIndex(function(m){ return String(m[0]) === String(idStr); });
     if (idx === -1) {
@@ -382,15 +382,10 @@
     }
     var m = MAPS[idx];
     countEl.textContent = '';
-    var banner = '<div class="kd-onlyline">只顯示編號 <b>' + m[0] + '</b>｜<button type="button" id="showAllBtn" class="kd-linkbtn">顯示全部結果</button></div>';
-    listEl.innerHTML = banner + '<section class="kd-group"><ul class="kd-map-cards">' + mapCardHTML(m, null) + '</ul></section>';
+    listEl.innerHTML = '<section class="kd-group"><ul class="kd-map-cards">' + mapCardHTML(m, null) + '</ul></section>';
     var row = listEl.querySelector('.kd-map-card[data-id="' + idStr + '"]');
     var head = row.querySelector('.kd-map-head');
     if (head && !head.classList.contains('kd-map-head-static')) openCard(row, head, idStr, m);  // 5016/5017：小地圖懶載入照常觸發（展開才 fetch）
-    document.getElementById('showAllBtn').addEventListener('click', function(){
-      try { history.replaceState(null, '', location.pathname); } catch(e) {}
-      render();
-    });
   }
 
   var t;

@@ -787,7 +787,7 @@
   else renderReset();
 
   // 5022：?id= 打開時不要把整份清單畫出來再捲過去（手機深連結會捲不到，見 5021 回報）。
-  // 改成只渲染那一件、直接展開，上面補一行「只顯示編號 N｜顯示全部結果」。
+  // 改成只渲染那一件、直接展開（不另加說明列）。
   function showOnlyId(idStr){
     var idx0 = -1;
     for (var i2 = 0; i2 < N; i2++) if (String(DATA[i2].i) === String(idStr)) { idx0 = i2; break; }
@@ -804,10 +804,6 @@
     resultCountEl.textContent = '';
     var row = buildRow(idx0);
     listEl.innerHTML = '';
-    var banner = document.createElement('div');
-    banner.className = 'onlyline';
-    banner.innerHTML = '只顯示編號 <b>' + esc(DATA[idx0].i) + '</b>｜<button type="button" id="showAllBtn" class="linkbtn">顯示全部結果</button>';
-    listEl.appendChild(banner);
     listEl.appendChild(row);
     var btn = row.querySelector('.row-main');
     var detail = row.querySelector('.detail');
@@ -815,10 +811,6 @@
     detailBuilt.add(idx0);
     detail.hidden = false;
     btn.setAttribute('aria-expanded', 'true');
-    document.getElementById('showAllBtn').addEventListener('click', function(){
-      try { history.replaceState(null, '', location.pathname); } catch(e) {}
-      renderReset();
-    });
   }
 })().catch(function(err){
   document.getElementById('list').innerHTML = '<p class="empty">資料載入失敗，請重新整理頁面。</p>';
