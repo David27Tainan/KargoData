@@ -372,7 +372,7 @@
     }
     if (state.job){
       if (state.job === '全職業'){ if (it.jb && it.jb !== '全職業') return false; }
-      else { if (!(it.jb || '').indexOf(state.job) > -1) return false; }
+      else { if ((it.jb || '').indexOf(state.job) === -1) return false; }
     }
     if (state.lvlBucket != null){
       var b = Math.min(9, Math.floor(lvl[idx] / 20));
