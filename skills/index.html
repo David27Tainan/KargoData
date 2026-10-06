@@ -97,8 +97,19 @@ input[type=search]:focus { outline:none; border-color:var(--accent); box-shadow:
 /* 第一層：系別按鈕列，一行可換行 */
 .systemrow { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 0; }
 
-/* 第二層：該系的分支，每條分支自己一行；放不下就「那一行」自己換行，不整塊橫捲 */
-.branches { display:flex; flex-direction:column; gap:10px; margin:14px 0 0; padding:14px; background:var(--surface-2); border:1px solid var(--line-soft); border-radius:var(--r); }
+/* 第二層：該系的分支，每條分支是一張卡片；桌機一排 2～3 張（視寬度自動排），手機一排 1 張。
+   點「初心者」一次顯示全部系的分支時，每系前面加一個系名小標（.branchsection-title），卡片分組排列。 */
+.branches { margin:14px 0 0; }
+.branchsection { margin:0 0 20px; }
+.branchsection:last-child { margin-bottom:0; }
+.branchsection-title { margin:0 0 10px; padding-left:10px; border-left:3px solid var(--jc, var(--line)); font-size:13px; font-weight:700; color:var(--jc, var(--ink)); }
+.branchgrid { display:grid; grid-template-columns:1fr; gap:12px; align-items:start; }
+@media (min-width:640px) { .branchgrid { grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); } }
+.branchcard {
+  background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--jc, var(--line));
+  border-radius:var(--r); box-shadow:var(--shadow); padding:12px;
+}
+.branchcard.sel { border-color:var(--jc); background:var(--surface-2); box-shadow:0 0 0 2px color-mix(in srgb, var(--jc) 35%, transparent), var(--shadow); }
 .branchrow { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
 .branchrow .jobnode { border-radius:10px; padding:6px 10px 6px 6px; }
 .branchrow .jname { white-space:normal; }
@@ -344,18 +355,40 @@ function branchesOfSystem(system){
     return chain;
   });
 }
-function renderBranchRow(chain){
-  return `<div class="branchrow">${chain.map((j, i) =>
-    (i > 0 ? '<span class="branch-arrow">→</span>' : '') + jobNodeHTML(j, 'branchnode')
-  ).join('')}</div>`;
+/* 每條分支是一張卡片：卡片左邊框用該系主題色，路線裡任一節點被選中就整張卡片高亮 */
+function renderBranchCard(chain){
+  const jc = colorKeyOf(chain[0]);
+  const selected = chain.some(j => routeIds.has(j.id));
+  return `<div class="branchcard${selected ? ' sel' : ''}" style="--jc:var(--job-${jc})">` +
+    `<div class="branchrow">${chain.map((j, i) =>
+      (i > 0 ? '<span class="branch-arrow">→</span>' : '') + jobNodeHTML(j, 'branchnode')
+    ).join('')}</div></div>`;
+}
+function renderBranchGrid(branches){
+  return `<div class="branchgrid">${branches.map(renderBranchCard).join('')}</div>`;
+}
+/* 點「初心者」（或其他群的同類 adv0 根，若之後有）：一次顯示底下全部系的全部分支，
+   每系前面一個系名小標，卡片依系分組排列（不是只顯示初心者自己那一條）。 */
+function renderAllBranchesForRoot(root){
+  const systems = (childrenOf.get(root.id) || []).map(id => jobsById.get(id));
+  const sections = systems.map(sys => {
+    const branches = branchesOfSystem(sys);
+    if (!branches.length) return '';
+    const jc = colorKeyOf(sys);
+    return `<div class="branchsection"><h3 class="branchsection-title" style="--jc:var(--job-${jc})">${esc(sys.name)}</h3>${renderBranchGrid(branches)}</div>`;
+  }).filter(Boolean);
+  if (!sections.length) { branchAreaEl.hidden = true; branchAreaEl.innerHTML = ''; return; }
+  branchAreaEl.hidden = false;
+  branchAreaEl.innerHTML = sections.join('');
 }
 function renderBranchesForCurrent(){
   const system = currentChain ? currentChain[0] : null;
-  if (!system || system.parent === null) { branchAreaEl.hidden = true; branchAreaEl.innerHTML = ''; return; }
+  if (!system) { branchAreaEl.hidden = true; branchAreaEl.innerHTML = ''; return; }
+  if (system.parent === null) { renderAllBranchesForRoot(system); return; }
   const branches = branchesOfSystem(system);
   if (!branches.length) { branchAreaEl.hidden = true; branchAreaEl.innerHTML = ''; return; }
   branchAreaEl.hidden = false;
-  branchAreaEl.innerHTML = branches.map(renderBranchRow).join('');
+  branchAreaEl.innerHTML = renderBranchGrid(branches);
 }
 function renderGroupTabs(active){
   groupTabsEl.innerHTML = GROUPS.map(g =>
