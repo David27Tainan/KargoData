@@ -97,23 +97,45 @@ input[type=search]:focus { outline:none; border-color:var(--accent); box-shadow:
 /* 第一層：系別按鈕列，一行可換行 */
 .systemrow { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 0; }
 
-/* 第二層：該系的分支，每條分支是一張卡片；桌機一排 2～3 張（視寬度自動排），手機一排 1 張。
-   點「初心者」一次顯示全部系的分支時，每系前面加一個系名小標（.branchsection-title），卡片分組排列。 */
+/* 第二層：一系一張卡，卡片內用 CSS 畫出職業樹（直線，或「根節點＋分支」兩種排法）。
+   桌機一排 2 張（寬度不夠自動變 1 張），手機一排 1 張。 */
 .branches { margin:14px 0 0; }
-.branchsection { margin:0 0 20px; }
-.branchsection:last-child { margin-bottom:0; }
-.branchsection-title { margin:0 0 10px; padding-left:10px; border-left:3px solid var(--jc, var(--line)); font-size:13px; font-weight:700; color:var(--jc, var(--ink)); }
-.branchgrid { display:grid; grid-template-columns:1fr; gap:12px; align-items:start; }
-@media (min-width:640px) { .branchgrid { grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); } }
+.systemgrid { display:grid; grid-template-columns:1fr; gap:16px; align-items:start; }
+@media (min-width:900px) { .systemgrid { grid-template-columns:repeat(2, 1fr); } }
 .branchcard {
   background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--jc, var(--line));
-  border-radius:var(--r); box-shadow:var(--shadow); padding:12px;
+  border-radius:var(--r); box-shadow:var(--shadow); padding:12px; min-width:0;
 }
 .branchcard.sel { border-color:var(--jc); background:var(--surface-2); box-shadow:0 0 0 2px color-mix(in srgb, var(--jc) 35%, transparent), var(--shadow); }
-.branchrow { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
-.branchrow .jobnode { border-radius:10px; padding:6px 10px 6px 6px; }
-.branchrow .jname { white-space:normal; }
+/* 卡片內容放進可橫捲的容器：樹太寬就只在卡片內捲，整頁不會橫向捲動 */
+.treescroll { overflow-x:auto; padding-bottom:2px; }
+.branchrow { display:flex; flex-wrap:nowrap; align-items:center; gap:4px; }
+.branchcard .jobnode { border-radius:10px; padding:6px 10px 6px 6px; }
 .branch-arrow { color:var(--faint); font-size:13px; padding:0 2px; flex:none; }
+.branch-arrow.sel { color:var(--jc); font-weight:700; }
+/* 根節點＋分支的樹狀排法：根節點在左，右邊一條直線（bus）往下接每條分支，
+   分支再往右接自己的技能鏈。選中的那條分支的接點／箭頭變主題色，其他維持淡色。 */
+.systree { display:flex; align-items:center; gap:0; }
+.treeroot { flex:none; }
+.treestem { flex:none; width:14px; height:2px; align-self:center; background:color-mix(in srgb, var(--jc) 35%, var(--line)); }
+.treebus {
+  flex:none; display:flex; flex-direction:column; gap:12px; position:relative;
+  padding-left:14px; border-left:2px solid color-mix(in srgb, var(--jc) 35%, var(--line));
+}
+.treebranch { position:relative; }
+.treebranch::before {
+  content:''; position:absolute; left:-14px; top:50%; width:14px; height:2px;
+  background:color-mix(in srgb, var(--jc) 35%, var(--line));
+}
+.treebranch.sel::before { background:var(--jc); height:3px; }
+/* 龍魔導士單一長鏈（10 節點）：放不下就在卡片內換行，不用橫捲 */
+.branchcard.evanchain .branchrow { flex-wrap:wrap; row-gap:8px; }
+/* 手機：卡片一排 1 張，樹的節點縮小（圖示 20px、字 12px），放不下再靠 .treescroll 橫捲 */
+@media (max-width:639px) {
+  .branchcard .jicon { width:20px; height:23px; }
+  .branchcard .jicon i { transform:scale(.77); transform-origin:top left; }
+  .branchcard .jname { font-size:12px; }
+}
 
 /* ---------- 路線：麵包屑、轉次分頁、技能格線 ---------- */
 .routehead { display:flex; flex-wrap:wrap; align-items:baseline; gap:10px; margin-top:22px; }
@@ -200,7 +222,7 @@ table.lvtable td.efcell, table.lvtable th.efcell { text-align:left; white-space:
   <div class="grouptabs" id="groupTabs"></div>
   <div class="systemrow" id="systemRow"><p class="empty" id="loading">資料載入中…</p></div>
   <div class="branches" id="branchArea" hidden></div>
-  <p class="treehint">先選一個系別；該系有分支的話，下面會列出每條分支（2 轉 → 3 轉 → 4 轉），點到哪一轉就顯示到那一轉為止。</p>
+  <p class="treehint">先選一個系別，下面會出現那一系的職業樹卡片；點樹上任一職業，最下面才會列出到那一轉為止的技能卡。</p>
 </div>
 
 <div id="routeArea" hidden>
@@ -235,6 +257,7 @@ let jobsById = new Map(), childrenOf = new Map(), skillToJob = new Map();
 let currentGroup = '冒險家';
 let routeIds = new Set();
 let currentChain = null;
+let currentSystems = null;
 const groupDataCache = {};
 const groupPromises = {};
 let skillAtlasPromise = null;
@@ -338,14 +361,13 @@ function renderSystems(groupName){
   systemRowEl.innerHTML = systems.length ? systems.map(j => jobNodeHTML(j)).join('')
     : '<p class="empty">找不到這個職業群。</p>';
 }
-/* 第二層「分支」：該系每個子職業各自一行，往下走到底（每個節點最多 1 個子職業）；
-   龍魔導士（10 次轉職）沒有分支可言，裁定把系本身（第1次）也算進這一行，一行列出第 1～10 次。 */
-function branchesOfSystem(system){
+/* 一系一張卡：算出這個系底下的職業樹——根節點（系本身）＋每個子職業各自一條分支，
+   分支往下走到底（每個節點最多 1 個子職業）。龍魔導士（10 次轉職）只有 1 個子職業，
+   變成「根節點＋唯一一條分支」＝一條 10 節點的直線，跟皇家騎士團／狂狼勇士同一套邏輯。 */
+function buildSystemTree(system){
   const kids = childrenOf.get(system.id) || [];
-  const includeSelf = system.group === '龍魔導士';
-  if (!kids.length) return includeSelf ? [[system]] : [];
-  return kids.map(kidId => {
-    const chain = includeSelf ? [system] : [];
+  const branches = kids.map(kidId => {
+    const chain = [];
     let cur = jobsById.get(kidId);
     while (cur) {
       chain.push(cur);
@@ -354,41 +376,47 @@ function branchesOfSystem(system){
     }
     return chain;
   });
+  return { root: system, branches };
 }
-/* 每條分支是一張卡片：卡片左邊框用該系主題色，路線裡任一節點被選中就整張卡片高亮 */
-function renderBranchCard(chain){
-  const jc = colorKeyOf(chain[0]);
-  const selected = chain.some(j => routeIds.has(j.id));
-  return `<div class="branchcard${selected ? ' sel' : ''}" style="--jc:var(--job-${jc})">` +
-    `<div class="branchrow">${chain.map((j, i) =>
-      (i > 0 ? '<span class="branch-arrow">→</span>' : '') + jobNodeHTML(j, 'branchnode')
-    ).join('')}</div></div>`;
+/* 一條分支鏈（含箭頭）：被選中路線經過的節點與箭頭用主題色強調 */
+function renderChainRow(chain){
+  return `<div class="branchrow">${chain.map((j, i) =>
+    (i > 0 ? `<span class="branch-arrow${routeIds.has(j.id) ? ' sel' : ''}">→</span>` : '') + jobNodeHTML(j, 'branchnode')
+  ).join('')}</div>`;
 }
-function renderBranchGrid(branches){
-  return `<div class="branchgrid">${branches.map(renderBranchCard).join('')}</div>`;
+/* 根節點 + 多條分支：根節點在左，右邊一條直線（bus）往下接每條分支自己的技能鏈 */
+function renderTreeRows(root, branches){
+  const rows = branches.map(chain => {
+    const sel = chain.some(j => routeIds.has(j.id));
+    return `<div class="treebranch${sel ? ' sel' : ''}">${renderChainRow(chain)}</div>`;
+  }).join('');
+  return `<div class="systree">` +
+    `<div class="treeroot">${jobNodeHTML(root, 'branchnode')}</div>` +
+    `<div class="treestem"></div>` +
+    `<div class="treebus">${rows}</div>` +
+  `</div>`;
 }
-/* 點「初心者」（或其他群的同類 adv0 根，若之後有）：一次顯示底下全部系的全部分支，
-   每系前面一個系名小標，卡片依系分組排列（不是只顯示初心者自己那一條）。 */
-function renderAllBranchesForRoot(root){
-  const systems = (childrenOf.get(root.id) || []).map(id => jobsById.get(id));
-  const sections = systems.map(sys => {
-    const branches = branchesOfSystem(sys);
-    if (!branches.length) return '';
-    const jc = colorKeyOf(sys);
-    return `<div class="branchsection"><h3 class="branchsection-title" style="--jc:var(--job-${jc})">${esc(sys.name)}</h3>${renderBranchGrid(branches)}</div>`;
-  }).filter(Boolean);
-  if (!sections.length) { branchAreaEl.hidden = true; branchAreaEl.innerHTML = ''; return; }
+/* 一張系卡：分支數 ≤1（皇家騎士團／狂狼勇士／龍魔導士）就畫一條直線；
+   分支數 ≥2（冒險家五系）才畫「根節點＋分支」的樹。龍魔導士那條線另外標記 evanchain，
+   手機放不下時用換行接續，不用橫捲（其他卡放不下用卡片內橫捲）。 */
+function renderSystemCard(system){
+  const jc = colorKeyOf(system);
+  const tree = buildSystemTree(system);
+  const selected = routeIds.has(system.id);
+  const isEvan = system.group === '龍魔導士';
+  const body = tree.branches.length <= 1
+    ? renderChainRow([system, ...(tree.branches[0] || [])])
+    : renderTreeRows(system, tree.branches);
+  return `<div class="branchcard${selected ? ' sel' : ''}${isEvan ? ' evanchain' : ''}" style="--jc:var(--job-${jc})">` +
+    `<div class="treescroll">${body}</div></div>`;
+}
+/* 顯示一張或多張系卡：多張時排進 2 欄（寬度不夠自動變 1 欄）的格線，單張時整張卡滿版寬 */
+function renderSystemCards(systems){
+  if (!systems.length) { branchAreaEl.hidden = true; branchAreaEl.innerHTML = ''; return; }
   branchAreaEl.hidden = false;
-  branchAreaEl.innerHTML = sections.join('');
-}
-function renderBranchesForCurrent(){
-  const system = currentChain ? currentChain[0] : null;
-  if (!system) { branchAreaEl.hidden = true; branchAreaEl.innerHTML = ''; return; }
-  if (system.parent === null) { renderAllBranchesForRoot(system); return; }
-  const branches = branchesOfSystem(system);
-  if (!branches.length) { branchAreaEl.hidden = true; branchAreaEl.innerHTML = ''; return; }
-  branchAreaEl.hidden = false;
-  branchAreaEl.innerHTML = renderBranchGrid(branches);
+  branchAreaEl.innerHTML = systems.length > 1
+    ? `<div class="systemgrid">${systems.map(renderSystemCard).join('')}</div>`
+    : renderSystemCard(systems[0]);
 }
 function renderGroupTabs(active){
   groupTabsEl.innerHTML = GROUPS.map(g =>
@@ -400,6 +428,7 @@ function switchGroup(name){
   currentGroup = name;
   routeIds = new Set();
   currentChain = null;
+  currentSystems = null;
   routeArea.hidden = true;
   branchAreaEl.hidden = true;
   branchAreaEl.innerHTML = '';
@@ -407,7 +436,25 @@ function switchGroup(name){
   renderSystems(name);
 }
 
-/* ---------- 選路線：點一個職業＝從初心者到那一轉的完整路線（可以只到 1/2 轉，也可以點初心者本身） ---------- */
+/* ---------- 第一層按鈕只決定「下面顯示哪張/哪些系卡」，不選路線、不列技能卡；
+   要看技能卡要點樹上（卡片內）的職業節點，交給 selectRoute 處理。 ---------- */
+function showSystem(jobId){
+  const job = jobsById.get(Number(jobId));
+  if (!job) return;
+  if (job.group !== currentGroup) {
+    currentGroup = job.group;
+    renderGroupTabs(currentGroup);
+  }
+  routeArea.hidden = true;
+  routeIds = new Set();
+  currentChain = null;
+  currentSystems = [job];
+  renderSystems(currentGroup);
+  renderSystemCards(currentSystems);
+}
+
+/* ---------- 選路線：點樹上（或初心者本身）一個職業＝從系根到那一轉的完整路線
+   （可以只到 1/2 轉，也可以點初心者本身）。點初心者＝該群全部系卡一次顯示。 ---------- */
 async function selectRoute(jobId){
   const job = jobsById.get(Number(jobId));
   if (!job) return;
@@ -426,8 +473,11 @@ async function selectRoute(jobId){
   }
   routeIds = new Set(chain.map(j => j.id));
   currentChain = chain;
+  currentSystems = job.parent === null
+    ? (childrenOf.get(job.id) || []).map(id => jobsById.get(id))
+    : [chain[0]];
   renderSystems(currentGroup);
-  renderBranchesForCurrent();
+  renderSystemCards(currentSystems);
   routeNameEl.textContent = chain.map(j => j.name).join(' → ');
   renderTierTabs(chain, job.id);
   routeArea.hidden = false;
@@ -438,6 +488,7 @@ function clearRoute(){
   branchAreaEl.innerHTML = '';
   routeIds = new Set();
   currentChain = null;
+  currentSystems = null;
   renderSystems(currentGroup);
 }
 
@@ -640,6 +691,12 @@ function exitSearch(opts){
 
 /* ---------- 事件委派 ---------- */
 document.addEventListener('click', e => {
+  const sysBtn = e.target.closest('#systemRow .jobnode:not([disabled])');
+  if (sysBtn) {
+    const job = jobsById.get(Number(sysBtn.dataset.job));
+    if (job && job.parent === null) selectRoute(job.id); else showSystem(Number(sysBtn.dataset.job));
+    return;
+  }
   const jobBtn = e.target.closest('.jobnode:not([disabled])');
   if (jobBtn) { selectRoute(Number(jobBtn.dataset.job)); return; }
   const tabBtn = e.target.closest('.tiertab');
