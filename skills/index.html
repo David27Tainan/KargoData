@@ -169,6 +169,64 @@ input[type=search]:focus { outline:none; border-color:var(--accent); box-shadow:
 .sicon i { position:absolute; left:0; top:0; background-repeat:no-repeat; }
 .sicon.noimg { color:var(--faint); font-size:14px; }
 
+/* ---------- 技能區：左邊技能清單、右邊詳情（取代原本的格線＋展開卡片）。
+   左右兩欄固定高度 470px、各自內捲，表格標頭／等級欄用 sticky 固定。 ---------- */
+.skillpanel { display:grid; grid-template-columns:240px 1fr; gap:14px; margin-top:14px; height:470px; }
+.skillListCol {
+  height:100%; overflow-y:auto; border:1px solid var(--line); border-radius:var(--r);
+  background:var(--surface); padding:6px;
+}
+.skillList { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
+.skillList .empty { padding:10px 6px; font-size:12.5px; }
+.skitem {
+  display:flex; align-items:center; gap:8px; width:100%; text-align:left; min-width:0;
+  font:inherit; color:inherit; background:none; border:1px solid transparent; border-radius:8px;
+  padding:5px 8px; cursor:pointer;
+}
+.skitem:hover { background:var(--surface-2); }
+.skitem.sel {
+  background:var(--surface-2); border-color:var(--jc); color:var(--jc); font-weight:700;
+  box-shadow:0 0 0 2px color-mix(in srgb, var(--jc) 30%, transparent) inset;
+}
+.skmeta { display:flex; flex-direction:column; min-width:0; }
+.skname { font-size:12.5px; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sktag { font-size:10.5px; color:var(--faint); line-height:1.2; }
+.sktag .need, .skdetailTags .need { color:var(--boss); font-weight:700; }
+.skitem.sel .sktag { color:inherit; opacity:.85; }
+.hiddenToggle { margin-top:6px; border-top:1px solid var(--line-soft); padding-top:6px; }
+.hiddenToggle summary { cursor:pointer; font-size:12px; color:var(--muted); padding:4px 2px; list-style:none; }
+.hiddenToggle .skillList { margin-top:4px; }
+.skillDetailCol {
+  height:100%; overflow:auto; border:1px solid var(--line); border-radius:var(--r);
+  background:var(--surface); box-shadow:var(--shadow); padding:14px;
+}
+.skillDetailCol.hl { box-shadow:0 0 0 3px var(--accent), var(--shadow); }
+.skdetailHead { display:flex; gap:10px; align-items:flex-start; }
+.skdetailName { margin:0; font-size:15px; font-weight:700; }
+.skdetailTags { font-size:11.5px; color:var(--faint); margin-top:3px; }
+.skillDetailCol .sfulldesc { font-size:12.5px; line-height:1.45; margin-top:8px; }
+.skdetailLine { margin-top:8px; font-size:12.5px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.skdetailLine .sklabel { font-size:11px; color:var(--faint); font-weight:700; flex:none; }
+/* 表格字 12～13px、列高緊湊；標頭與等級欄固定在 skillDetailCol 的捲動範圍內。
+   .tablewrap 本身不能自己建立捲動容器（會攔截 sticky 的對照基準），
+   上下／左右捲動都交給外層 .skillDetailCol 一個容器處理 */
+.skillDetailCol .tablewrap { overflow:visible; }
+.skillDetailCol table.lvtable th, .skillDetailCol table.lvtable td { padding:4px 8px; font-size:12.5px; }
+.skillDetailCol table.lvtable thead th { position:sticky; top:0; z-index:2; }
+.skillDetailCol table.lvtable thead th.lvcell { z-index:3; }
+.skillDetailCol table.lvtable td.lvcell { z-index:1; }
+/* 手機 375：左欄變成上方一排可換行的圖示（只顯示圖示，名稱放 title），詳情維持固定高度內捲 */
+@media (max-width:639px) {
+  .skillpanel { grid-template-columns:1fr; height:auto; gap:10px; }
+  .skillListCol { height:auto; overflow:visible; border:0; padding:0; background:none; }
+  .skillList { flex-direction:row; flex-wrap:wrap; gap:6px; }
+  .skitem { width:auto; padding:4px; }
+  .skmeta { display:none; }
+  .hiddenToggle { flex:1 0 100%; border-top:0; margin-top:2px; padding-top:2px; }
+  .hiddenToggle .skillList { flex-direction:row; }
+  .skillDetailCol { height:470px; }
+}
+
 .sbody { display:none; padding:0 14px 16px; border-top:1px solid var(--line-soft); margin-top:4px; }
 .skillcard.open .sbody { display:block; }
 .sfulldesc { margin:12px 0 0; font-size:13px; color:var(--muted); white-space:normal; max-width:70ch; }
@@ -193,11 +251,6 @@ table.lvtable td.efcell, table.lvtable th.efcell { text-align:left; white-space:
 .lvlwrap.show-full .compact { display:none; }
 .lvtoggle { margin-top:8px; display:inline-block; }
 
-.hiddenbox { margin-top:16px; }
-.hiddenbox summary { cursor:pointer; font-size:13px; color:var(--muted); padding:8px 0; }
-.hiddenlist { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:6px; }
-.hiddenlist li { font-size:12px; padding:4px 10px; border-radius:999px; background:var(--sunk); color:var(--muted); border:1px solid var(--line); }
-
 .pagenote { margin:28px 0 0; font-size:12.5px; color:var(--faint); }
 @media (prefers-reduced-motion:no-preference) { .skillcard { transition:border-color .15s; } .skillcard.hl{ transition:box-shadow .3s; } }
 .skillcard.hl { box-shadow:0 0 0 3px var(--accent), var(--shadow); }
@@ -208,7 +261,7 @@ table.lvtable td.efcell, table.lvtable th.efcell { text-align:left; white-space:
 <div class="wrap">
 <header>
   <h1>職業技能</h1>
-  <p class="lede">《楓之谷 Classic》客戶端 1.15.3 全部職業技能。先選職業樹上的一個職業（可以只選到 1 轉或 2 轉），再切換轉次分頁看技能格線；點技能卡展開完整說明、前置技能、技能書與每級數值。</p>
+  <p class="lede">《楓之谷 Classic》客戶端 1.15.3 全部職業技能。先選職業樹上的一個職業（可以只選到 1 轉或 2 轉），再切換轉次分頁；左邊點技能、右邊看完整說明、前置技能、技能書與每級數值。</p>
 </header>
 
 <div class="searchbar">
@@ -222,7 +275,7 @@ table.lvtable td.efcell, table.lvtable th.efcell { text-align:left; white-space:
   <div class="grouptabs" id="groupTabs"></div>
   <div class="systemrow" id="systemRow"><p class="empty" id="loading">資料載入中…</p></div>
   <div class="branches" id="branchArea" hidden></div>
-  <p class="treehint">先選一個系別，下面會出現那一系的職業樹卡片；點樹上任一職業，最下面才會列出到那一轉為止的技能卡。</p>
+  <p class="treehint">先選一個系別，下面會出現那一系的職業樹卡片（點初心者直接看初心者自己的技能）；點樹上任一職業，最下面才會列出到那一轉為止的技能。</p>
 </div>
 
 <div id="routeArea" hidden>
@@ -231,8 +284,10 @@ table.lvtable td.efcell, table.lvtable th.efcell { text-align:left; white-space:
     <button type="button" class="linkbtn" id="clearRoute">收起路線</button>
   </div>
   <div class="tiertabs" id="tierTabs"></div>
-  <div class="skillgrid" id="skillGrid"></div>
-  <div class="hiddenbox" id="hiddenBox"></div>
+  <div class="skillpanel" id="skillPanel">
+    <div class="skillListCol"><ul class="skillList" id="skillList"></ul></div>
+    <div class="skillDetailCol" id="skillDetail"></div>
+  </div>
 </div>
 
 <p class="pagenote">技能數值欄位名稱對照客戶端資料；技能圖示縮小/放大顯示，非原始像素大小。</p>
@@ -263,7 +318,9 @@ const groupPromises = {};
 let skillAtlasPromise = null;
 
 const systemRowEl = $('#systemRow'), branchAreaEl = $('#branchArea'), groupTabsEl = $('#groupTabs'), routeArea = $('#routeArea');
-const routeNameEl = $('#routeName'), tierTabsEl = $('#tierTabs'), skillGrid = $('#skillGrid'), hiddenBox = $('#hiddenBox');
+const routeNameEl = $('#routeName'), tierTabsEl = $('#tierTabs'), skillListEl = $('#skillList'), skillDetailEl = $('#skillDetail');
+let currentTierSkills = new Map();
+let selectedSkillId = null;
 const searchResultsEl = $('#searchResults'), searchCountEl = $('#searchCount'), qInput = $('#q'), treeArea = $('#treeArea');
 
 /* ---------- 韓文佔位名稱（含 [TW] 或韓文字元）一律不顯示 ---------- */
@@ -306,12 +363,13 @@ function ensureSkillAtlas(){
   }
   return skillAtlasPromise;
 }
-function skillIconHTML(id, atlas){
-  if (!atlas) return `<span class="sicon ph" data-skill-icon="${id}" style="width:40px;height:40px"></span>`;
+function skillIconHTML(id, atlas, size){
+  size = size || 40;
+  if (!atlas) return `<span class="sicon ph" data-skill-icon="${id}" data-skill-size="${size}" style="width:${size}px;height:${size}px"></span>`;
   const p = atlas.pos[String(id)];
-  if (!p) return `<span class="sicon noimg" style="width:40px;height:40px">?</span>`;
+  if (!p) return `<span class="sicon noimg" style="width:${size}px;height:${size}px">?</span>`;
   const [sheet,x,y,w,h] = p;
-  const S = 40 / 32;
+  const S = size / 32;
   const cw = Math.round(w * S), ch = Math.round(h * S);
   return `<span class="sicon" style="width:${cw}px;height:${ch}px"><i style="width:${w}px;height:${h}px;` +
     `background-image:url('../assets/${esc(atlas.sheets[sheet])}');background-position:-${x}px -${y}px;` +
@@ -320,7 +378,8 @@ function skillIconHTML(id, atlas){
 function patchPendingSkillIcons(root){
   ensureSkillAtlas().then(atlas => {
     root.querySelectorAll('.sicon.ph[data-skill-icon]').forEach(el => {
-      el.outerHTML = skillIconHTML(el.dataset.skillIcon, atlas);
+      const size = Number(el.dataset.skillSize) || 40;
+      el.outerHTML = skillIconHTML(el.dataset.skillIcon, atlas, size);
     });
   }).catch(err => console.error('skill_atlas 載入失敗', err));
 }
@@ -454,7 +513,8 @@ function showSystem(jobId){
 }
 
 /* ---------- 選路線：點樹上（或初心者本身）一個職業＝從系根到那一轉的完整路線
-   （可以只到 1/2 轉，也可以點初心者本身）。點初心者＝該群全部系卡一次顯示。 ---------- */
+   （可以只到 1/2 轉，也可以點初心者本身）。系別卡片每次只顯示一張：
+   點初心者＝不顯示系卡片，直接看初心者自己的技能；點其他職業＝只顯示它所屬那一系的卡片。 ---------- */
 async function selectRoute(jobId){
   const job = jobsById.get(Number(jobId));
   if (!job) return;
@@ -473,9 +533,7 @@ async function selectRoute(jobId){
   }
   routeIds = new Set(chain.map(j => j.id));
   currentChain = chain;
-  currentSystems = job.parent === null
-    ? (childrenOf.get(job.id) || []).map(id => jobsById.get(id))
-    : [chain[0]];
+  currentSystems = job.parent === null ? [] : [chain[0]];
   renderSystems(currentGroup);
   renderSystemCards(currentSystems);
   routeNameEl.textContent = chain.map(j => j.name).join(' → ');
@@ -507,7 +565,8 @@ function activateTier(jobId){
   renderTierTabs(currentChain, jobId);
 }
 
-/* ---------- 技能格線（隔開：正常顯示 / 需技能書 / 隱藏收合 / 韓文不顯示） ---------- */
+/* ---------- 技能區：左邊清單（隔開：正常顯示 / 需技能書 / 隱藏收合 / 韓文不顯示）、
+   右邊詳情。點左邊哪個技能，右邊就顯示它的詳情；預設選第一個技能。 ---------- */
 function renderSkillGrid(job){
   const data = groupDataCache[job.group] || {};
   const ids = job.skills || [];
@@ -519,15 +578,51 @@ function renderSkillGrid(job){
     if (sk.invisible && !(sk.books && sk.books.length)) { hidden.push(sk); continue; }
     visible.push(sk);
   }
-  skillGrid.innerHTML = visible.length ? visible.map(sk => skillCardHTML(sk, false)).join('')
-    : `<p class="empty">這一轉沒有可顯示的技能。</p>`;
-  renderHiddenBox(hidden);
-  patchPendingSkillIcons(skillGrid);
+  currentTierSkills = new Map([...visible, ...hidden].map(sk => [sk.id, sk]));
+  renderSkillList(visible, hidden);
+  const defaultId = visible.length ? visible[0].id : (hidden.length ? hidden[0].id : null);
+  selectSkill(defaultId, { scroll:false });
 }
-function renderHiddenBox(hidden){
-  if (!hidden.length) { hiddenBox.innerHTML = ''; return; }
-  hiddenBox.innerHTML = `<details><summary>其他隱藏技能（${hidden.length}）▾</summary>` +
-    `<ul class="hiddenlist">${hidden.map(sk => `<li>${esc(sk.name)}（最高 ${sk.maxLevel}）</li>`).join('')}</ul></details>`;
+/* 左欄一列一個：圖示 32px＋技能名一行，主動／被動、需技能書用小字標示；
+   隱藏技能收在最下面一個可展開的小標題，展開後一樣是可點的清單項 */
+function skillListItemHTML(sk){
+  const jc = colorKeyOf(jobsById.get(sk.job));
+  const needBook = sk.invisible && sk.books && sk.books.length;
+  const tagParts = [esc(sk.type)];
+  if (needBook) tagParts.push('<span class="need">需技能書</span>');
+  const sel = sk.id === selectedSkillId ? ' sel' : '';
+  return `<li><button type="button" class="skitem${sel}" data-skill="${sk.id}" title="${esc(sk.name)}" style="--jc:var(--job-${jc})">` +
+    `${skillIconHTML(sk.id, null, 32)}<span class="skmeta"><span class="skname">${esc(sk.name)}</span><span class="sktag">${tagParts.join('・')}</span></span>` +
+  `</button></li>`;
+}
+function renderSkillList(visible, hidden){
+  let html = visible.length ? visible.map(skillListItemHTML).join('') : '<li class="empty">這一轉沒有可顯示的技能。</li>';
+  if (hidden.length) {
+    html += `<li class="hiddenToggle"><details><summary>其他隱藏技能（${hidden.length}）▾</summary>` +
+      `<ul class="skillList">${hidden.map(skillListItemHTML).join('')}</ul></details></li>`;
+  }
+  skillListEl.innerHTML = html;
+  patchPendingSkillIcons(skillListEl);
+}
+/* 選一個技能：左欄高亮＋右欄顯示詳情；opts.scroll 把左欄捲到它（深連結用） */
+function selectSkill(id, opts){
+  opts = opts || {};
+  selectedSkillId = id;
+  skillListEl.querySelectorAll('.skitem').forEach(btn => {
+    btn.classList.toggle('sel', Number(btn.dataset.skill) === id);
+  });
+  const sk = id != null ? currentTierSkills.get(id) : null;
+  skillDetailEl.innerHTML = sk ? skillDetailPanelHTML(sk) : '<p class="empty">這一轉沒有可顯示的技能。</p>';
+  if (sk) patchPendingSkillIcons(skillDetailEl);
+  skillDetailEl.scrollTop = 0;
+  if (opts.scroll) {
+    const btn = skillListEl.querySelector(`.skitem[data-skill="${id}"]`);
+    if (btn) {
+      const det = btn.closest('details');
+      if (det) det.open = true;
+      btn.scrollIntoView({ block:'nearest' });
+    }
+  }
 }
 
 /* ---------- 技能卡 ---------- */
@@ -613,35 +708,70 @@ function levelTableHTML(sk){
   return html;
 }
 
+/* ---------- 技能詳情（右欄）：頂部圖示＋名稱＋標籤、說明、前置技能／技能書各一行、
+   然後一次顯示所有等級的表格（不像搜尋結果卡片那樣可收合展開）。 ---------- */
+function skillDetailPanelHTML(sk){
+  const needBook = sk.invisible && sk.books && sk.books.length;
+  const tagParts = [esc(sk.type), `最高 ${sk.maxLevel}`];
+  if (needBook) tagParts.push('<span class="need">需技能書</span>');
+  let out = `<div class="skdetailHead">${skillIconHTML(sk.id, null)}<div>` +
+    `<h3 class="skdetailName">${esc(sk.name)}</h3>` +
+    `<div class="skdetailTags">${tagParts.join('・')}</div></div></div>`;
+  out += `<p class="sfulldesc">${esc(cleanText(sk.desc)).replace(/\n/g, '<br>')}</p>`;
+  if (sk.req && sk.req.length) {
+    out += `<div class="skdetailLine"><span class="sklabel">前置技能</span>${sk.req.map(r => {
+      const rsk = findSkillById(r.id);
+      if (!rsk || isKorean(rsk.name)) {
+        return `<span class="spill">（未翻譯技能）Lv${r.level}</span>`;
+      }
+      return `<button type="button" class="spill reqlink" data-skill="${r.id}">${esc(rsk.name)} Lv${r.level}</button>`;
+    }).join('')}</div>`;
+  }
+  if (sk.books && sk.books.length) {
+    out += `<div class="skdetailLine"><span class="sklabel">技能書</span><span class="sbooknote">${sk.books.map(b => {
+      const extra = `（可提升至 ${b.masterLevel}${b.reqSkillLevel ? `，需 Lv${b.reqSkillLevel}` : ''}${b.success != null ? `，成功率 ${b.success}%` : ''}）`;
+      const link = b.valid ? `<a class="spill link" href="../items/?id=${b.item}">${esc(b.name)}</a>` : `<span class="spill">${esc(b.name)}</span>`;
+      return link + extra;
+    }).join('、')}</span></div>`;
+  }
+  out += levelTableFullHTML(sk);
+  return out;
+}
+/* 每級數值：一次全部顯示（不做 1/5/10… 的精簡＋「顯示全部等級」切換），
+   標頭／等級欄的 sticky 由 .skillDetailCol 範圍內的 CSS 處理 */
+function levelTableFullHTML(sk){
+  const levels = sk.levels || [];
+  if (!levels.length) return '';
+  const keysPresent = new Set();
+  levels.forEach(lv => { for (const k in lv) { if (k !== 'lv' && k !== 'text') keysPresent.add(k); } });
+  const cols = FIELD_ORDER.filter(k => keysPresent.has(k));
+  keysPresent.forEach(k => { if (!cols.includes(k)) cols.push(k); });
+  const fields = (JOBMETA._ && JOBMETA._.fields) || {};
+  const labels = cols.map(k => fields[k] || k);
+  const head = `<tr><th class="lvcell">等級</th>${labels.map(l => `<th>${esc(l)}</th>`).join('')}<th class="efcell">效果</th></tr>`;
+  function row(lv){
+    const cells = cols.map(k => `<td>${esc(fmtVal(lv[k]))}</td>`).join('');
+    return `<tr><td class="lvcell">${lv.lv}</td>${cells}<td class="efcell">${esc(cleanText(lv.text))}</td></tr>`;
+  }
+  return `<div class="ssec"><h4>每級數值</h4><div class="tablewrap"><table class="lvtable"><thead>${head}</thead><tbody>${levels.map(row).join('')}</tbody></table></div></div>`;
+}
+
 function toggleCard(card){
   const open = !card.classList.contains('open');
   card.classList.toggle('open', open);
   card.querySelector('.schead').setAttribute('aria-expanded', String(open));
   if (open) patchPendingSkillIcons(card);
 }
-function openCard(card){
-  card.classList.add('open');
-  card.querySelector('.schead').setAttribute('aria-expanded', 'true');
-}
-function flashHighlight(card){
-  card.classList.add('hl');
-  setTimeout(() => card.classList.remove('hl'), 2500);
-}
 
-/* ---------- 技能前置／搜尋結果：跳到該職業路線那一轉並展開這張卡 ---------- */
+/* ---------- 技能前置／搜尋結果：跳到該職業路線那一轉，左欄選中並捲到該技能、右欄顯示詳情 ---------- */
 async function jumpToSkill(skillId){
   const jobId = skillToJob.get(Number(skillId));
   if (jobId == null) return;
   exitSearch({ keepQuery:false });
   await selectRoute(jobId);
-  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-  const card = skillGrid.querySelector(`.skillcard[data-skill="${skillId}"]`);
-  if (card) {
-    openCard(card);
-    patchPendingSkillIcons(card);
-    card.scrollIntoView({ behavior:'smooth', block:'center' });
-    flashHighlight(card);
-  }
+  selectSkill(Number(skillId), { scroll:true });
+  skillDetailEl.classList.add('hl');
+  setTimeout(() => skillDetailEl.classList.remove('hl'), 2500);
 }
 
 /* ---------- 跨職業搜尋技能名 ---------- */
@@ -699,6 +829,8 @@ document.addEventListener('click', e => {
   }
   const jobBtn = e.target.closest('.jobnode:not([disabled])');
   if (jobBtn) { selectRoute(Number(jobBtn.dataset.job)); return; }
+  const skItem = e.target.closest('.skitem:not([disabled])');
+  if (skItem) { selectSkill(Number(skItem.dataset.skill), { scroll:false }); return; }
   const tabBtn = e.target.closest('.tiertab');
   if (tabBtn) { activateTier(Number(tabBtn.dataset.job)); return; }
   const grpBtn = e.target.closest('.grouptab');
