@@ -117,6 +117,10 @@
     border-radius:999px;padding:7px 14px;font-size:.85rem;cursor:pointer;
   }
   #sort:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  /* 5058：特殊版本開關 */
+  .toggle-special{display:flex;align-items:center;gap:6px;font-size:.84rem;color:var(--text-muted);white-space:nowrap;cursor:pointer;padding:0 2px;}
+  .toggle-special input{cursor:pointer;}
+  .tag-vt{background:transparent;border:1px dashed var(--border);color:var(--faint);font-size:.68rem;margin-left:5px;border-radius:5px;padding:1px 6px;}
 
   /* ---------- 篩選 chip ---------- */
   .chiprow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
@@ -228,6 +232,7 @@
 
   <div class="toolbar">
     <input id="search" type="search" placeholder="搜尋名稱、編號、說明、掉落怪物、任務…" autocomplete="off">
+    <label class="toggle-special" for="showSpecial"><input type="checkbox" id="showSpecial">顯示特殊版本</label>
     <select id="sort" aria-label="排序方式">
       <option value="id-asc">編號（小→大）</option>
       <option value="id-desc">編號（大→小）</option>
@@ -346,7 +351,7 @@
   for (var wi = 0; wi < N; wi++){ if (DATA[wi].wt) weaponTypeSet.add(DATA[wi].wt); }
 
   // ========== 狀態 ==========
-  var state = { cat: null, sub: null, subKind: null, job: null, lvlBucket: null, q: '', sort: 'id-asc' };
+  var state = { cat: null, sub: null, subKind: null, job: null, lvlBucket: null, q: '', sort: 'id-asc', showSpecial: false };
   var PAGE = 120;
   var currentList = [];
   var shown = 0;
@@ -355,6 +360,7 @@
   // ========== 篩選 ==========
   function matches(idx){
     var it = DATA[idx];
+    if (!state.showSpecial && it.hide) return false;  // 5058：特殊版本預設隱藏，開關開了才列出來
     if (state.cat && it.c !== state.cat) return false;
     if (state.sub){
       if (state.subKind === 'weapon'){ if (it.wt !== state.sub) return false; }
@@ -525,13 +531,17 @@
     if (state.q && searchTierOf(idx, state.q) === 3){
       whyHtml = '<span class="row-id">（' + esc(searchReasonOf(idx, state.q)) + '）</span>';
     }
+    // 5058：特殊版本（vt 非空）名稱旁加淡色小標籤
+    var vtHtml = (it.vt && it.vt.length) ? it.vt.map(function(t){
+      return '<span class="tag-vt">' + esc(t) + '</span>';
+    }).join('') : '';
 
     wrap.innerHTML =
       '<button class="row-main" type="button" aria-expanded="false">' +
         '<div class="row-icon">' + iconHTML(idx) + '</div>' +
         '<div class="row-lv mono">Lv.' + lvl[idx] + '</div>' +
         '<div class="row-main-info">' +
-          '<div class="row-name">' + esc(it.n) + '<span class="row-id">#' + it.i + '</span>' + whyHtml + '</div>' +
+          '<div class="row-name">' + esc(it.n) + '<span class="row-id">#' + it.i + '</span>' + vtHtml + whyHtml + '</div>' +
           '<div class="row-tags">' + tagsHtml + '</div>' +
         '</div>' +
         '<div class="row-obtain">' + obtainSummary(it) + '</div>' +
@@ -753,6 +763,17 @@
     }, 140);
   });
   sortEl.addEventListener('change', function(){ state.sort = sortEl.value; renderReset(); });
+
+  // ========== 5058：顯示特殊版本開關（預設關，狀態存 localStorage） ==========
+  var SHOW_SPECIAL_KEY = 'kd_show_special';
+  var showSpecialEl = document.getElementById('showSpecial');
+  try { state.showSpecial = localStorage.getItem(SHOW_SPECIAL_KEY) === '1'; } catch(e) {}
+  showSpecialEl.checked = state.showSpecial;
+  showSpecialEl.addEventListener('change', function(){
+    state.showSpecial = showSpecialEl.checked;
+    try { localStorage.setItem(SHOW_SPECIAL_KEY, state.showSpecial ? '1' : '0'); } catch(e) {}
+    renderReset();
+  });
 
   // ========== 頁首統計 ==========
   function renderHeaderStats(){

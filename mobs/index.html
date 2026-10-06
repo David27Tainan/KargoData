@@ -165,6 +165,10 @@ select {
 .tag.lv { background:var(--sunk); color:var(--ink); font-weight:700; }
 .tag.boss { background:var(--boss-soft); color:var(--boss); border-color:var(--boss); font-weight:500; }
 .tag.hit { background:var(--accent-soft); color:var(--accent-ink); border-color:var(--accent); font-weight:500; }
+/* 5058：特殊版本標籤 */
+.tag.vt { background:transparent; border-style:dashed; color:var(--faint); font-weight:400; }
+.toggle-special { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); white-space:nowrap; cursor:pointer; }
+.toggle-special input { cursor:pointer; }
 
 /* 5018：格子縮小成跟內容一樣大——改用 flex-wrap 讓每格依內容自然寬度排列，
    不再用 grid auto-fill(...,1fr) 把剩餘空間平均撐開成一大塊 */
@@ -251,6 +255,7 @@ footer p { margin:4px 0; }
 <div class="bar">
   <div class="search">
     <input type="search" id="q" placeholder="搜怪物名字、掉落道具、地圖或編號…" autocomplete="off">
+    <label class="toggle-special" for="showSpecial"><input type="checkbox" id="showSpecial">顯示特殊版本</label>
     <select id="sort">
       <option value="i">編號</option>
       <option value="lv">等級由低到高</option>
@@ -479,6 +484,8 @@ function mobCard(m, meState){
     m.u ? `<span class="tag">不死族</span>` : '',
     `<span class="tag">${esc(m.k || '—')}</span>`,
     `<span class="tag">${esc(m.mv || '—')}</span>`,
+    // 5058：特殊版本（vt 非空）名稱旁加淡色小標籤
+    ...(m.vt || []).map(t => `<span class="tag vt">${esc(t)}</span>`),
   ].join('');
 
   const stats = [
@@ -562,6 +569,7 @@ function currentFilter(){
   const elemIdx = elemSel.value;
   const region = regionSel.value;
   let out = MOBS.filter(m => {
+    if (!showSpecial && m.hide) return false;  // 5058：特殊版本預設隱藏，開關開了才列出來
     if (term && !m.hay.includes(term)) return false;
     for (const k of boolActive) if (!boolPass(m, k)) return false;
     if (lvRange) {
@@ -681,6 +689,18 @@ list.addEventListener('click', e => {
 let qTimer;
 q.addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(resetAndRender, 150); });
 [sortSel, moveSel, elemSel, regionSel, lvSel].forEach(el => el.addEventListener('change', resetAndRender));
+
+/* ---------- 5058：顯示特殊版本開關（預設關，狀態存 localStorage） ---------- */
+const SHOW_SPECIAL_KEY = 'kd_show_special';
+let showSpecial = false;
+const showSpecialEl = $('#showSpecial');
+try { showSpecial = localStorage.getItem(SHOW_SPECIAL_KEY) === '1'; } catch(e) {}
+showSpecialEl.checked = showSpecial;
+showSpecialEl.addEventListener('change', () => {
+  showSpecial = showSpecialEl.checked;
+  try { localStorage.setItem(SHOW_SPECIAL_KEY, showSpecial ? '1' : '0'); } catch(e) {}
+  resetAndRender();
+});
 
 /* ---------- 我的角色（命中率小工具） ---------- */
 let meState = null;
