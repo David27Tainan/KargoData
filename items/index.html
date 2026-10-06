@@ -198,6 +198,9 @@
 
   .xlink{color:var(--accent-ink);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 40%,transparent);text-underline-offset:2px;}
   .xlink:hover{text-decoration-color:currentColor;}
+  /* 5061：展開後掉落怪名稱前的小圖（高 24px，寬依原比例） */
+  .mobchip{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}
+  .mobchip .mob-ico-ph{display:inline-block;width:0;height:24px;}
   .empty{text-align:center;color:var(--text-muted);padding:40px 10px;font-size:.9rem;}
   .notice{margin:4px 0 0;padding:9px 12px;font-size:.85rem;color:var(--text);background:var(--bronze-weak);border-left:3px solid var(--bronze);border-radius:0 8px 8px 0;}
   /* 5022：?id= 只顯示那一件時，上面這行告知使用者目前是縮小範圍、怎麼回到完整清單 */
@@ -238,8 +241,8 @@
       <option value="id-desc">編號（大→小）</option>
       <option value="lvl-asc">需求等級（低→高）</option>
       <option value="lvl-desc">需求等級（高→低）</option>
-      <option value="price-desc">價格（高→低）</option>
-      <option value="price-asc">價格（低→高）</option>
+      <option value="price-desc">賣店價（高→低）</option>
+      <option value="price-asc">賣店價（低→高）</option>
       <option value="name">名稱</option>
     </select>
   </div>
@@ -413,7 +416,7 @@
 
   // ========== 欄位中文標籤（「全部欄位格」用） ==========
   var STAT_LABELS = {
-    reqLevel:'需求等級', price:'價格', slotMax:'衝卷次數上限', tuc:'目前衝卷次數', attackSpeed:'攻擊速度',
+    reqLevel:'需求等級', price:'賣給商店', slotMax:'衝卷次數上限', tuc:'目前衝卷次數', attackSpeed:'攻擊速度',
     incPAD:'物理攻擊力', incMAD:'魔法攻擊力', incPDD:'物理防禦力', incMDD:'魔法防禦力',
     incSTR:'力量', incDEX:'敏捷', incINT:'智力', incLUK:'幸運',
     incMHP:'最大HP', incMMP:'最大MP', incACC:'命中率', incEVA:'迴避率', incSpeed:'移動速度', incJump:'跳躍力',
@@ -430,6 +433,15 @@
     if (k.indexOf('spec/') === 0) return '額外：' + k.slice(5);
     return k;
   }
+  // 5061：攻擊速度數字→遊戲裡的文字。對照取自客戶端程式碼本身（武器說明框組字串的地方），
+  // 0～1 非常快、2～3 更快、4～5 快、6 普通、7～8 慢、9～10 比較慢、11～12 慢；其他數字遊戲不顯示。
+  var SPEED_TEXT = ['非常快','非常快','更快','更快','快','快','普通','慢','慢','比較慢','比較慢','慢','慢'];
+  function speedText(v){
+    var t = SPEED_TEXT[v];
+    return t ? t + '（' + v + '）' : String(v);
+  }
+  // 展開後不顯示的欄位（職業限制已有標籤，位元遮罩數字對玩家沒意義）
+  var HIDE_KEYS = { reqJob: 1 };
   function fmtVal(v){
     if (typeof v === 'number') return String(v);
     if (typeof v === 'boolean') return v ? '是' : '否';
@@ -457,6 +469,36 @@
     return '<a class="xlink" href="../mobs/?id=' + id + '">' + esc(name) + '</a>';
   }
 
+  // 5061：怪物小圖。怪物圖檔很大，等使用者展開道具才去抓（開頁不抓）
+  var mobAtlasP = null;
+  function loadMobAtlas(){
+    if (!mobAtlasP) mobAtlasP = fetch('../data/mob_atlas.json').then(function(r){
+      if (!r.ok) throw new Error('mob_atlas ' + r.status);
+      return r.json();
+    });
+    return mobAtlasP;
+  }
+  function mobIconHTML(atlas, id, hpx){
+    var p = atlas.pos[String(id)];
+    if (!p) return '';
+    var sheet = p[0], x = p[1], y = p[2], w = p[3], h = p[4];
+    var scale = h > 0 ? Math.min(1, hpx / h) : 1;
+    var wpx = Math.max(1, Math.round(w * scale)), hh = Math.max(1, Math.round(h * scale));
+    return '<span class="kd-pt-ico" style="width:' + wpx + 'px;height:' + hh + 'px">' +
+      '<i style="width:' + w + 'px;height:' + h + 'px;background-image:url(\'../assets/' + esc(atlas.sheets[sheet]) + '\');' +
+      'background-position:-' + x + 'px -' + y + 'px;transform:scale(' + scale + ')"></i></span>';
+  }
+  function fillMobIcons(container){
+    var phs = container.querySelectorAll('.mob-ico-ph[data-mob]');
+    if (!phs.length) return;
+    loadMobAtlas().then(function(atlas){
+      phs.forEach(function(ph){
+        var html = mobIconHTML(atlas, ph.dataset.mob, 24);
+        if (html) ph.outerHTML = html; else ph.remove();  // 沒圖的怪只留名字
+      });
+    }).catch(function(e){ console.error(e); });
+  }
+
   // ========== 取得方式（列表摘要，掉落怪用編號連結；任務頁不在範圍內，維持純文字） ==========
   function obtainSummary(it){
     var ob = it.ob;
@@ -479,7 +521,10 @@
     var ob = it.ob;
     if (!ob) return '<p class="desc">目前資料裡沒有這件道具的掉落怪物或任務記錄（可能是商店購買、活動限定，或客戶端沒有收錄）。</p>';
     var lines = [];
-    if (ob.dri && ob.dri.length) lines.push('<div class="line"><b>掉落怪物（' + ob.dri.length + '）</b>' + ob.dri.map(function(p){ return moblink(p[0], p[1]); }).join('、') + '</div>');
+    if (ob.dri && ob.dri.length) lines.push('<div class="line"><b>掉落怪物（' + ob.dri.length + '）</b>' + ob.dri.map(function(p){
+      // 5061：名稱前留一個位置，展開後才載入怪物圖檔填進去（fillMobIcons）
+      return '<span class="mobchip"><span class="mob-ico-ph" data-mob="' + p[0] + '"></span>' + moblink(p[0], p[1]) + '</span>';
+    }).join('、') + '</div>');
     else if (ob.dr && ob.dr.length) lines.push('<div class="line"><b>掉落怪物（' + ob.dr.length + '）</b>' + ob.dr.map(function(x){ return xlink('mobs', x); }).join('、') + '</div>');
     if (ob.qr && ob.qr.length) lines.push('<div class="line"><b>任務獎勵（' + ob.qr.length + '）</b>' + ob.qr.map(function(x){ return xlink('quests', x); }).join('、') + '</div>');
     if (ob.qn && ob.qn.length) lines.push('<div class="line"><b>任務需要繳交／持有（' + ob.qn.length + '）</b>' + ob.qn.map(function(x){ return xlink('quests', x); }).join('、') + '</div>');
@@ -566,10 +611,11 @@
 
   function buildDetailHTML(idx){
     var it = DATA[idx], st = it.st || {};
-    var kv = Object.keys(st).map(function(k){
+    var kv = Object.keys(st).filter(function(k){ return !HIDE_KEYS[k]; }).map(function(k){
       // 價格這格換成 bronze 色（純外觀，跟其他欄位格的篩選/資料邏輯無關）
       var cls = k === 'price' ? 'kv price' : 'kv';
-      return '<div class="' + cls + '"><span>' + esc(fmtKV(k, st[k])) + '</span><b>' + esc(fmtVal(st[k])) + '</b></div>';
+      var val = k === 'attackSpeed' ? speedText(st[k]) : (k === 'price' ? Number(st[k]).toLocaleString('zh-Hant') + ' 楓幣' : fmtVal(st[k]));
+      return '<div class="' + cls + '"><span>' + esc(fmtKV(k, st[k])) + '</span><b>' + esc(val) + '</b></div>';
     }).join('');
     var meta = [];
     meta.push('<div class="kv"><span>編號</span><b class="mono">' + it.i + '</b></div>');
@@ -578,7 +624,6 @@
     if (it.wt) meta.push('<div class="kv"><span>武器種類</span><b>' + esc(it.wt) + '</b></div>');
     if (it.ty) meta.push('<div class="kv"><span>道具細分類</span><b>' + esc(it.ty) + '</b></div>');
     if (it.jb) meta.push('<div class="kv"><span>職業限制</span><b>' + esc(it.jb) + '</b></div>');
-    if (it.mk) meta.push('<div class="kv"><span>拍賣場分類</span><b>' + esc(it.mk) + '</b></div>');
 
     return (
       (it.d ? '<p class="desc">' + esc(it.d) + '</p>' : '<p class="desc">（客戶端沒有這件道具的說明文字）</p>') +
@@ -633,6 +678,7 @@
     if (!detailBuilt.has(idx)){
       detail.innerHTML = buildDetailHTML(idx);
       detailBuilt.add(idx);
+      fillMobIcons(detail);
     }
     var open = !detail.hidden;
     detail.hidden = open;
@@ -832,6 +878,7 @@
     var detail = row.querySelector('.detail');
     detail.innerHTML = buildDetailHTML(idx0);
     detailBuilt.add(idx0);
+    fillMobIcons(detail);
     detail.hidden = false;
     btn.setAttribute('aria-expanded', 'true');
   }
