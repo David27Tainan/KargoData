@@ -224,6 +224,8 @@ details.fold summary small { font-weight:400; color:var(--faint); font-size:12px
     <p class="wtinfo" id="wtinfo" style="margin-top:8px"></p>
     <p class="apwarn" id="apwarn" role="status"></p>
     <p class="hint" id="apinfo"></p>
+    <p class="hint" id="hpnote"></p>
+    <p class="hint">HP／MP 為依玩家實測資料推定的近似值，遊戲中每級增加量由伺服器決定。</p>
     <p class="hint">直接在視窗上改：點「職業」選職業（法師以外二轉後旁邊有分支小選單）、點「等級」打數字、點四圍數字打要加的點數，或按住橘色加號連續加。括號內是「基礎＋加成」，細項的攻擊力、防禦、命中、迴避加成大於 0 紅字、小於 0 藍字。</p>
   </section>
 
@@ -338,7 +340,27 @@ const jobNow = () => jobFor(S.cat, clamp(int(S.lvl) || 1, 1, 200), curWt(S), S.b
 function baseStats(catK){ const m = catOf(catK).main, o = {}; AP_KEYS.forEach(k => o[k] = k === m ? AP_MAIN : AP_OTHER); return o; }
 const apTotal = lvl => AP_PER_LEVEL * Math.max(0, lvl - 1);
 const apUsed = ap => AP_KEYS.reduce((a, k) => a + Math.max(0, int(ap[k])), 0);
-const MHP0 = 50, MMP0 = 5;    // HP／MP 原始值先用預設（之後依職業等級換算另開單）
+// HP／MP 原始值：推定（依玩家實測）。Lv1 = 50／5；擴展技能依 SP 模擬；其餘每級固定 k，由各職業唯一的實測點反解
+const MHP0 = 50, MMP0 = 5;
+const HPMP_PT = {war:[78,5278,521], mage:[100,1545,7183], arch:[18,536,291], pirG:[41,1500,1056]};   // [等級, HP, MP]；盜賊、海盜（打）無資料
+// 升級前（等級 lv）已學的擴展技能等級：先點淨化到 5，再點擴展到 10；SP = 1 + 3×(lv − 轉職等級)
+function expLvAt(catK, lv){
+  if (catK !== 'war' && catK !== 'mage') return 0;
+  const b1 = catOf(catK).b1; if (lv < b1) return 0;
+  return clamp(1 + 3 * (lv - b1) - 5, 0, 10);
+}
+// lv 級時的擴展累計加成（從 1 升到 lv，每次升級加「升級前」擴展等級 × 4 HP（劍士）或 × 2 MP（法師））
+function expSum(catK, lv){ let t = 0; for (let L = 1; L < lv; L++) t += expLvAt(catK, L); return t * (catK === 'war' ? 4 : 2); }
+const HPMP_K = {};
+Object.keys(HPMP_PT).forEach(k => {
+  const [L, hp, mp] = HPMP_PT[k], e = expSum(k, L);
+  HPMP_K[k] = {hp: (hp - MHP0 - (k === 'war' ? e : 0)) / (L - 1), mp: (mp - MMP0 - (k === 'mage' ? e : 0)) / (L - 1)};
+});
+function hpmpBase(catK, lv){
+  const k = HPMP_K[catK]; if (!k) return null;
+  const e = expSum(catK, lv);
+  return {hp: Math.round(MHP0 + k.hp * (lv - 1) + (catK === 'war' ? e : 0)), mp: Math.round(MMP0 + k.mp * (lv - 1) + (catK === 'mage' ? e : 0))};
+}
 
 let D = null;          // {equips, ammo, sk}
 let S = null;          // 目前輸入狀態
@@ -433,9 +455,10 @@ function compute(S){
     tot[k] = raw[k] + sum[k.toUpperCase()] + Math.floor(raw[k] * statPct / 100);
   });
   // HP／MP
-  const mhpBase = MHP0, mmpBase = MMP0;
-  const mhp = Math.floor((mhpBase + sum.MHP) * (100 + B.hp) / 100);
-  const mmp = Math.floor((mmpBase + sum.MMP) * (100 + B.mp) / 100);
+  const hb = hpmpBase(S.cat, lvl);
+  const mhpBase = hb ? hb.hp : null, mmpBase = hb ? hb.mp : null;
+  const mhp = hb ? Math.floor((mhpBase + sum.MHP) * (100 + B.hp) / 100) : null;
+  const mmp = hb ? Math.floor((mmpBase + sum.MMP) * (100 + B.mp) / 100) : null;
   // 攻擊力
   let padBase = sum.PAD;
   if (noWeapon && cat === 5) padBase += Math.floor(Math.min(10 + 0.7 * lvl, 31));
@@ -575,7 +598,7 @@ function render(){
   const sg = d => d > 0 ? 'up' : d < 0 ? 'dn' : '';
   set('name', 'KargoData'); set('guild', '-');
   syncJobUi(r);
-  set('hp', r.mhp[0] + ' / ' + r.mhp[0]); set('mp', r.mmp[0] + ' / ' + r.mmp[0]);
+  set('hp', r.mhp[0] == null ? '—' : r.mhp[0] + ' / ' + r.mhp[0]); set('mp', r.mmp[0] == null ? '—' : r.mmp[0] + ' / ' + r.mmp[0]);
   set('exp', '-'); set('pop', '-');
   AP_KEYS.forEach(k => { $('#r-' + k + '-t').textContent = fmt(r[k]); const inp = $('#ap-' + k); if (document.activeElement !== inp) inp.value = int(S.ap[k]); });
   set('ap', r.apMax - r.apUsed);
@@ -595,6 +618,7 @@ function render(){
   const b0 = baseStats(S.cat), mk = catOf(S.cat).main;
   $('#apinfo').textContent = '初始值：' + AP_KEYS.map(k => k.toUpperCase() + ' ' + b0[k]).join('／') + '（主屬性 ' + mk.toUpperCase() + '）；可分配 ' + r.apMax + ' 點（每升 1 級 5 點），已用 ' + r.apUsed + '。創角初始四圍客戶端查不到，這是預設。' +
     (r.job === 0 && r.lvl <= 10 ? '初心者在 1 轉或 Lv11 之前由系統自動配點（遊戲裡玩家不能自己加），這裡的加點只是模擬。' : '');
+  $('#hpnote').textContent = r.mhp[0] == null ? 'HP／MP：尚無實測資料（盜賊、海盜（打）還沒有玩家提供的數字）。' : '';
   window.KCalcLast = r;
   layoutWindow();
 }
