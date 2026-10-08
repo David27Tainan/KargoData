@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>能力值計算機｜魔龍數據</title>
+<meta name="description" content="《楓之谷 Classic》1.15.3 能力值視窗（S 鍵）的攻擊力、防禦、命中、迴避等數值計算機，照客戶端公式，可選裝備與技能等級。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<link rel="stylesheet" href="../assets/site.css?v=4adfe4d6">
+<style>
+:root {
+  color-scheme: light dark;
+  --bg:#EFEDE9; --surface:#FFFFFF; --surface-2:#F7F5F2; --sunk:#E5E1DB;
+  --ink:#1A1714; --muted:#615A52; --faint:#8C847A;
+  --line:#DDD7CF; --line-soft:#E9E4DD;
+  --accent:#9B3B2B; --accent-soft:#F6E4DF; --accent-ink:#83301F;
+  --good:#1F6B52; --warn:#C0392B;
+  --shadow:0 1px 2px rgba(26,23,20,.06), 0 10px 26px -18px rgba(26,23,20,.35);
+  --r:10px;
+  --serif: "Noto Serif TC","Noto Sans TC","PingFang TC","Microsoft JhengHei",serif;
+  --sans: "Noto Sans TC","PingFang TC","Microsoft JhengHei","Hiragino Sans TC", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg:#131110; --surface:#1C1917; --surface-2:#221E1B; --sunk:#171412;
+    --ink:#EDE8E2; --muted:#A39A90; --faint:#7C736A;
+    --line:#302B26; --line-soft:#26221E;
+    --accent:#E07A5F; --accent-soft:#33201A; --accent-ink:#EE9678;
+    --good:#5CBF9B; --warn:#F0776A;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -18px rgba(0,0,0,.85);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:#131110; --surface:#1C1917; --surface-2:#221E1B; --sunk:#171412;
+  --ink:#EDE8E2; --muted:#A39A90; --faint:#7C736A;
+  --line:#302B26; --line-soft:#26221E;
+  --accent:#E07A5F; --accent-soft:#33201A; --accent-ink:#EE9678;
+  --good:#5CBF9B; --warn:#F0776A;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -18px rgba(0,0,0,.85);
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.55; -webkit-font-smoothing:antialiased; }
+.wrap { max-width:1100px; margin:0 auto; padding:0 16px 80px; }
+header { padding:40px 0 14px; }
+h1 { margin:0; font-family:var(--serif); font-size:clamp(26px,5vw,42px); font-weight:900; letter-spacing:-.01em; text-wrap:balance; }
+.lede { margin:8px 0 0; color:var(--muted); max-width:70ch; font-size:14px; }
+.notice { margin:14px 0 0; padding:10px 14px; background:var(--accent-soft); border-left:4px solid var(--accent); border-radius:8px; font-size:13.5px; color:var(--accent-ink); }
+.linkbtn { font:inherit; font-size:13px; color:var(--accent-ink); background:none; border:0; padding:0; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+
+.wrap { max-width:1320px; }
+/* 上方左右兩大塊：左＝解剖圖式裝備欄、右＝能力值視窗（桌機 2 倍）；輸入欄放在下面 */
+.top { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; margin-top:16px; align-items:start; }
+@media (min-width:1240px) { .top { grid-template-columns:524px minmax(0,1fr); } }
+#equipCard { min-width:0; }
+#results { min-width:0; }
+@media (min-width:1240px) { .top { gap:12px; } #results { padding:8px; } }
+#inputs { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; min-width:0; margin-top:16px; }
+@media (min-width:960px) { #inputs { grid-template-columns:repeat(2,minmax(0,1fr)); } #inputs .span2 { grid-column:span 2; } }
+
+.card { background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); padding:14px; min-width:0; }
+.card h2 { margin:0 0 10px; font-size:15px; font-weight:700; }
+.card h2 small { font-weight:400; color:var(--faint); font-size:12px; margin-left:6px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; }
+.f { display:flex; flex-direction:column; gap:3px; min-width:0; font-size:12px; color:var(--muted); }
+.f.wide { grid-column:span 2; }
+input[type=number], input[type=text], select {
+  font:inherit; font-size:14px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line);
+  border-radius:8px; padding:7px 9px; width:100%; min-width:0;
+}
+input:focus, select:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+.hint { font-size:12px; color:var(--faint); margin:8px 0 0; }
+
+/* 解剖圖式裝備欄：格子與格名取自遊戲裝備欄（64 = 32 的 2 倍），線連到人物對應部位 */
+.board { position:relative; width:496px; height:624px; margin:0 auto; }
+.doll { position:absolute; left:78px; top:82px; width:340px; height:300px; image-rendering:pixelated; user-select:none; pointer-events:none; }
+.cell { position:absolute; width:64px; height:64px; padding:0; border:0; background:transparent center/64px 64px no-repeat; image-rendering:pixelated; cursor:pointer; border-radius:3px; }
+.cell:hover { outline:2px solid var(--accent); }
+.cell:focus-visible { outline:2px solid #ff8a00; }
+.cell.occ { opacity:.45; }
+.board.off { opacity:.35; }
+.cell .ic { position:absolute; image-rendering:pixelated; pointer-events:none; background-repeat:no-repeat; }
+.cell .lb { position:absolute; left:0; right:0; top:0; bottom:0; display:flex; align-items:center; justify-content:center; text-align:center; font:700 13px/1.1 var(--sans); color:#5b7b9e; pointer-events:none; letter-spacing:.02em; }
+.cell .mk { position:absolute; right:2px; bottom:1px; font:700 10px/1 Arial,sans-serif; color:#B0261A; pointer-events:none; }
+.eqnote { min-height:1.4em; margin:10px 0 0; font-size:13px; color:var(--accent-ink); }
+.eqtools { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:6px; }
+@media (max-width:640px) {
+  .board { width:auto; height:auto; display:flex; flex-wrap:wrap; justify-content:center; gap:6px; }
+  .cell { position:relative; left:auto !important; top:auto !important; width:52px; height:52px; background-size:52px 52px; }
+  .doll { position:relative; left:auto; top:auto; order:2; flex:0 0 auto; max-width:100%; margin:-64px 0 -8px; }
+  .cell[data-g="t"] { order:1; } .cell[data-g="b"] { order:3; }
+}
+/* 搜尋選單（跳出視窗） */
+#pk { position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:12px; background:rgba(0,0,0,.45); }
+#pk[hidden] { display:none; }
+#pk .box { width:min(520px,100%); max-height:calc(100vh - 24px); overflow-y:auto; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); padding:14px; }
+#pk h3 { margin:0 0 8px; font-size:15px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+#pk .sug { position:static; max-height:220px; margin:6px 0 0; }
+#pk .sug li { display:grid; grid-template-columns:36px minmax(0,1fr); gap:8px; align-items:center; }
+#pk .sug .ico { width:36px; height:36px; display:flex; align-items:center; justify-content:center; }
+#pk .sug .ico i { display:block; background-repeat:no-repeat; image-rendering:pixelated; }
+#pk .cur { margin-top:12px; border-top:1px solid var(--line-soft); padding-top:10px; }
+#pk .curname { font-weight:700; font-size:14px; margin-bottom:6px; }
+#pk .btnrow { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+/* 裝備欄位 */
+.slot { border-top:1px solid var(--line-soft); padding:8px 0; }
+.slot:first-of-type { border-top:0; }
+.slothead { display:grid; grid-template-columns:64px minmax(0,1fr) auto; gap:8px; align-items:center; }
+.slotname { font-size:13px; font-weight:700; }
+.qwrap { position:relative; min-width:0; }
+.sug { position:absolute; z-index:20; left:0; right:0; top:100%; margin:2px 0 0; padding:4px; list-style:none; max-height:280px; overflow-y:auto;
+  background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); }
+.sug li { padding:6px 8px; border-radius:6px; cursor:pointer; font-size:13px; }
+.sug li:hover, .sug li.on { background:var(--surface-2); }
+.sug li small { display:block; color:var(--faint); font-size:11.5px; }
+.sug li.none { color:var(--faint); cursor:default; }
+.slotbtn { font:inherit; font-size:12px; padding:5px 8px; border:1px solid var(--line); background:var(--surface-2); color:var(--muted); border-radius:6px; cursor:pointer; white-space:nowrap; }
+.slotbtn:hover { color:var(--accent-ink); border-color:var(--accent); }
+.statgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(72px,1fr)); gap:6px; margin-top:8px; }
+.statgrid .f { font-size:11px; }
+.statgrid input, .statgrid select { padding:5px 6px; font-size:13px; }
+.slotdetail[hidden] { display:none; }
+.slotdetail .picked { font-size:12px; color:var(--faint); margin-top:6px; }
+
+/* 技能 */
+.skrow { display:grid; grid-template-columns:minmax(0,1fr) 70px; gap:8px; align-items:center; padding:6px 0; border-top:1px solid var(--line-soft); }
+.skrow:first-of-type { border-top:0; }
+.skrow .nm { font-size:13px; font-weight:700; }
+.skrow .tip { display:block; font-size:11.5px; color:var(--faint); font-weight:400; }
+.skrow label.chk { display:flex; gap:6px; align-items:center; font-size:12px; color:var(--muted); font-weight:400; margin-top:2px; }
+.row-inline { display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:13px; }
+.row-inline input[type=checkbox] { width:auto; }
+
+/* 結果 */
+.resbox h2 { margin:0 0 8px; font-size:15px; }
+/* 能力值視窗（遊戲真圖＋數值）：座標取自遊戲客戶端的能力值視窗介面 */
+#winhost { width:100%; overflow:hidden; }
+#winsize { position:relative; margin:0 auto; }
+.swin { position:absolute; left:0; top:0; transform-origin:0 0; font:12px/16px Arial,"Microsoft JhengHei","Noto Sans TC",sans-serif; color:#000; user-select:none; -webkit-user-select:none; }
+.swin .swm, .swin .swd { position:absolute; }
+.swin .swm { left:0; top:0; width:175px; height:337px; z-index:2; }
+.swin .swd { width:177px; height:203px; z-index:1; }
+.swin img { position:absolute; display:block; max-width:none; image-rendering:pixelated; }
+.swin .c { position:absolute; height:16px; line-height:16px; white-space:nowrap; overflow:hidden; padding-left:1px; color:#000; }
+.swin .c.up { color:#FF0000; } .swin .c.dn { color:#0000FF; }
+.swin .ib { position:absolute; padding:0; margin:0; border:0; background:none; cursor:pointer; line-height:0; }
+.swin .ib img { position:static; }
+.swin .ib:focus-visible { outline:2px solid #ff8a00; }
+.swin .ib[disabled] { cursor:not-allowed; }
+/* 能力值視窗上直接改：職業下拉、分支小選單、等級輸入、四圍加點輸入 */
+.swin .jobtx { position:absolute; left:0; top:0; right:0; white-space:nowrap; overflow:hidden; text-overflow:clip; padding-left:1px; pointer-events:none; }
+.swin select.ov { position:absolute; margin:0; padding:0; border:0; opacity:0; cursor:pointer; font:12px Arial,"Microsoft JhengHei","Noto Sans TC",sans-serif; z-index:3; }
+.swin .jobcell:hover, .swin .lvcell:hover, .swin .statcell:hover { outline:1px solid #ff8a00; outline-offset:-1px; }
+.swin .jobcell:focus-within, .swin .lvcell:focus-within, .swin .statcell:focus-within { outline:1px solid #ff8a00; outline-offset:-1px; }
+.swin select.br { position:absolute; margin:0; padding:0 0 0 2px; height:16px; border:1px solid #8a8a8a; border-radius:3px; background:#fff3d9; color:#000; font:11px/14px Arial,"Microsoft JhengHei","Noto Sans TC",sans-serif; cursor:pointer; z-index:3; }
+.swin input.cin { position:absolute; left:0; top:0; width:100%; height:16px; margin:0; padding:0 0 0 1px; border:0; background:transparent; color:#000; font:12px/16px Arial,"Microsoft JhengHei","Noto Sans TC",sans-serif; -moz-appearance:textfield; appearance:textfield; outline:none; border-radius:0; }
+.swin input.cin::-webkit-outer-spin-button, .swin input.cin::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+.swin .statcell { cursor:text; }
+.swin .statcell input.cin { display:none; background:#fffbe6; z-index:4; }
+.swin .statcell.editing input.cin { display:block; }
+.swin .statcell.editing .stx { visibility:hidden; }
+.swin .statcell .stx { position:absolute; left:0; top:0; right:0; white-space:nowrap; overflow:hidden; padding-left:1px; }
+.swin .statcell .stx.up { color:#FF0000; } .swin .statcell .stx.dn { color:#0000FF; }
+.apwarn { margin:8px 0 0; font-size:12.5px; color:var(--warn); min-height:1em; }
+.bgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:8px; }
+.bcard { position:relative; display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 4px 6px; font:inherit; color:var(--muted);
+  background:var(--surface-2); border:2px solid var(--line); border-radius:10px; cursor:pointer; text-align:center; min-width:0; }
+.bcard:hover { border-color:var(--faint); }
+.bcard .bi { width:32px; height:32px; background-repeat:no-repeat; image-rendering:pixelated; opacity:.55; filter:grayscale(.7); }
+.bcard .bn { font-size:12px; line-height:1.25; font-weight:700; word-break:break-all; }
+.bcard .be { font-size:11px; line-height:1.2; color:var(--faint); }
+.bcard[aria-pressed="true"] { border-color:var(--accent); background:var(--accent-soft); color:var(--accent-ink); box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
+.bcard[aria-pressed="true"] .bi { opacity:1; filter:none; }
+.bcard[aria-pressed="true"] .be { color:var(--accent-ink); }
+.bcard:focus-visible { outline:2px solid #ff8a00; outline-offset:1px; }
+details.fold { margin-top:14px; border-top:1px solid var(--line-soft); padding-top:10px; }
+details.fold summary { cursor:pointer; font-size:14px; font-weight:700; }
+details.fold summary small { font-weight:400; color:var(--faint); font-size:12px; margin-left:6px; }
+.est { color:var(--accent-ink); font-size:11px; font-weight:500; }
+.restbl { width:100%; border-collapse:collapse; font-size:14px; }
+.restbl th { text-align:left; font-weight:500; color:var(--muted); padding:5px 0; width:42%; }
+.restbl td { text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; padding:5px 0; font-weight:500; word-break:break-all; }
+.restbl tr { border-top:1px solid var(--line-soft); }
+.restbl tr:first-child { border-top:0; }
+.restbl tr.sep th { padding-top:12px; color:var(--accent-ink); font-size:12px; letter-spacing:.04em; }
+.restbl tr.sep { border-top:1px solid var(--line); }
+.restbl td.red { color:var(--warn); }
+.wtinfo { font-size:12.5px; color:var(--muted); margin:0 0 6px; }
+.pagenote { margin:26px 0 0; font-size:12.5px; color:var(--faint); }
+</style>
+</head>
+<body>
+<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../skills/">職業技能</a><a href="../calc/" aria-current="page">能力值計算機</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a><a class="kd-ext" href="https://maplestockdata.vercel.app/?i=maple-sidesria&amp;tf=1h&amp;type=area" target="_blank" rel="noopener">楓股數據 ↗</a><a class="kd-mail" href="mailto:maplestockdata@gmail.com">聯絡我：maplestockdata@gmail.com</a></div></div>
+<div class="wrap">
+<header>
+  <h1>能力值計算機</h1>
+  <p class="lede">在能力值視窗上選職業、打等級、加四圍點數，再選身上的裝備，算出遊戲內能力值視窗（S 鍵）會顯示的攻擊力、防禦、命中、迴避等數值。只包含冒險家職業。</p>
+  <p class="notice">公式取自遊戲客戶端；buff 與卷軸結果由伺服器決定，請自行輸入。</p>
+</header>
+
+<div class="top">
+  <section id="equipCard" class="card">
+    <h2>裝備欄 <small>點方框挑選裝備，每件的數值都能改（例如衝卷）</small></h2>
+    <div class="board" id="board" aria-label="裝備欄"></div>
+    <p class="eqnote" id="eqnote" role="status"></p>
+    <div class="eqtools"><button type="button" class="slotbtn" id="eqClear">全部卸下</button>
+      <label class="row-inline"><input type="checkbox" id="jobFilter"> 搜尋時只列出符合目前職業與等級的裝備</label></div>
+    <label class="row-inline" style="margin-top:8px"><input type="checkbox" id="manualOn"> 不選裝備，直接輸入裝備數值的總和</label>
+    <div id="manualBox" hidden>
+      <div class="statgrid" id="manGrid"></div>
+      <div class="grid" style="margin-top:8px">
+        <label class="f wide">武器種類<select id="man-wt"></select></label>
+      </div>
+    </div>
+  </section>
+
+  <section id="results" class="card resbox" aria-live="polite">
+    <h2>能力值視窗</h2>
+    <div id="winhost"><div id="winsize"><div class="swin" id="swin"></div></div></div>
+    <p class="wtinfo" id="wtinfo" style="margin-top:8px"></p>
+    <p class="apwarn" id="apwarn" role="status"></p>
+    <p class="hint" id="apinfo"></p>
+    <p class="hint">直接在視窗上改：點「職業」選職業（法師以外二轉後旁邊有分支小選單）、點「等級」打數字、點四圍數字打要加的點數，或按住橘色加號連續加。括號內是「基礎＋加成」，細項的攻擊力、防禦、命中、迴避加成大於 0 紅字、小於 0 藍字。</p>
+  </section>
+
+</div>
+
+  <div id="inputs">
+    <section class="card span2">
+      <h2>buff <small>點一張卡開／關，會用最高等級的數值加到對應欄位</small></h2>
+      <label class="row-inline" style="margin-bottom:8px"><input type="checkbox" id="buffAll"> 顯示全部職業的 buff（預設只列目前職業學得到的）</label>
+      <div class="bgrid" id="buffList"></div>
+      <details class="fold"><summary>手動輸入 <small>疊加在點選之上</small></summary>
+      <div class="grid" id="buffGrid" style="margin-top:10px"></div></details>
+      <p class="hint">攻擊、魔攻、防禦、命中、迴避填「增加的點數」；速度與跳躍填增加的百分點（例：+20）；四圍％、攻擊％、HP％、MP％填百分比（推定：伺服器決定這些技能寫進哪一欄，這是依數值意義判斷）。buff 不改視窗的技能（魔心防禦、神聖祈禱）不列。</p>
+    </section>
+  </div>
+
+<p class="pagenote">公式與係數取自遊戲客戶端 1.15.3；附加能力（潛能）、套裝與各 buff 技能不在計算內，請用「手動修改裝備數值」或 buff 欄補上。</p>
+</div>
+
+<div id="pk" hidden>
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="pkTitle">
+    <h3><span id="pkTitle">選擇裝備</span><button type="button" class="slotbtn" id="pkClose">完成</button></h3>
+    <input type="text" id="pkQ" placeholder="打名稱或編號搜尋…" autocomplete="off">
+    <ul class="sug" id="pkList"></ul>
+    <div class="cur" id="pkCur" hidden></div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const int = v => { const n = parseInt(v, 10); return isNaN(n) ? 0 : n; };
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+// ---- 寫死的公式資料（出處：客戶端能力值視窗計算器）
+const WT_NAME = {30:'單手劍',31:'單手斧',32:'單手棍',33:'短劍',37:'短杖',38:'長杖',40:'雙手劍',41:'雙手斧',42:'雙手棍',
+  43:'槍',44:'矛',45:'弓',46:'弩',47:'拳套',48:'指虎',49:'火槍'};
+// 武器種類 → [主屬性, 最大係數, 最小係數, 副屬性]
+const COEF = {
+  30:['str',4.0,4.0,['dex']], 31:['str',4.4,3.2,['dex']], 32:['str',4.4,3.2,['dex']],
+  37:['str',4.4,3.2,['dex']], 38:['str',4.4,3.2,['dex']],
+  40:['str',4.6,4.6,['dex']], 41:['str',4.8,3.4,['dex']], 42:['str',4.8,3.4,['dex']],
+  43:['str',5.0,3.0,['dex']], 44:['str',5.0,3.0,['dex']],
+  45:['dex',3.4,3.4,['str']], 46:['dex',3.6,3.6,['str']], 47:['luk',3.6,3.6,['str','dex']],
+  48:['str',4.8,4.8,['dex']], 49:['dex',3.6,3.6,['str']]
+};
+function coefOf(wt, job){
+  const cat = Math.floor(job/100)%10;
+  if (wt === 33) return cat === 4 ? ['luk',3.6,3.6,['str','dex']] : ['str',4.0,4.0,['dex']];
+  if (wt === 39) return job === 500 ? ['str',3.0,3.0,['dex']] : ['str',4.2,4.2,['dex']];
+  return COEF[wt] || null;
+}
+const AMMO_PREFIX = {45:2060, 46:2061, 47:2070, 49:2330};
+// 熟練度技能：武器種類 → 規則
+const MASTERY_RULE = {
+  30:{first:[1100000,1200000]}, 40:{first:[1100000,1200000]},
+  31:{first:[1100001]}, 41:{first:[1100001]}, 32:{first:[1200001]}, 42:{first:[1200001]},
+  33:{first:[4200000]}, 43:{first:[1300000], add:[1321007]}, 44:{first:[1300001], add:[1321007]},
+  45:{first:[3100000], upg:3120005}, 46:{first:[3200000], upg:3220004},
+  47:{first:[4100000]}, 48:{first:[5100001]}, 49:{first:[5200000]}
+};
+const MASTERY4 = new Set([3120005,3220004,1321007]);   // 4 轉精通：等級 >120 才算（有技能書的情況），其餘被動依職業與等級自動點滿
+const SHIELD_SK = [1110001, 1210001, 4210000];
+const ACC_SK = [3000000, 4000000, 5000000];
+const SPEED_SK = [3110000, 3210000];
+
+const STAT_KEYS = [['STR','STR'],['DEX','DEX'],['INT','INT'],['LUK','LUK'],['MHP','MHP'],['MMP','MMP'],['PAD','物攻'],['MAD','魔攻'],
+  ['PDD','物防'],['MDD','魔防'],['ACC','命中'],['EVA','迴避'],['CRAFT','手技'],['SPEED','速度'],['JUMP','跳躍']];
+const SLOTS = [
+  {k:'wpn',n:'武器',s:'武器'},{k:'shield',n:'盾牌',s:'盾牌'},{k:'hat',n:'帽子',s:'帽子'},{k:'top',n:'上衣',s:'上衣'},
+  {k:'suit',n:'套服',s:'套服'},{k:'bottom',n:'褲裙',s:'褲裙'},{k:'glove',n:'手套',s:'手套'},{k:'shoe',n:'鞋子',s:'鞋子'},
+  {k:'cape',n:'披風',s:'披風'},{k:'face',n:'臉飾',s:'臉飾'},{k:'eye',n:'眼飾',s:'眼飾'},{k:'ear',n:'耳環',s:'耳環'},
+  {k:'pend',n:'墜飾',s:'墜飾'},{k:'belt',n:'腰帶',s:'腰帶'},{k:'medal',n:'勳章',s:'勳章'},
+  {k:'ring1',n:'戒指 1',s:'戒指'},{k:'ring2',n:'戒指 2',s:'戒指'},{k:'ring3',n:'戒指 3',s:'戒指'},{k:'ring4',n:'戒指 4',s:'戒指'}
+];
+const BUFFS = [['pad','攻擊'],['mad','魔攻'],['pdd','物防'],['mdd','魔防'],['acc','命中'],['eva','迴避'],['speed','速度'],['jump','跳躍'],
+  ['stat','四圍 %（推定）'],['atk','攻擊 %（推定）'],['hp','HP %（推定）'],['mp','MP %（推定）']];
+const BUFF_LABEL = {pad:'攻擊',mad:'魔攻',pdd:'物防',mdd:'魔防',acc:'命中',eva:'迴避',speed:'移動速度',jump:'跳躍力',stat:'四圍%',atk:'攻擊%、魔攻%',hp:'HP%',mp:'MP%'};
+const BUFF_PCT = {stat:1, atk:1, hp:1, mp:1};
+const AP_PER_LEVEL = 5, AP_MAIN = 13, AP_OTHER = 4;
+const AP_KEYS = ['str','dex','int','luk'];
+// 視窗上的六個職業選項；轉數由等級決定（b1 = 一轉等級），二轉以後的分支依武器或分支小選單
+// br = 二轉職業編號（三轉 +1、四轉 +2）；brs = 小選單短名；auto = 依武器自動挑
+const CATS = [
+  {k:'war',  n:'劍士',       base:100, b1:10, br:[110,120,130], brs:['狂戰','騎士','槍騎'], main:'str'},
+  {k:'mage', n:'法師',       base:200, b1:8,  br:[210,220,230], brs:['火毒','冰雷','僧侶'], main:'int'},
+  {k:'thief',n:'盜賊',       base:400, b1:10, br:[410,420],     brs:['刺客','俠盜'],         main:'luk'},
+  {k:'arch', n:'弓箭手',     base:300, b1:10, br:[310,320],     brs:['獵人','弩手'],         main:'dex'},
+  {k:'pirB', n:'海盜（打）', base:500, b1:10, br:[510],         brs:['打手'],                main:'str'},
+  {k:'pirG', n:'海盜（槍）', base:500, b1:10, br:[520],         brs:['槍手'],                main:'dex'}
+];
+const catOf = k => CATS.filter(c => c.k === k)[0] || CATS[0];
+const tierOf = (c, lvl) => lvl >= 120 ? 4 : lvl >= 70 ? 3 : lvl >= 30 ? 2 : lvl >= c.b1 ? 1 : 0;
+function branchIdx(c, wt, branch){
+  if (c.br.length === 1) return 0;
+  if (branch >= 0 && branch < c.br.length) return branch;
+  if (c.k === 'war') return (wt === 32 || wt === 42) ? 1 : (wt === 43 || wt === 44) ? 2 : 0;   // 劍斧→狂戰士、鈍器→見習騎士、槍矛→槍騎兵
+  if (c.k === 'arch') return wt === 46 ? 1 : 0;
+  if (c.k === 'thief') return wt === 33 ? 1 : 0;
+  return 0;
+}
+function jobFor(catK, lvl, wt, branch){
+  const c = catOf(catK), t = tierOf(c, lvl);
+  if (t === 0) return 0;
+  if (t === 1) return c.base;
+  return c.br[branchIdx(c, wt, branch)] + (t - 2);
+}
+const curWt = S => S.manual ? int(S.manWt) : (S.slots.wpn ? int(S.slots.wpn.wt) : 0);
+const jobNow = () => jobFor(S.cat, clamp(int(S.lvl) || 1, 1, 200), curWt(S), S.branch);
+function baseStats(catK){ const m = catOf(catK).main, o = {}; AP_KEYS.forEach(k => o[k] = k === m ? AP_MAIN : AP_OTHER); return o; }
+const apTotal = lvl => AP_PER_LEVEL * Math.max(0, lvl - 1);
+const apUsed = ap => AP_KEYS.reduce((a, k) => a + Math.max(0, int(ap[k])), 0);
+const MHP0 = 50, MMP0 = 5;    // HP／MP 原始值先用預設（之後依職業等級換算另開單）
+
+let D = null;          // {equips, ammo, sk}
+let S = null;          // 目前輸入狀態
+const KEY = 'kd-calc-v3';
+
+function blankSt(){ const o = {}; STAT_KEYS.forEach(([k]) => o[k] = 0); return o; }
+function defaultState(){
+  const s = {cat:'war', branch:-1, lvl:1, ap:{str:0,dex:0,int:0,luk:0}, slots:{}, manual:false, man:blankSt(), manWt:0,
+    ammo:0, buff:{}, bchk:{}, buffAll:false, detail:true, m:'', filter:false};
+  BUFFS.forEach(([k]) => s.buff[k] = 0);
+  return s;
+}
+function saveState(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function loadState(){
+  const d = defaultState();
+  try {
+    const t = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (t && typeof t === 'object') {
+      Object.keys(d).forEach(k => { if (t[k] !== undefined) d[k] = t[k]; });
+      BUFFS.forEach(([k]) => { if (d.buff[k] === undefined) d.buff[k] = 0; });
+    }
+  } catch(e){}
+  return d;
+}
+
+// ---- 職業
+const jobById = () => { const m = {}; D.sk.jobs.forEach(j => m[j.id] = j); return m; };
+function jobChain(job){
+  const jm = jobById(), out = new Set();
+  let id = job;
+  while (id != null && jm[id]) { out.add(id); id = jm[id].p; }
+  return out;
+}
+// 被動技能與熟練度：依職業與等級自動視為點滿（職業鏈裡有這個技能就用最高等級；4 轉精通要等級超過 120）
+function skLevel(id, chain, lvl){
+  const sk = D.sk.skills[id];
+  if (!sk || !chain.has(sk.job)) return 0;
+  if (MASTERY4.has(id) && lvl <= 120) return 0;
+  return sk.max;
+}
+function skVal(id, key, chain, lvl){
+  const n = skLevel(id, chain, lvl);
+  if (n <= 0) return 0;
+  return D.sk.skills[id].lv[n-1][key] || 0;
+}
+
+// ---- buff：勾選（最高等級數值）＋手動輸入
+function buffVisible(e, chain){ return S.buffAll || e.jobs.some(j => chain.has(j)); }
+function buffSum(chain){
+  const t = {}; BUFFS.forEach(([k]) => t[k] = int(S.buff[k]));
+  (D.buffs || []).forEach(e => {
+    if (!S.bchk[e.k] || !buffVisible(e, chain)) return;
+    Object.keys(e.eff).forEach(k => { t[k] = (t[k] || 0) + e.eff[k]; });
+  });
+  return t;
+}
+
+// ---- 計算（照客戶端公式的順序與取整）
+function compute(S){
+  const lvl = clamp(int(S.lvl) || 1, 1, 200), job = jobFor(S.cat, lvl, curWt(S), S.branch), cat = Math.floor(job/100)%10;
+  const chain = jobChain(job);
+  // 裝備加總
+  const sum = blankSt();
+  let wt = 0;
+  if (S.manual) {
+    STAT_KEYS.forEach(([k]) => sum[k] = int(S.man[k]));
+    wt = int(S.manWt);
+  } else {
+    const shLv = SHIELD_SK.filter(id => skLevel(id, chain, lvl) > 0)[0];
+    const shPct = shLv ? skVal(shLv, 'x', chain, lvl) : 100;
+    SLOTS.forEach(sl => {
+      const e = S.slots[sl.k];
+      if (!e) return;
+      STAT_KEYS.forEach(([k]) => {
+        let v = int(e.st && e.st[k]);
+        if (sl.k === 'shield' && k === 'PDD') v = Math.floor(v * shPct / 100);
+        sum[k] += v;
+      });
+    });
+    const w = S.slots.wpn;
+    wt = w ? int(w.wt) : 0;
+  }
+  const noWeapon = wt === 0;
+  const wtEff = noWeapon ? (cat === 5 ? 39 : 0) : wt;   // 沒拿武器的海盜系當空手算
+  // 四圍
+  const base0 = baseStats(S.cat), raw = {};
+  AP_KEYS.forEach(k => raw[k] = base0[k] + Math.max(0, int(S.ap[k])));
+  const B = buffSum(chain);
+  const statPct = B.stat;
+  const tot = {};
+  ['str','dex','int','luk'].forEach(k => {
+    tot[k] = raw[k] + sum[k.toUpperCase()] + Math.floor(raw[k] * statPct / 100);
+  });
+  // HP／MP
+  const mhpBase = MHP0, mmpBase = MMP0;
+  const mhp = Math.floor((mhpBase + sum.MHP) * (100 + B.hp) / 100);
+  const mmp = Math.floor((mmpBase + sum.MMP) * (100 + B.mp) / 100);
+  // 攻擊力
+  let padBase = sum.PAD;
+  if (noWeapon && cat === 5) padBase += Math.floor(Math.min(10 + 0.7 * lvl, 31));
+  padBase = clamp(padBase, 0, 1999);
+  const buffPad = B.pad;
+  let ammoPad = 0;
+  if (AMMO_PREFIX[wt] && S.ammo) {
+    const a = D.ammo.filter(x => x.i === S.ammo)[0];
+    if (a && Math.floor(a.i / 1000) === AMMO_PREFIX[wt]) ammoPad = a.p;
+  }
+  const atkPct = B.atk;
+  const padTot = clamp(Math.floor((padBase + buffPad + ammoPad) * (100 + atkPct) / 100), 0, 1999);
+  // 熟練度：2 轉精通依職業與等級自動點滿（沒到 2 轉、或職業學不到這把武器的精通 → 10%）；
+  // Lv121 起 4 轉精通（弓弩取代、槍矛相加）也算點滿
+  let mAuto = 0;
+  const rule = MASTERY_RULE[wt];
+  if (rule && !noWeapon) {
+    const f = rule.first.filter(id => skLevel(id, chain, lvl) > 0)[0];
+    mAuto = f ? skVal(f, 'mastery', chain, lvl) : 0;
+    if (rule.upg && skLevel(rule.upg, chain, lvl) > 0) mAuto = skVal(rule.upg, 'mastery', chain, lvl);
+    (rule.add || []).forEach(id => { mAuto += skVal(id, 'mastery', chain, lvl); });
+  }
+  const mOv = String(S.m).trim() === '' ? null : int(S.m);
+  let m = mOv === null ? mAuto : mOv;
+  if (wtEff === 39 || wtEff === 0) m = (mOv === null ? 0 : m);
+  const mastery = (m * 5 + 10) / 100;
+  let atk = '0', amin = 0, amax = 0;
+  const cf = coefOf(wtEff, job);
+  if (cf) {
+    const [mainK, maxC, minC, subK] = cf;
+    const main = tot[mainK];
+    const sub = subK.reduce((a, k) => a + tot[k], 0);
+    const t = mastery * 0.9 * (main * minC);
+    amin = Math.floor(padTot * (sub + t) / 100);
+    amax = Math.floor(padTot * (main * maxC + sub) / 100);
+    atk = amin + ' ~ ' + amax;
+  }
+  // 命中／迴避
+  let accB, evaB;
+  if (Math.floor(job/10) === 51) { accB = Math.floor(tot.dex*0.9 + tot.luk*0.3); evaB = Math.floor(tot.dex*1.5 + Math.floor(tot.luk/2)); }
+  else if (Math.floor(job/10) === 52) { accB = Math.floor(tot.dex*0.6 + tot.luk*0.3); evaB = Math.floor(tot.dex/8) + Math.floor(tot.luk/2); }
+  else if (cat >= 3) { accB = Math.floor(tot.dex*0.6 + tot.luk*0.3); evaB = Math.floor(tot.dex/4) + Math.floor(tot.luk/2); }
+  else { accB = Math.floor(tot.dex*0.8 + tot.luk*0.5); evaB = Math.floor(tot.dex/4) + Math.floor(tot.luk/2); }
+  let accP = 0, evaP = 0;
+  ACC_SK.forEach(id => { accP += skVal(id, 'x', chain, lvl); evaP += skVal(id, 'y', chain, lvl); });
+  accB = clamp(accB + sum.ACC + accP, 0, 999);
+  evaB = clamp(evaB + sum.EVA + evaP, 0, 999);
+  const accT = clamp(accB + B.acc, 0, 999);
+  const evaT = clamp(evaB + B.eva, 0, 999);
+  // 防禦、魔攻、手技
+  const pddB = clamp(sum.PDD, 0, 1999), pddT = clamp(pddB + B.pdd, 0, 1999);
+  const madB = clamp(tot.int + sum.MAD, 0, 1999);
+  const madT = clamp(Math.floor((madB + B.mad) * (100 + atkPct) / 100), 0, 1999);
+  const mddB = clamp(tot.int + sum.MDD, 0, 1999), mddT = clamp(mddB + B.mdd, 0, 1999);
+  const craft = tot.dex + tot.int + tot.luk + sum.CRAFT;
+  // 速度、跳躍
+  let spd = 100 + sum.SPEED;
+  SPEED_SK.forEach(id => { spd += skVal(id, 'speed', chain, lvl); });
+  const spdT = clamp(spd + B.speed, 100, 140);
+  const jmpT = clamp(100 + sum.JUMP + B.jump, 100, 123);
+  return {atk, amin, amax, wt, wtEff, m, mastery, job, tier: tierOf(catOf(S.cat), lvl), padTot, padPlain: padBase + ammoPad, lvl,
+    pdd:[pddT, pddB], mad:[madT, madB], mdd:[mddT, mddB], acc:[accT, accB], eva:[evaT, evaB],
+    craft:[craft, craft], spd:spdT, jmp:jmpT,
+    str:[tot.str, raw.str], dex:[tot.dex, raw.dex], int:[tot.int, raw.int], luk:[tot.luk, raw.luk],
+    mhp:[mhp, mhpBase], mmp:[mmp, mmpBase], madPct: atkPct !== 0, apMax: apTotal(lvl), apUsed: apUsed(S.ap), B};
+}
+
+// ---- 能力值視窗（座標取自客戶端介面；細項面板座標相對細項面板左上）
+const A = '../assets/calc/';
+const MAIN_CELLS = [['name',61,32],['guild',61,86],['hp',61,104],['mp',61,122],['exp',61,140],['pop',61,158]];
+const STAT_CELLS = [['str',61,234],['dex',61,252],['int',61,270],['luk',61,288]];
+const DETAIL_CELLS = [['atk',77,7],['pdd',77,25],['mad',77,43],['mdd',77,61],['acc',77,79],['eva',77,97],['craft',77,115],['spd',77,133],['jmp',77,151]];
+const PLUS_Y = {str:237, dex:255, int:273, luk:291};
+const JOB_X = 61, JOB_Y = 50, JOB_W = 105, BR_W = 52;
+function buildWindow(){
+  const cell = (id, x, y, w) => '<div class="c" id="r-' + id + '" style="left:' + x + 'px;top:' + y + 'px;width:' + w + 'px"></div>';
+  $('#swin').innerHTML =
+    '<div class="swd" id="swd"><img src="' + A + 'stat_bg2.png" width="177" height="203" alt="">' +
+      DETAIL_CELLS.map(([id, x, y]) => cell(id, x, y, 90)).join('') +
+      '<button type="button" class="ib" id="swHide" style="left:155px;top:182px" title="收合細項" aria-label="收合細項"><img src="' + A + 'detail_hide.png" width="12" height="12" alt=""></button></div>' +
+    '<div class="swm"><img src="' + A + 'stat_bg.png" width="175" height="337" alt="">' +
+      MAIN_CELLS.map(([id, x, y]) => cell(id, x, y, 105)).join('') +
+      // 職業：點下去出現下拉（六個選項）；二轉以後旁邊多一個分支小選單
+      '<div class="c jobcell" id="r-job" style="left:' + JOB_X + 'px;top:' + JOB_Y + 'px;width:' + JOB_W + 'px" title="點一下選職業"><span class="jobtx" id="r-jobtx"></span>' +
+        '<select class="ov" id="selCat" aria-label="職業" style="left:0;top:0;width:100%;height:16px">' + CATS.map(c => '<option value="' + c.k + '">' + c.n + '</option>').join('') + '</select></div>' +
+      '<select class="br" id="selBr" aria-label="職業分支" title="二轉以後的分支（預設依武器）" style="left:' + (JOB_X + JOB_W - BR_W) + 'px;top:' + JOB_Y + 'px;width:' + BR_W + 'px" hidden></select>' +
+      // 等級：直接輸入 1～200
+      '<div class="c lvcell" id="r-lvl" style="left:61px;top:68px;width:105px" title="直接輸入等級（1～200）"><input class="cin" id="lvIn" type="number" min="1" max="200" inputmode="numeric" aria-label="等級"></div>' +
+      // 四圍：點數字輸入加點數；右邊橘色加號按一下 +1、按住連續加
+      STAT_CELLS.map(([k, x, y]) => '<div class="c statcell" id="r-' + k + '" data-stat="' + k + '" style="left:' + x + 'px;top:' + y + 'px;width:90px" title="點一下輸入要加的點數"><span class="stx" id="r-' + k + '-t"></span>' +
+        '<input class="cin" id="ap-' + k + '" type="number" min="0" inputmode="numeric" aria-label="' + k.toUpperCase() + ' 加點數"></div>').join('') +
+      '<div class="c" id="r-ap" style="left:75px;top:204px;width:50px"></div>' +
+      AP_KEYS.map(k => '<button type="button" class="ib" data-plus="' + k + '" style="left:153px;top:' + PLUS_Y[k] + 'px" title="加 1 點（按住連續加）" aria-label="' + k.toUpperCase() + ' 加 1 點"><img src="' + A + 'ap_plus.png" width="12" height="12" alt=""></button>').join('') +
+      '<button type="button" class="ib" id="swAuto" disabled style="left:97px;top:187px" title="計算機不提供自動配點" aria-label="自動配點（不提供）"><img src="' + A + 'bt_auto_off.png" width="73" height="35" alt=""></button>' +
+      '<button type="button" class="ib" id="swDetail" style="left:124px;top:314px" title="展開／收合細項" aria-label="展開或收合細項"><img src="' + A + 'bt_detail.png" width="63" height="19" alt=""></button>' +
+    '</div>';
+}
+let winMode = 'side';
+function layoutWindow(){
+  const host = $('#winhost'), size = $('#winsize'), win = $('#swin'), det = $('#swd');
+  const avail = host.clientWidth || 347;
+  const show = !!S.detail;
+  winMode = avail >= 347 ? 'side' : 'stack';
+  det.style.display = show ? '' : 'none';
+  let w, h;
+  if (winMode === 'side') { det.style.left = '170px'; det.style.top = '134px'; w = show ? 347 : 175; h = 337; }
+  else { det.style.left = '0px'; det.style.top = '345px'; w = 177; h = show ? 548 : 337; }
+  const sc = Math.min(2, avail / w);
+  win.style.width = w + 'px'; win.style.height = h + 'px';
+  win.style.transform = sc !== 1 ? 'scale(' + sc + ')' : 'none';
+  size.style.width = Math.round(w * sc) + 'px'; size.style.height = Math.round(h * sc) + 'px';
+}
+const fmt = ([t, b]) => t === b ? String(t) : t + ' (' + b + (t - b >= 0 ? '+' : '-') + Math.abs(t - b) + ')';
+let brFor = '';
+function syncJobUi(r){
+  const c = catOf(S.cat), lvl = clamp(int(S.lvl) || 1, 1, 200);
+  const j = D.sk.jobs.filter(x => x.id === r.job)[0] || {n:''};
+  const jn = j.n.replace(/[（(].*?[）)]/g, '');
+  $('#r-jobtx').textContent = jn; $('#r-job').title = '職業：' + j.n + '（點一下選職業）';
+  $('#selCat').value = S.cat;
+  const showBr = r.tier >= 2 && c.br.length > 1, br = $('#selBr');
+  br.hidden = !showBr;
+  $('#r-jobtx').textContent = jn + (showBr ? '' : ' ▾');
+  $('#r-job').style.width = (showBr ? JOB_W - BR_W - 2 : JOB_W) + 'px';
+  if (showBr) {
+    if (brFor !== S.cat) {
+      br.innerHTML = (S.cat === 'mage' ? '' : '<option value="-1">自動</option>') + c.brs.map((n, i) => '<option value="' + i + '">' + n + '</option>').join('');
+      brFor = S.cat;
+    }
+    br.value = String(S.cat === 'mage' && S.branch < 0 ? 0 : S.branch);
+  }
+  const li = $('#lvIn'); if (document.activeElement !== li) li.value = lvl;
+}
+function render(){
+  const r = compute(S);
+  const set = (k, v, cls) => { const el = $('#r-' + k); el.textContent = v; el.className = 'c' + (cls ? ' ' + cls : ''); };
+  const sg = d => d > 0 ? 'up' : d < 0 ? 'dn' : '';
+  set('name', 'KargoData'); set('guild', '-');
+  syncJobUi(r);
+  set('hp', r.mhp[0] + ' / ' + r.mhp[0]); set('mp', r.mmp[0] + ' / ' + r.mmp[0]);
+  set('exp', '-'); set('pop', '-');
+  AP_KEYS.forEach(k => { $('#r-' + k + '-t').textContent = fmt(r[k]); const inp = $('#ap-' + k); if (document.activeElement !== inp) inp.value = int(S.ap[k]); });
+  set('ap', r.apMax - r.apUsed);
+  // 細項：攻擊力與其他 6 欄依「總和 − 基礎」上色；速度、跳躍不上色；魔攻有 % 加成時強制紅字
+  set('atk', r.atk, sg(r.padTot - r.padPlain));
+  set('pdd', fmt(r.pdd), sg(r.pdd[0] - r.pdd[1]));
+  set('mad', fmt(r.mad), r.madPct ? 'up' : sg(r.mad[0] - r.mad[1]));
+  set('mdd', fmt(r.mdd), sg(r.mdd[0] - r.mdd[1]));
+  set('acc', fmt(r.acc), sg(r.acc[0] - r.acc[1]));
+  set('eva', fmt(r.eva), sg(r.eva[0] - r.eva[1]));
+  set('craft', fmt(r.craft), sg(r.craft[0] - r.craft[1]));
+  set('spd', r.spd + '%'); set('jmp', r.jmp + '%');
+  const wn = r.wtEff === 39 ? '空手' : (WT_NAME[r.wt] || '無武器');
+  $('#wtinfo').textContent = '武器：' + wn + (r.wtEff ? '・熟練度 ' + Math.round(r.mastery * 100) + '%（' + (String(S.m).trim() === '' ? '自動' : '手動') + '）' : '') +
+    (r.wtEff && r.lvl > 120 && MASTERY_RULE[r.wt] && MASTERY_RULE[r.wt].upg ? '・含 4 轉精通' : '');
+  // AP 資訊
+  const b0 = baseStats(S.cat), mk = catOf(S.cat).main;
+  $('#apinfo').textContent = '初始值：' + AP_KEYS.map(k => k.toUpperCase() + ' ' + b0[k]).join('／') + '（主屬性 ' + mk.toUpperCase() + '）；可分配 ' + r.apMax + ' 點（每升 1 級 5 點），已用 ' + r.apUsed + '。創角初始四圍客戶端查不到，這是預設。' +
+    (r.job === 0 && r.lvl <= 10 ? '初心者在 1 轉或 Lv11 之前由系統自動配點（遊戲裡玩家不能自己加），這裡的加點只是模擬。' : '');
+  window.KCalcLast = r;
+  layoutWindow();
+}
+
+// ---- UI：視窗上直接改職業、等級、加點
+function writeBasic(){
+  if (!CATS.some(c => c.k === S.cat)) S.cat = 'war';
+  S.lvl = clamp(int(S.lvl) || 1, 1, 200);
+  $('#buffAll').checked = !!S.buffAll;
+  $('#manualOn').checked = !!S.manual; $('#jobFilter').checked = !!S.filter;
+  $('#manualBox').hidden = !S.manual;
+  BUFFS.forEach(([k]) => $('#bf-' + k).value = S.buff[k]);
+  STAT_KEYS.forEach(([k]) => $('#man-' + k).value = S.man[k]);
+  $('#man-wt').value = S.manWt;
+}
+
+// ---- UI：解剖圖式裝備欄（格子座標＝版面自訂：人物在中央，格子在左右兩側與下方，用細線連到身體對應部位）
+// CELLS：k＝S.slots 的鍵；lb＝方框上的中文說明字（沒裝備時顯示）；types＝可放的裝備分類；x,y＝格子左上；g＝手機版排在上排(t)或下排(b)
+const CELLS = [
+  {k:'hat',  lb:'帽子',      n:'帽子',      types:['帽子'], x:0,   y:0,   g:'t'},
+  {k:'face', lb:'臉飾',      n:'臉飾',      types:['臉飾'], x:0,   y:80,  g:'t'},
+  {k:'eye',  lb:'眼飾',      n:'眼飾',      types:['眼飾'], x:0,   y:160, g:'t'},
+  {k:'shield',lb:'盾牌',     n:'盾牌',      types:['盾牌'], x:0,   y:240, g:'t'},
+  {k:'glove',lb:'手套',      n:'手套',      types:['手套'], x:0,   y:320, g:'b'},
+  {k:'bottom',lb:'褲裙',     n:'褲裙',      types:['褲裙'], x:0,   y:400, g:'b'},
+  {k:'shoe', lb:'鞋子',      n:'鞋子',      types:['鞋子'], x:0,   y:480, g:'b'},
+  {k:'ear',  lb:'耳環',      n:'耳環',      types:['耳環'], x:432, y:0,   g:'t', r:1},
+  {k:'pend', lb:'墜飾',      n:'墜飾',      types:['墜飾'], x:432, y:80,  g:'t', r:1},
+  {k:'cape', lb:'披風',      n:'披風',      types:['披風'], x:432, y:160, g:'t', r:1},
+  {k:'top',  lb:'上衣／套服', n:'上衣／套服', types:['上衣','套服'], x:432, y:240, g:'t', r:1},
+  {k:'wpn',  lb:'武器',      n:'武器',      types:['武器'], x:432, y:320, g:'b', r:1},
+  {k:'belt', lb:'腰帶',      n:'腰帶',      types:['腰帶'], x:432, y:400, g:'b', r:1},
+  {k:'ammo', lb:'彈藥',      n:'彈藥',      types:[],       x:432, y:480, g:'b', r:1},
+  {k:'medal',lb:'勳章',      n:'勳章',      types:['勳章'], x:76,  y:560, g:'b'},
+  {k:'ring1',lb:'戒指',      n:'戒指 1',    types:['戒指'], x:146, y:560, g:'b'},
+  {k:'ring2',lb:'戒指',      n:'戒指 2',    types:['戒指'], x:216, y:560, g:'b'},
+  {k:'ring3',lb:'戒指',      n:'戒指 3',    types:['戒指'], x:286, y:560, g:'b'},
+  {k:'ring4',lb:'戒指',      n:'戒指 4',    types:['戒指'], x:356, y:560, g:'b'}
+];
+const cellByK = k => CELLS.filter(c => c.k === k)[0];
+const TWO_H = wt => wt >= 40 && wt <= 44;      // 雙手武器（劍、斧、棍、槍、矛）：遊戲裡 vslot 佔盾牌格
+let ATLAS = null, curCell = null;
+function slotKeyOf(c){ return c.k === 'top' ? (S.slots.suit ? 'suit' : 'top') : c.k; }
+const AMMO_NAME = {45:'箭', 46:'弩箭', 47:'飛鏢', 49:'子彈'};
+function itemAt(c){
+  if (c.k === 'ammo') { const a = S.ammo && D.ammo.filter(x => x.i === S.ammo)[0]; return a ? {id:a.i, name:a.n, ammo:true, p:a.p} : null; }
+  return S.slots[slotKeyOf(c)] || null;
+}
+function iconStyle(id, box){
+  const p = ATLAS && ATLAS.pos[id]; if (!p) return '';
+  const sc = Math.min(2, box / Math.max(p[3], p[4]));
+  const w = p[3] * sc, h = p[4] * sc;
+  return 'width:' + w + 'px;height:' + h + 'px;left:' + ((box - w) / 2) + 'px;top:' + ((box - h) / 2) + 'px;' +
+    'background-image:url(../assets/' + ATLAS.sheets[p[0]] + ');background-size:' + (ATLAS.w[p[0]] * sc) + 'px ' + (ATLAS.h[p[0]] * sc) + 'px;' +
+    'background-position:' + (-p[1] * sc) + 'px ' + (-p[2] * sc) + 'px;';
+}
+// ---- 紙娃娃：身體錨點對齊、依遊戲的圖層順序與遮擋規則疊圖
+// 資料：../assets/doll/{rules,base,<部位>}.json 與 png/；選了那件裝備才下載該部位 json 與那件的圖
+const DOLL = {rules:null, base:null, slotP:{}, imgP:{}, sig:'', tok:0, FX:85, FY:138};
+const DOLL_MIN = -2147483648;
+const DOLL_SLOT = {hat:'cap', top:'top', suit:'suit', bottom:'bottom', shoe:'shoe', glove:'glove', cape:'cape', shield:'shield', face:'face', eye:'eye', ear:'ear', wpn:'wpn'};
+const DOLL_ORDER = ['hat','top','suit','bottom','shoe','glove','cape','shield','face','eye','ear','wpn'];
+function dollJson(u){ return fetch('../assets/doll/' + u).then(r => { if (!r.ok) throw 0; return r.json(); }); }
+function dollSlot(sl){ return DOLL.slotP[sl] || (DOLL.slotP[sl] = dollJson(sl + '.json').catch(() => ({}))); }
+function dollImg(f){
+  if (!f) return Promise.resolve(null);
+  return DOLL.imgP[f] || (DOLL.imgP[f] = new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = '../assets/doll/png/' + f; }));
+}
+const dollPairs = s => { const o = []; for (let i = 0; i + 1 < (s || '').length; i += 2) o.push(s.substr(i, 2)); return o; };
+function dollCompose(parts, stand, hasCap, R){
+  // parts: [{ent, isBody}] 依載入順序（身→頭→臉→髮→裝備）
+  let pieces = [];
+  parts.forEach(pt => {
+    const isl = dollPairs(pt.ent.i), vsl = dollPairs(pt.ent.v);
+    const prio = isl.length ? Math.max.apply(null, isl.map(c => R.prio[c] === undefined ? DOLL_MIN : R.prio[c])) : DOLL_MIN;
+    (pt.ent.p[stand] || []).forEach(pc => {
+      if (!hasCap && pc.n === 'backHairBelowCap') return;
+      const z = pc.z, zp = R.prio[z.trim()] === undefined ? DOLL_MIN : R.prio[z.trim()];
+      const sm = dollPairs(R.smap[z] || '');
+      pieces.push({pt, pc, zp, prio, slots: vsl.filter(c => sm.indexOf(c) >= 0), vis: true});
+    });
+  });
+  pieces = pieces.map((p, i) => [p, i]).sort((a, b) => a[0].zp - b[0].zp || a[1] - b[1]).map(x => x[0]);
+  const owner = {};
+  if (!hasCap) { owner.H4 = null; owner.H5 = null; }
+  pieces.forEach(p => {
+    p.vis = true;
+    for (const c of p.slots) {
+      if (!(c in owner)) { owner[c] = p; continue; }
+      const o = owner[c];
+      if (o === null) { p.vis = false; break; }
+      const d = o.prio - p.prio;
+      if (d === 0) continue;
+      if (d > 0) { p.vis = false; break; }
+      o.vis = false; owner[c] = p;
+    }
+  });
+  const anchors = {}, placed = [];
+  const first = pieces.filter(x => x.pt.isBody && x.pc.n === 'body');
+  first.forEach(x => { placed.push([x, [0, 0]]); Object.assign(anchors, x.pc.m); });
+  let rest = pieces.filter(x => first.indexOf(x) < 0);
+  while (rest.length) {
+    let prog = false;
+    rest.slice().forEach(x => {
+      const k = Object.keys(x.pc.m).filter(k => k in anchors)[0];
+      if (k === undefined) return;
+      const pos = [anchors[k][0] - x.pc.m[k][0], anchors[k][1] - x.pc.m[k][1]];
+      Object.keys(x.pc.m).forEach(k2 => { if (!(k2 in anchors)) anchors[k2] = [pos[0] + x.pc.m[k2][0], pos[1] + x.pc.m[k2][1]]; });
+      placed.push([x, pos]); rest.splice(rest.indexOf(x), 1); prog = true;
+    });
+    if (!prog) break;
+  }
+  return placed.filter(t => t[0].vis && t[0].pc.f)
+    .map((t, i) => [t, i]).sort((a, b) => a[0][0].zp - b[0][0].zp || a[1] - b[1]).map(x => x[0]);
+}
+async function dollRender(){
+  const cv = $('#doll'); if (!cv) return;
+  const eq = [];
+  DOLL_ORDER.forEach(k => { const e = S.slots[k]; if (e && e.id) eq.push([k, e.id]); });
+  const sig = eq.map(x => x.join(':')).join(',');
+  if (sig === DOLL.sig && DOLL.drawn) return;
+  DOLL.sig = sig; const tok = ++DOLL.tok;
+  try {
+    if (!DOLL.rules) DOLL.rules = dollJson('rules.json');
+    if (!DOLL.base) DOLL.base = dollJson('base.json');
+    const [R, B] = await Promise.all([DOLL.rules, DOLL.base]);
+    const list = await Promise.all(eq.map(x => dollSlot(DOLL_SLOT[x[0]]).then(j => j[x[1]] || null)));
+    const ents = list.filter(Boolean);
+    const wp = list[eq.findIndex(x => x[0] === 'wpn')];
+    const stand = wp && wp.p.stand2 && !wp.p.stand1 ? 'stand2' : 'stand1';
+    const hasCap = eq.some((x, i) => x[0] === 'hat' && list[i]);
+    const parts = [{ent:B.body, isBody:true}, {ent:B.head}, {ent:B.face}, {ent:B.hair}].concat(ents.map(e => ({ent:e})));
+    const out = dollCompose(parts, stand, hasCap, R);
+    const imgs = await Promise.all(out.map(t => dollImg(t[0].pc.f)));
+    if (tok !== DOLL.tok) return;
+    const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height);
+    out.forEach((t, i) => { if (imgs[i]) g.drawImage(imgs[i], DOLL.FX + t[1][0] - t[0].pc.o[0], DOLL.FY + t[1][1] - t[0].pc.o[1]); });
+    DOLL.drawn = true;
+  } catch (err) { DOLL.sig = ''; }
+}
+function buildBoard(){
+  $('#board').innerHTML = '<canvas class="doll" id="doll" width="170" height="150" aria-label="紙娃娃預覽"></canvas>' +
+    CELLS.map(c => '<button type="button" class="cell" data-cell="' + c.k + '" data-g="' + c.g + '" style="left:' + c.x + 'px;top:' + c.y + 'px" aria-label="' + c.n + '"></button>').join('');
+}
+function renderBoard(){
+  CELLS.forEach(c => {
+    const el = document.querySelector('.cell[data-cell="' + c.k + '"]'); if (!el) return;
+    const e = itemAt(c);
+    el.style.backgroundImage = 'url(../assets/calc/eq_blank.png)';
+    let h = '';
+    if (!e) h = '<span class="lb">' + c.lb + '</span>';
+    else {
+      if (e.id && ATLAS && ATLAS.pos[e.id]) h = '<i class="ic" style="' + iconStyle(e.id, 64) + '"></i>';
+      else h = '<span class="mk" style="left:3px;right:3px;bottom:auto;top:26px;text-align:center;color:#5b7b9e">' + (e.id ? '無圖示' : '自訂') + '</span>';
+    }
+    el.innerHTML = h;
+    let occ = false, why = '';
+    if (c.k === 'bottom' && S.slots.suit) { occ = true; why = '（穿套服時不用穿褲裙）'; }
+    if (c.k === 'shield' && S.slots.wpn && TWO_H(int(S.slots.wpn.wt))) { occ = true; why = '（雙手武器不能拿盾牌）'; }
+    if (c.k === 'ammo' && !AMMO_PREFIX[curWt(S)]) { occ = true; why = '（先裝備弓、弩、拳套或火槍才能選彈藥）'; }
+    el.classList.toggle('occ', occ && !e);
+    el.title = c.n + (e ? '：' + e.name : '') + why;
+  });
+  $('#board').classList.toggle('off', !!S.manual);
+  dollRender();
+}
+function note(msg){ $('#eqnote').textContent = msg || ''; }
+function statInputs(prefix, st){
+  return STAT_KEYS.map(([k, n]) => '<label class="f">' + n + '<input type="number" data-k="' + k + '" value="' + int(st && st[k]) + '"></label>').join('');
+}
+function wtOptions(){
+  return '<option value="0">無武器</option>' + Object.keys(WT_NAME).map(c => '<option value="' + c + '">' + WT_NAME[c] + '</option>').join('');
+}
+function sugFor(c, q){
+  const ql = q.trim().toLowerCase();
+  if (c.k === 'ammo') {
+    const pre = AMMO_PREFIX[curWt(S)];
+    return pre ? D.ammo.filter(a => Math.floor(a.i / 1000) === pre && (!ql || a.n.toLowerCase().indexOf(ql) >= 0 || String(a.i).indexOf(ql) === 0)).map(a => ({i:a.i, n:a.n, p:a.p, ammo:true})) : [];
+  }
+  const catName = {war:'劍士', mage:'法師', arch:'弓箭手', thief:'盜賊', pirB:'海盜', pirG:'海盜'}[S.cat];
+  let list = D.equips.filter(e => c.types.indexOf(e.s) >= 0 && (!ql || e.n.toLowerCase().indexOf(ql) >= 0 || String(e.i).indexOf(ql) === 0));
+  if (S.filter) list = list.filter(e => e.l <= S.lvl && (e.j === '全職業' || e.j.indexOf(catName) >= 0));
+  list.sort((a, b) => a.l - b.l || a.i - b.i);
+  return list.slice(0, 40);
+}
+function itemInfo(e){
+  if (e.ammo) return '攻擊 +' + e.p + '　#' + e.i;
+  const bits = ['Lv.' + e.l, e.j || ''];
+  if (e.w) bits.push(e.w);
+  STAT_KEYS.forEach(([k, n]) => { if (e[k]) bits.push(n + '+' + e[k]); });
+  return bits.filter(Boolean).join('・') + '　#' + e.i;
+}
+function renderPickList(){
+  const c = curCell, e0 = itemAt(c), q = $('#pkQ').value;
+  const list = sugFor(c, (e0 && q === e0.name) ? '' : q);
+  $('#pkList').innerHTML = list.length ? list.map(e => {
+    const ic = ATLAS && ATLAS.pos[e.i] ? '<i style="' + iconStyle(e.i, 36).replace(/left:[^;]*;top:[^;]*;/, '') + '"></i>' : '';
+    return '<li data-i="' + e.i + '"><span class="ico">' + ic + '</span><span>' + esc(e.n) + '<small>' + esc(itemInfo(e)) + '</small></span></li>';
+  }).join('') : '<li class="none">' + (c.k === 'ammo' && !AMMO_PREFIX[curWt(S)] ? '請先在武器格裝備弓、弩、拳套或火槍，才能選彈藥。' : '沒有符合的' + (c.k === 'ammo' ? '彈藥' : '裝備')) + '</li>';
+}
+function renderPickCur(){
+  const c = curCell, e = itemAt(c), box = $('#pkCur');
+  if (c.k === 'ammo') {
+    box.hidden = false;
+    box.innerHTML = e ? '<div class="curname">' + esc(e.name) + ' <small style="font-weight:400;color:var(--faint)">攻擊 +' + e.p + '・#' + e.id + '</small></div><div class="btnrow"><button type="button" class="slotbtn" data-act="off">卸下</button></div>'
+      : '<div class="curname" style="font-weight:400;color:var(--faint)">目前沒有彈藥。' + (AMMO_NAME[curWt(S)] ? '這把武器用的是' + AMMO_NAME[curWt(S)] + '。' : '') + '</div>';
+    return;
+  }
+  if (!e) { box.hidden = false; box.innerHTML = '<div class="curname" style="font-weight:400;color:var(--faint)">目前沒有裝備。</div><div class="btnrow"><button type="button" class="slotbtn" data-act="custom">改用自訂數值（不選裝備）</button></div>'; return; }
+  box.hidden = false;
+  const k = slotKeyOf(c);
+  let extra = '';
+  if (k === 'wpn') extra = '<div class="grid" style="margin-top:8px"><label class="f wide">武器種類<select class="wtsel">' + wtOptions() + '</select></label></div>';
+  box.innerHTML = '<div class="curname">' + esc(e.name) + ' <small style="font-weight:400;color:var(--faint)">' + (e.id ? '#' + e.id : '自訂數值') + '</small></div>' +
+    '<div class="statgrid">' + statInputs('', e.st) + '</div>' + extra +
+    '<div class="btnrow"><button type="button" class="slotbtn" data-act="off">卸下</button></div>';
+  if (k === 'wpn') box.querySelector('.wtsel').value = int(e.wt);
+}
+function openPicker(k){
+  curCell = cellByK(k);
+  $('#pkTitle').textContent = curCell.n;
+  $('#pkQ').value = '';
+  $('#pk').hidden = false;
+  renderPickList(); renderPickCur();
+  setTimeout(() => { try { $('#pkQ').focus(); } catch(e){} }, 0);
+}
+function closePicker(){ $('#pk').hidden = true; curCell = null; }
+function pickItem(c, id){
+  if (c.k === 'ammo') { S.ammo = id; note(''); renderPickCur(); renderBoard(); afterChange(); return; }
+  const e = D.equips.filter(x => x.i === id)[0];
+  if (!e) return;
+  const st = blankSt(); STAT_KEYS.forEach(([k]) => { if (e[k]) st[k] = e[k]; });
+  const k = c.k === 'top' ? (e.s === '套服' ? 'suit' : 'top') : c.k;
+  const o = {id:e.i, name:e.n, st};
+  if (k === 'wpn') o.wt = Math.floor(e.i / 10000) % 100;
+  let msg = '';
+  if (c.k === 'top') { delete S.slots.top; delete S.slots.suit; }
+  if (k === 'suit' && S.slots.bottom) { msg = '套服已包含褲裙，已卸下「' + S.slots.bottom.name + '」。'; delete S.slots.bottom; }
+  if (k === 'bottom' && S.slots.suit) { msg = '穿褲裙就不能穿套服，已卸下「' + S.slots.suit.name + '」。'; delete S.slots.suit; }
+  if (k === 'wpn' && TWO_H(o.wt) && S.slots.shield) { msg = '「' + e.n + '」是雙手武器，已卸下盾牌「' + S.slots.shield.name + '」。'; delete S.slots.shield; }
+  if (k === 'shield' && S.slots.wpn && TWO_H(int(S.slots.wpn.wt))) { msg = '拿盾牌就不能用雙手武器，已卸下「' + S.slots.wpn.name + '」。'; delete S.slots.wpn; }
+  S.slots[k] = o;
+  note(msg);
+  renderPickCur(); renderBoard(); afterChange();
+}
+function wirePicker(){
+  $('#board').addEventListener('click', ev => { const b = ev.target.closest('.cell'); if (b) openPicker(b.dataset.cell); });
+  $('#pkQ').addEventListener('input', renderPickList);
+  $('#pkList').addEventListener('click', ev => { const li = ev.target.closest('li'); if (li && li.dataset.i) pickItem(curCell, int(li.dataset.i)); });
+  $('#pkClose').addEventListener('click', closePicker);
+  $('#pk').addEventListener('mousedown', ev => { if (ev.target.id === 'pk') closePicker(); });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !$('#pk').hidden) closePicker(); });
+  $('#pkCur').addEventListener('input', ev => {
+    const e = itemAt(curCell); if (!e || !e.st || !ev.target.dataset.k) return;
+    e.st[ev.target.dataset.k] = int(ev.target.value); afterChange();
+  });
+  $('#pkCur').addEventListener('change', ev => {
+    const e = itemAt(curCell);
+    if (e && ev.target.classList.contains('wtsel')) {
+      e.wt = int(ev.target.value);
+      if (TWO_H(e.wt) && S.slots.shield) { note('改成雙手武器，已卸下盾牌。'); delete S.slots.shield; }
+      renderBoard(); afterChange();
+    }
+  });
+  $('#pkCur').addEventListener('click', ev => {
+    const act = ev.target.dataset.act; if (!act) return;
+    const c = curCell;
+    if (act === 'off') { if (c.k === 'ammo') S.ammo = 0; else delete S.slots[slotKeyOf(c)]; note(''); renderPickCur(); renderBoard(); afterChange(); }
+    if (act === 'custom') {
+      const k = c.k === 'top' ? 'top' : c.k;
+      const o = {id:0, name:'（自訂）', st:blankSt()}; if (k === 'wpn') o.wt = 0;
+      S.slots[k] = o; renderPickCur(); renderBoard(); afterChange();
+    }
+  });
+  $('#eqClear').addEventListener('click', () => { S.slots = {}; note('已全部卸下。'); renderBoard(); afterChange(); });
+}
+
+// ---- UI：buff 小圖示方卡（技能圖示取網站職業技能頁的 skill_atlas 合圖）
+let SKATLAS = null;
+function skIconStyle(id){
+  const p = SKATLAS && SKATLAS.pos[id]; if (!p) return '';
+  return 'background-image:url(../assets/' + SKATLAS.sheets[p[0]] + ');background-size:' + SKATLAS.w[p[0]] + 'px ' + SKATLAS.h[p[0]] + 'px;background-position:' + (-p[1]) + 'px ' + (-p[2]) + 'px;';
+}
+function renderBuffs(){
+  const chain = jobChain(jobNow());
+  const list = (D.buffs || []).filter(e => buffVisible(e, chain));
+  $('#buffList').innerHTML = list.length ? list.map(e => {
+    const eff = Object.keys(e.eff).map(k => BUFF_LABEL[k] + (BUFF_PCT[k] ? ' +' + e.eff[k] + '%' : ' ' + (e.eff[k] > 0 ? '+' : '') + e.eff[k])).join('、');
+    const est = Object.keys(e.eff).some(k => BUFF_PCT[k]);
+    return '<button type="button" class="bcard" data-bk="' + e.k + '" aria-pressed="' + (S.bchk[e.k] ? 'true' : 'false') + '" title="' + esc(e.n + '　Lv' + e.lv + '　' + eff + (est ? '（推定）' : '')) + '">' +
+      '<i class="bi" style="' + skIconStyle(e.ic) + '"></i><span class="bn">' + esc(e.n) + '</span><span class="be">' + esc(eff) + (est ? '・推定' : '') + '</span></button>';
+  }).join('') : '<p class="hint">這個職業沒有可點選的 buff。</p>';
+}
+// 彈藥：武器換了以後，不相容的彈藥自動清掉
+function syncAmmo(){
+  const pre = AMMO_PREFIX[curWt(S)];
+  if (S.ammo && (!pre || Math.floor(S.ammo / 1000) !== pre)) S.ammo = 0;
+}
+// AP：超過可分配點數不能輸入（夾住並提示）
+function warnAp(msg){ $('#apwarn').textContent = msg || ''; }
+function setAp(k, v, typing){
+  const max = apTotal(clamp(int(S.lvl) || 1, 1, 200));
+  const others = AP_KEYS.reduce((a, x) => a + (x === k ? 0 : Math.max(0, int(S.ap[x]))), 0);
+  const cap = Math.max(0, max - others);
+  let n = Math.max(0, int(v));
+  if (n > cap) { n = cap; warnAp(k.toUpperCase() + ' 最多只能再加到 ' + cap + ' 點（可分配總點數 ' + max + '）。'); $('#ap-' + k).value = n; }
+  else warnAp('');
+  S.ap[k] = n;
+}
+function trimAp(){
+  const max = apTotal(clamp(int(S.lvl) || 1, 1, 200));
+  let over = apUsed(S.ap) - max;
+  if (over <= 0) return false;
+  ['luk','int','dex','str'].forEach(k => { if (over > 0) { const d = Math.min(over, Math.max(0, int(S.ap[k]))); S.ap[k] -= d; over -= d; } });
+  warnAp('等級降低後可分配點數只剩 ' + max + '，已從 LUK、INT、DEX、STR 依序扣掉多出來的點數。');
+  return true;
+}
+function addAp(k, d){
+  const before = int(S.ap[k]);
+  setAp(k, before + d);
+  if (int(S.ap[k]) === before) return false;
+  afterChange(); return true;
+}
+
+let lastJob = -1;
+function afterChange(){
+  syncAmmo();
+  const j = jobNow();
+  if (j !== lastJob) { lastJob = j; renderBuffs(); }
+  render(); renderBoard(); saveState();
+}
+
+function init(){
+  buildWindow(); buildBoard(); wirePicker();
+  $('#man-wt').innerHTML = wtOptions();
+  $('#manGrid').innerHTML = STAT_KEYS.map(([k, n]) => '<label class="f">' + n + '<input type="number" id="man-' + k + '" data-k="' + k + '" value="0"></label>').join('');
+  $('#buffGrid').innerHTML = BUFFS.map(([k, n]) => '<label class="f">' + n + '<input type="number" id="bf-' + k + '" data-b="' + k + '" value="0"></label>').join('');
+  S = loadState();
+  trimAp(); writeBasic(); syncAmmo(); lastJob = jobNow(); renderBuffs(); renderBoard(); render();
+
+  // 職業、分支、等級
+  $('#selCat').addEventListener('change', e => { S.cat = e.target.value; S.branch = -1; warnAp(''); afterChange(); });
+  $('#selBr').addEventListener('change', e => { S.branch = int(e.target.value); afterChange(); });
+  const lv = $('#lvIn');
+  lv.addEventListener('input', () => {
+    if (lv.value === '') return;
+    const n = int(lv.value);
+    S.lvl = clamp(n, 1, 200);
+    if (n > 200) lv.value = 200;
+    warnAp(''); trimAp(); afterChange();
+  });
+  lv.addEventListener('blur', () => { lv.value = S.lvl; });
+  lv.addEventListener('keydown', e => { if (e.key === 'Enter') lv.blur(); });
+  // 四圍：點數字輸入加點數；按住加號連續加
+  AP_KEYS.forEach(k => {
+    const inp = $('#ap-' + k), cell = $('#r-' + k);
+    inp.addEventListener('input', () => { if (inp.value === '') { S.ap[k] = 0; afterChange(); return; } setAp(k, inp.value, true); afterChange(); });
+    inp.addEventListener('blur', () => { cell.classList.remove('editing'); inp.value = int(S.ap[k]); });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') inp.blur(); });
+  });
+  let hold = null;
+  const stopHold = () => { if (hold) { clearTimeout(hold.t); clearInterval(hold.i); hold = null; } };
+  $('#swin').addEventListener('pointerdown', e => {
+    const pl = e.target.closest('[data-plus]');
+    if (!pl || e.button > 0) return;
+    e.preventDefault(); stopHold();
+    const k = pl.dataset.plus, step = e.shiftKey ? 5 : 1;
+    if (!addAp(k, step)) return;
+    const h = hold = {};
+    h.t = setTimeout(() => { h.i = setInterval(() => { if (!addAp(k, step)) stopHold(); }, 70); }, 450);
+  });
+  ['pointerup', 'pointercancel'].forEach(n => document.addEventListener(n, stopHold));
+  window.addEventListener('blur', stopHold);
+  $('#swin').addEventListener('click', e => {
+    const pl = e.target.closest('[data-plus]');
+    if (pl) { if (e.detail === 0) addAp(pl.dataset.plus, 1); return; }          // 鍵盤（Enter／空白鍵）按加號
+    const sc = e.target.closest('.statcell');
+    if (sc && e.target.tagName !== 'INPUT') {
+      const inp = $('#ap-' + sc.dataset.stat);
+      sc.classList.add('editing'); inp.value = int(S.ap[sc.dataset.stat]); inp.focus(); inp.select();
+      return;
+    }
+    if (e.target.closest('#swHide') || e.target.closest('#swDetail')) { S.detail = !S.detail; saveState(); layoutWindow(); }
+  });
+  if (window.ResizeObserver) new ResizeObserver(layoutWindow).observe($('#winhost'));
+  window.addEventListener('resize', layoutWindow);
+  $('#buffAll').addEventListener('change', e => { S.buffAll = e.target.checked; renderBuffs(); afterChange(); });
+  $('#buffList').addEventListener('click', e => {
+    const b = e.target.closest('.bcard'); if (!b) return;
+    S.bchk[b.dataset.bk] = !S.bchk[b.dataset.bk];
+    b.setAttribute('aria-pressed', S.bchk[b.dataset.bk] ? 'true' : 'false'); afterChange();
+  });
+  $('#manualOn').addEventListener('change', e => { S.manual = e.target.checked; $('#manualBox').hidden = !S.manual; renderBoard(); afterChange(); });
+  $('#jobFilter').addEventListener('change', e => { S.filter = e.target.checked; saveState(); });
+  $('#manGrid').addEventListener('input', e => { if (e.target.dataset.k) { S.man[e.target.dataset.k] = int(e.target.value); afterChange(); } });
+  $('#man-wt').addEventListener('change', e => { S.manWt = int(e.target.value); afterChange(); });
+  $('#buffGrid').addEventListener('input', e => { if (e.target.dataset.b) { S.buff[e.target.dataset.b] = int(e.target.value); afterChange(); } });
+  window.KCalc = {compute, state:() => S, ready:true, layoutWindow, winMode:() => winMode, jobNow,
+    // 測試用：直接指定熟練度 mastery 值（頁面上不提供）
+    setM:v => { S.m = String(v); afterChange(); },
+    pick:(k, id) => { curCell = cellByK(k); pickItem(curCell, id); }, doll:DOLL};
+}
+
+Promise.all(['equips','ammo','skills','buffs'].map(n => fetch('../data/calc/' + n + '.json').then(r => r.json())))
+  .then(([equips, ammo, sk, buffs]) => { D = {equips, ammo, sk, buffs}; init();
+    // 裝備圖示：沿用道具頁的 item_atlas／item_0.png，晚到也沒關係（到了再重畫）
+    fetch('../data/skill_atlas.json').then(r => r.json()).then(a => { SKATLAS = a; renderBuffs(); }).catch(() => {});
+    fetch('../data/item_atlas.json').then(r => r.json()).then(a => { ATLAS = a; renderBoard(); if (curCell) { renderPickList(); renderPickCur(); } }).catch(() => {}); })
+  .catch(err => { $('#wtinfo').textContent = '資料載入失敗，請重新整理。'; console.error(err); });
+})();
+</script>
+<div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 1.15.3 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理 ・ 聯絡：<a href="mailto:maplestockdata@gmail.com">maplestockdata@gmail.com</a></div>
+</body>
+</html>

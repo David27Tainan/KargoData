@@ -172,8 +172,13 @@ input[type=search]:focus { outline:none; border-color:var(--accent); box-shadow:
 /* ---------- 技能區：左邊技能清單、右邊詳情（取代原本的格線＋展開卡片）。
    右欄照表格長度自動伸縮；左欄跟著畫面黏住，技能多時自己捲。 ---------- */
 .skillpanel { display:grid; grid-template-columns:240px 1fr; gap:14px; margin-top:14px; align-items:start; }
+/* 5064：左欄 = 上方預覽框 + 下方技能清單。整個左欄黏住（sticky），總高度不超過視窗；
+   預覽框固定高度，清單吃剩下的高度自己捲動，所以清單下面不會被切掉看不到。 */
+.skillLeftCol {
+  position:sticky; top:12px; max-height:calc(100vh - 24px); display:flex; flex-direction:column; gap:10px; min-width:0;
+}
 .skillListCol {
-  position:sticky; top:12px; max-height:calc(100vh - 24px); overflow-y:auto; border:1px solid var(--line); border-radius:var(--r);
+  flex:1 1 auto; min-height:120px; overflow-y:auto; border:1px solid var(--line); border-radius:var(--r);
   background:var(--surface); padding:6px;
 }
 .skillList { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
@@ -215,10 +220,34 @@ input[type=search]:focus { outline:none; border-color:var(--accent); box-shadow:
 .skillDetailCol table.lvtable thead th { position:sticky; top:0; z-index:2; }
 .skillDetailCol table.lvtable thead th.lvcell { z-index:3; }
 .skillDetailCol table.lvtable td.lvcell { z-index:1; }
+
+/* ---------- 技能預覽框（5064：左欄上方；iframe 嵌技能展示的迷你模式）。
+   寬度＝左欄寬度、3:2。沒有預覽的技能也用同一個框（同高度）放那行字，清單不會跳上跳下。 ---------- */
+.skillPreviewCol {
+  flex:none; border:1px solid var(--line); border-radius:var(--r); background:var(--surface);
+  box-shadow:var(--shadow); padding:8px;
+}
+.skPreviewFrameWrap {
+  position:relative; width:100%; aspect-ratio:3/2; border-radius:8px; overflow:hidden;
+  background:var(--surface-2);
+}
+.skillPreviewCol iframe { position:absolute; inset:0; width:100%; height:100%; border:0; display:block; }
+.skillPreviewCol iframe[hidden] { display:none; }
+.skillPreviewNone {
+  position:absolute; inset:0; margin:0; display:flex; align-items:center; justify-content:center;
+  text-align:center; font-size:12px; color:var(--faint); padding:8px;
+}
+.skillPreviewPlay {
+  display:inline-block; margin-top:6px; font-size:12.5px; font-weight:700;
+  color:var(--accent-ink); text-decoration:none;
+}
+.skillPreviewPlay:hover { color:var(--accent); text-decoration:underline; }
+.skillPreviewPlay[hidden] { display:inline-block; visibility:hidden; }
 /* 手機 375：左欄變成上方一排可換行的圖示（只顯示圖示，名稱放 title），詳情照內容長度 */
 @media (max-width:639px) {
   .skillpanel { grid-template-columns:1fr; height:auto; gap:10px; }
-  .skillListCol { position:static; max-height:none; overflow:visible; border:0; padding:0; background:none; }
+  .skillLeftCol { position:static; max-height:none; }
+  .skillListCol { overflow:visible; min-height:0; border:0; padding:0; background:none; }
   .skillList { flex-direction:row; flex-wrap:wrap; gap:6px; }
   .skitem { width:auto; padding:4px; }
   .skmeta { display:none; }
@@ -256,7 +285,7 @@ table.lvtable td.efcell, table.lvtable th.efcell { text-align:left; white-space:
 </style>
 </head>
 <body>
-<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../skills/" aria-current="page">職業技能</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a><a class="kd-ext" href="https://maplestockdata.vercel.app/?i=maple-sidesria&amp;tf=1h&amp;type=area" target="_blank" rel="noopener">楓股數據 ↗</a><a class="kd-mail" href="mailto:maplestockdata@gmail.com">聯絡我：maplestockdata@gmail.com</a></div></div>
+<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../skills/" aria-current="page">職業技能</a><a href="../calc/">能力值計算機</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a><a class="kd-ext" href="https://maplestockdata.vercel.app/?i=maple-sidesria&amp;tf=1h&amp;type=area" target="_blank" rel="noopener">楓股數據 ↗</a><a class="kd-mail" href="mailto:maplestockdata@gmail.com">聯絡我：maplestockdata@gmail.com</a></div></div>
 <div class="wrap">
 <header>
   <h1>職業技能</h1>
@@ -284,7 +313,15 @@ table.lvtable td.efcell, table.lvtable th.efcell { text-align:left; white-space:
   </div>
   <div class="tiertabs" id="tierTabs"></div>
   <div class="skillpanel" id="skillPanel">
-    <div class="skillListCol"><ul class="skillList" id="skillList"></ul></div>
+    <div class="skillLeftCol">
+      <div class="skillPreviewCol" id="skillPreview" hidden>
+        <div class="skPreviewFrameWrap" id="skPreviewFrameWrap">
+          <p class="skillPreviewNone" id="skillPreviewNone" hidden>此技能沒有施放動畫</p>
+        </div>
+        <a class="skillPreviewPlay" id="skPreviewPlay" href="#" rel="noopener">▶ 試玩</a>
+      </div>
+      <div class="skillListCol"><ul class="skillList" id="skillList"></ul></div>
+    </div>
     <div class="skillDetailCol" id="skillDetail"></div>
   </div>
 </div>
@@ -321,6 +358,46 @@ const routeNameEl = $('#routeName'), tierTabsEl = $('#tierTabs'), skillListEl = 
 let currentTierSkills = new Map();
 let selectedSkillId = null;
 const searchResultsEl = $('#searchResults'), searchCountEl = $('#searchCount'), qInput = $('#q'), treeArea = $('#treeArea');
+
+/* ---------- 技能預覽框（5063）：previewIds 來自 data/skills/jobs.json 的 _.previewIds
+   （產生網站時從技能展示的特效資料生成，不用另外抓 646 KB 的完整特效資料檔）。
+   iframe 只建一個，換技能用 postMessage 通知 showcase 頁換技能，不重新整理。 ---------- */
+let previewIds = new Set();
+let previewFrameEl = null;
+const skillPreviewEl = $('#skillPreview'), skPreviewFrameWrapEl = $('#skPreviewFrameWrap'),
+  skPreviewPlayEl = $('#skPreviewPlay'), skillPreviewNoneEl = $('#skillPreviewNone');
+function updateSkillPreview(sk){
+  // 5071：冒險家以外的職業（官方還沒推出）只留說明，不放預覽框
+  if (!sk || Math.floor(sk.id / 10000) >= 1000) {
+    skillPreviewEl.hidden = true;
+    if (previewFrameEl && previewFrameEl.contentWindow) previewFrameEl.contentWindow.postMessage({ type:'kd-pause' }, '*');
+    return;
+  }
+  skillPreviewEl.hidden = false;
+  if (!previewIds.has(sk.id)) {
+    // 沒有預覽：同一個框顯示一行字；iframe（若已建立）暫停循環並藏起來
+    skillPreviewNoneEl.hidden = false;
+    skPreviewPlayEl.hidden = true;
+    if (previewFrameEl) {
+      previewFrameEl.hidden = true;
+      if (previewFrameEl.contentWindow) previewFrameEl.contentWindow.postMessage({ type:'kd-pause' }, '*');
+    }
+    return;
+  }
+  skillPreviewNoneEl.hidden = true;
+  skPreviewPlayEl.hidden = false;
+  if (!previewFrameEl) {
+    previewFrameEl = document.createElement('iframe');
+    previewFrameEl.loading = 'lazy';
+    previewFrameEl.title = '技能預覽';
+    previewFrameEl.src = '../showcase/?skill=' + sk.id + '&mini=1';
+    skPreviewFrameWrapEl.appendChild(previewFrameEl);
+  } else {
+    previewFrameEl.hidden = false;
+    if (previewFrameEl.contentWindow) previewFrameEl.contentWindow.postMessage({ type:'kd-skill', id: sk.id }, '*');
+  }
+  skPreviewPlayEl.href = '../showcase/?skill=' + sk.id;
+}
 
 /* ---------- 韓文佔位名稱（含 [TW] 或韓文字元）一律不顯示 ---------- */
 function isKorean(name){
@@ -614,6 +691,7 @@ function selectSkill(id, opts){
   skillDetailEl.innerHTML = sk ? skillDetailPanelHTML(sk) : '<p class="empty">這一轉沒有可顯示的技能。</p>';
   if (sk) patchPendingSkillIcons(skillDetailEl);
   skillDetailEl.scrollTop = 0;
+  updateSkillPreview(sk);
   if (opts.scroll) {
     const btn = skillListEl.querySelector(`.skitem[data-skill="${id}"]`);
     if (btn) {
@@ -856,6 +934,7 @@ qInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer 
     fetch('../data/job_atlas.json').then(r => { if (!r.ok) throw new Error('job_atlas ' + r.status); return r.json(); }),
   ]);
   JOBMETA = jm; JOBATLAS = ja;
+  previewIds = new Set((JOBMETA._ && JOBMETA._.previewIds) || []);
   for (const j of JOBMETA.jobs) {
     jobsById.set(j.id, j);
     if (j.parent !== null) {
