@@ -757,6 +757,8 @@ async function dollRender(){
     const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height);
     out.forEach((t, i) => { if (imgs[i]) g.drawImage(imgs[i], DOLL.FX + t[1][0] - t[0].pc.o[0], DOLL.FY + t[1][1] - t[0].pc.o[1]); });
     DOLL.drawn = true;
+    // 存一張站姿圖給技能試玩舞台用（套用計算機時當玩家紙娃娃；sig 對不上就不用）
+    try { localStorage.setItem('kd-calc-doll', JSON.stringify({sig, url: cv.toDataURL('image/png')})); } catch (e2) {}
   } catch (err) { DOLL.sig = ''; }
 }
 function buildBoard(){

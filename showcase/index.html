@@ -121,6 +121,42 @@
   .kd-mobile-controls{ display:flex; }
 }
 .kd-mobPick-wrap{ display:flex; align-items:center; }
+.kd-mobsel{ position:relative; font-size:13px; }
+.kd-mobsel summary{
+  cursor:pointer; padding:6px 10px; border-radius:8px; border:1px solid var(--kd-line);
+  background:var(--kd-surface); color:var(--kd-ink); list-style:none; user-select:none;
+}
+.kd-mobsel summary::-webkit-details-marker{ display:none; }
+.kd-mobsel-box{
+  margin-top:6px; padding:8px 10px; border:1px solid var(--kd-line); border-radius:10px;
+  background:var(--kd-surface); max-height:260px; overflow:auto; width:100%;
+}
+.kd-mobsel-tools{ display:flex; gap:6px; margin-bottom:6px; }
+.kd-mobsel-tools button{
+  font:inherit; font-size:12px; padding:3px 8px; border-radius:7px;
+  border:1px solid var(--kd-line); background:var(--kd-surface); color:var(--kd-ink); cursor:pointer;
+}
+.kd-mobsel-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:4px 10px; }
+.kd-mobsel-grid label{ display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--kd-ink); cursor:pointer; }
+.kd-hud{
+  position:absolute; left:8px; top:8px; z-index:7; pointer-events:none;
+  background:rgba(10,14,20,.72); border:1px solid rgba(255,255,255,.2); border-radius:8px;
+  padding:4px 8px; min-width:150px; color:#fff; font-family:"IBM Plex Mono",monospace; font-size:11px; line-height:1.35;
+}
+.kd-hud-bar{ height:7px; border-radius:4px; background:rgba(255,255,255,.2); overflow:hidden; margin-top:2px; }
+.kd-hud-bar i{ display:block; height:100%; width:100%; background:#d94a4a; }
+.kd-hud-mobs{ opacity:.8; }
+.kd-hud-stats{ opacity:.9; white-space:normal; max-width:230px; }
+.kd-hud-tag{ opacity:.75; }
+body.kd-mini .kd-hud{ display:none; }
+.kd-stage-btns{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.kd-stage-btns button{
+  font:inherit; font-size:13px; padding:6px 12px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--kd-line); background:var(--kd-surface); color:var(--kd-ink);
+}
+.kd-stage-btns button:hover{ background:var(--kd-sunk); }
+.kd-apply-msg{ font-size:12.5px; color:var(--kd-muted); }
+.kd-apply-msg a{ color:inherit; text-decoration:underline; }
 .kd-comboAdv-wrap{ display:flex; align-items:center; gap:4px; }
 .kd-combo{ position:absolute; left:0; top:0; width:0; height:0; pointer-events:none; }
 .kd-combo > div{ position:absolute; left:0; top:0; width:0; height:0; }
@@ -140,7 +176,7 @@ body.kd-mini{ background:transparent; height:100vh; overflow:hidden; }
 body.kd-mini .kd-nav, body.kd-mini .kd-foot, body.kd-mini .kd-hero,
 body.kd-mini .kd-stage-bar, body.kd-mini .kd-job-group, body.kd-mini .kd-job-row,
 body.kd-mini .kd-skill-row, body.kd-mini .kd-skill-hover, body.kd-mini .kd-stage-cap,
-body.kd-mini .kd-mobile-controls, body.kd-mini .kd-cast-row {
+body.kd-mini .kd-mobile-controls, body.kd-mini .kd-cast-row, body.kd-mini .kd-mobsel {
   display:none !important;
 }
 body.kd-mini main.kd-wrap{ max-width:none; margin:0; padding:0; height:100vh; }
@@ -168,15 +204,30 @@ body.kd-mini .kd-mini-caption{
       <select id="stagePick">
         <option value="golem">巨人之林</option>
         <option value="temple">被詛咒的寺院</option>
+        <option value="monkey">猴子森林Ⅱ</option>
       </select>
     </label>
     <label class="kd-comboAdv-wrap" id="comboAdvWrap" style="display:none">
       <input type="checkbox" id="comboAdv"> 已學進階鬥氣（上限 10 顆）
     </label>
-    <label class="kd-mobPick-wrap" id="mobPickWrap">舞台怪物
-      <select id="mobPick"></select>
-    </label>
+    <div class="kd-stage-btns">
+      <button type="button" id="btnApplyCalc" title="讀取能力值計算機存下的職業、等級、四圍、裝備與 buff">套用能力值計算機</button>
+      <button type="button" id="btnPreset" title="回到依目前武器套用的 Lv80 預設裝備">Lv80 預設</button>
+      <button type="button" id="btnReset" title="人物回中心、HP 回滿、怪全部重生、特效與狀態清空">重置</button>
+    </div>
+    <span class="kd-apply-msg" id="applyMsg" role="status"></span>
   </div>
+  <details class="kd-mobsel" id="mobPickWrap">
+    <summary>怪物（已選 <span id="mobSelCount">0</span> 種，勾選後從中隨機出怪）</summary>
+    <div class="kd-mobsel-box">
+      <div class="kd-mobsel-tools">
+        <button type="button" id="mobSelAll">全選</button>
+        <button type="button" id="mobSelNone">清空</button>
+        <button type="button" id="mobSelDefault">舞台預設</button>
+      </div>
+      <div class="kd-mobsel-grid" id="mobSelGrid"></div>
+    </div>
+  </details>
   <div class="kd-job-group" id="groupRow"></div>
   <div class="kd-job-row" id="jobRow"></div>
   <div class="kd-skill-row" id="skillIconRow"></div>
@@ -188,6 +239,7 @@ body.kd-mini .kd-mini-caption{
       <div class="kd-mob-layer" id="mobLayer"></div>
       <div class="kd-buffbar" id="buffBar"></div>
     </div>
+    <div class="kd-hud" id="hud"><div class="kd-hud-tag" id="hudTag"></div><div id="hudText">HP</div><div class="kd-hud-bar"><i id="hudBar"></i></div><div class="kd-hud-stats" id="hudStats"></div><div class="kd-hud-mobs" id="hudMobs"></div></div>
     <div class="kd-mini-caption" id="miniCaption"></div>
   </div>
   <div class="kd-mobile-controls" aria-label="手機操作按鈕">
@@ -204,6 +256,7 @@ body.kd-mini .kd-mini-caption{
 </main>
 <div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 1.15.3 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理 ・ 聯絡：<a href="mailto:maplestockdata@gmail.com">maplestockdata@gmail.com</a></div>
 
+<script src="../assets/combat.js"></script>
 <script>
 (function(){
 "use strict";
@@ -223,7 +276,10 @@ var CHAR_JSON = "../data/showcase/char.json";
 var FX_JSON = "../data/showcase/skill_fx.json";
 var STAGE_JSON = "../data/showcase/stage.json";
 var STAGE_GOLEM_JSON = "../data/showcase/stage_golem.json";
+var STAGE_MONKEY_IMG_BASE = "../assets/showcase/stage_monkey/";
+var STAGE_MONKEY_JSON = "../data/showcase/stage_monkey.json";
 var DRAGON_JSON = "../data/showcase/dragon.json";
+var STDPDD_JSON = "../data/showcase/standard_pdd.json";
 var STATUS_JSON = "../data/showcase/status_fx.json";
 var STATUS_IMG_BASE = "../assets/showcase/status/";
 var MORPH_JSON = "../data/showcase/morph.json";
@@ -243,8 +299,8 @@ var TIER_Y = {};      // {2: 560, 3: 200}（從 stage_golem.json tierY 來）
 var TIER_FLOOR = {};  // {2:[x1,x2], 3:[x1,x2]}（可站立的地板 x 範圍，從 platforms 的 tier2/tier3 來）
 var ROPE = null;      // {x,y1(上),y2(下)}：唯一一條貫穿第2/3層的繩子
 var ROPE_X_THRESHOLD = 40;
-var CLIMB_SPEED = 0.15; // px/ms
-var FALL_SPEED = 0.45;  // px/ms
+var CLIMB_SPEED = 0.1;  // px/ms（客戶端查不到爬繩速度，推定 100 px/s）
+var FALL_SPEED = 0.67;  // px/ms 最快下墜（客戶端 fallSpeed 670）
 var Y_EPS = 15; // 技能 lt/rb 的 y 判定給一點容許誤差（規格 2，見回報）
 var MAX_SPRITE_H = 200;
 var HIT_DURATION = 400;
@@ -252,9 +308,19 @@ var DIE_TOTAL = 1500;
 var SPLIT_RESPAWN_DELAY = 1500;
 var GOLEM_RESPAWN_DELAY = 1500; // 規格 1：怪死後原地重生 1.5 秒
 var SKILL_COOLDOWN = 500; // 冷卻 0.5 秒（沿用 5052）
-var JUMP_V = 0.5;      // px/ms, upward
-var GRAVITY = 0.0016;  // px/ms^2
-var WALK_SPEED = 0.14; // px/ms for the playable character
+// 玩家物理（客戶端 Map/Physics）：走 125 px/s、跳 555 px/s、重力 2000 px/s^2；單位換成 px/ms。
+var JUMP_V = 0.555;    // px/ms, upward
+var GRAVITY = 0.002;   // px/ms^2
+var WALK_SPEED = 0.125; // px/ms for the playable character
+// 猴子森林Ⅱ專用：移動速度%、跳躍力%、繩上跳／下跳初速
+var PHYS_SPEED_PCT = 100, PHYS_JUMP_PCT = 100;
+var ROPE_JUMP_VY = 0.2775;   // 555 × 0.5
+var ROPE_JUMP_VX = 0.125;    // 繩上跳橫向初速（推定等於走速；客戶端只查到垂直 277.5）
+var DOWN_JUMP_VY = 0.196;    // 555 × 0.353553
+var ROPE_GRAB_DX = 20;       // 靠繩子多近可抓（推定）
+var MONKEY_VIEW_W = 1200, MONKEY_VIEW_H = 680;
+var MONKEY_CAM_X = [40, 1716], MONKEY_CAM_TOP = 142, MONKEY_CAM_BOTTOM = 1754; // 平台範圍 map x -343~1333、y -1072~390（+mapOrigin）；上緣多留 150 px 頭頂空間
+var WALL_HEAD = 30;          // 牆擋住角色的身高（推定）
 var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // 5 隻舞台王怪（沿用 5048 追加指示後的名單）。
@@ -303,8 +369,13 @@ var stageEl = document.getElementById("stage");
 var backdropEl = document.getElementById("backdrop");
 var mobLayerEl = document.getElementById("mobLayer");
 var buffBarEl = document.getElementById("buffBar");
-var pickEl = document.getElementById("mobPick");
-var mobPickWrapEl = document.getElementById("mobPickWrap");
+var mobSelGridEl = document.getElementById("mobSelGrid");
+var mobSelCountEl = document.getElementById("mobSelCount");
+var hudTextEl = document.getElementById("hudText");
+var hudBarEl = document.getElementById("hudBar");
+var hudMobsEl = document.getElementById("hudMobs");
+var hudTagEl = document.getElementById("hudTag");
+var hudStatsEl = document.getElementById("hudStats");
 var stagePickEl = document.getElementById("stagePick");
 var groupRowEl = document.getElementById("groupRow");
 var jobRowEl = document.getElementById("jobRow");
@@ -312,6 +383,7 @@ var skillIconRowEl = document.getElementById("skillIconRow");
 var skillHoverEl = document.getElementById("skillHover");
 
 var MORPH = {}, BASICFX = {};
+var MONKEY = null, MK = { segs:[], plats:{}, walls:[], ropes:[], rope:null, dropId:null, curPid:null, noGrabUntil:0, camX:0, camY:0 };
 var MOBS = null, DIGITS = null, CHARD = null, FX = null, STAGE = null, GOLEM = null, DRAGON = null, STATUS = null;
 var instances = [];       // 怪物（含分裂出來的子怪）
 var pendingRespawns = [];  // [{mobId, at}] 雪吉拉分裂全滅後排的重生
@@ -367,6 +439,14 @@ function layoutStage(){
     var camLeft = clamp(MINI_CAM_X - MINI_VIEW_W / 2, 0, Math.max(0, STAGE_W - MINI_VIEW_W));
     var camTop = (TIER_Y[2] || GOLEM_H) - (MINI_VIEW_H - 24);
     stageEl.style.transform = "scale(" + s2 + ") translate(" + (-camLeft) + "px," + (-camTop) + "px)";
+    return;
+  }
+  if (STAGE_KEY === "monkey"){
+    var mw = frameEl.clientWidth || MONKEY_VIEW_W;
+    var ms = mw / MONKEY_VIEW_W;
+    frameEl.style.height = Math.round(MONKEY_VIEW_H * ms) + "px";
+    MK.scale = ms;
+    applyMonkeyCam();
     return;
   }
   var w = frameEl.clientWidth || STAGE_W;
@@ -523,19 +603,7 @@ function footprint(mob){
 }
 
 function buildPicker(){
-  var optAll = document.createElement("option");
-  optAll.value = "";
-  optAll.textContent = "全部";
-  pickEl.appendChild(optAll);
-  BOSS_ORDER.forEach(function(id){
-    var o = document.createElement("option");
-    o.value = id;
-    o.textContent = MOBS[id].name + "（Lv." + MOBS[id].lv + "）";
-    pickEl.appendChild(o);
-  });
-  pickEl.addEventListener("change", function(){
-    spawnStage(pickEl.value || null);
-  });
+  buildMobSelector();
 }
 
 function clampX(inst){
@@ -622,17 +690,34 @@ function setAction(inst, kind){
   }
 }
 
+function setMobCulled(inst, culled){
+  if (!!inst._culled === culled) return;
+  inst._culled = culled;
+  var d = culled ? "none" : "";
+  inst.el.style.display = d;
+  inst.dmgStack.style.display = d;
+  if (culled) inst.hpEl.style.display = "none";
+  if (inst.parts) inst.parts.forEach(function(p){ p.el.style.display = d; });
+}
+
 function render(inst){
+  if (inst.free){
+    // 猴子森林Ⅱ地圖比鏡頭大很多：鏡頭外的怪不更新畫面（AI 照跑）
+    setMobCulled(inst, STAGE_KEY === "monkey" && (inst.x < MK.camX - 260 || inst.x > MK.camX + MONKEY_VIEW_W + 260 ||
+      inst.groundY < MK.camY - 120 || inst.groundY - (inst.alt || 0) > MK.camY + MONKEY_VIEW_H + 420));
+    if (inst._culled) return;
+  }
+  var gyEff = inst.groundY - (inst.alt || 0);
   var opacity = (inst.state === "die") ? (inst.dieOpacity != null ? inst.dieOpacity : 1) : (inst.fadeIn != null ? inst.fadeIn : 1);
-  placeSprite(inst.el, MOB_IMG_BASE, inst.action, inst.x, inst.groundY, inst.scale, inst.dir, 0, 0, inst.frameIndex, opacity);
+  placeSprite(inst.el, MOB_IMG_BASE, inst.action, inst.x, gyEff, inst.scale, inst.dir, 0, 0, inst.frameIndex, opacity);
   if (inst.parts){
     inst.parts.forEach(function(part){
       if (!part.action) return;
-      placeSprite(part.el, MOB_IMG_BASE, part.action, inst.x, inst.groundY, inst.scale, inst.dir, part.dx, part.dy, part.frameIndex, opacity);
+      placeSprite(part.el, MOB_IMG_BASE, part.action, inst.x, gyEff, inst.scale, inst.dir, part.dx, part.dy, part.frameIndex, opacity);
     });
   }
 
-  var top = inst.groundY - inst.action.footY;
+  var top = gyEff - inst.action.footY * (inst.scale || 1);
   var hpTop = top - 12;
   var hpLeft = inst.x - 17;
   inst.hpEl.style.left = hpLeft + "px";
@@ -662,9 +747,9 @@ function spawnDamage(obj, text, kind, opts){
     pop.className = "kd-dmg-pop";
     pop.style.top = (-(15 + idx * (opts.compact ? 15 : 30))) + "px";
 
-    if (kind === "miss"){
+    if (kind === "miss" || kind === "vmiss"){
       // 推定：Miss 圖沒追到專屬排法，origin 對基準點（同第 1 個字高度），動畫同數字
-      var m = DIGITS.NoRed0.Miss;
+      var m = (kind === "vmiss" && DIGITS.NoViolet0.Miss) ? DIGITS.NoViolet0.Miss : DIGITS.NoRed0.Miss;
       var mi = document.createElement("img");
       mi.src = DMG_IMG_BASE + m.file;
       mi.width = m.w; mi.height = m.h;
@@ -675,6 +760,7 @@ function spawnDamage(obj, text, kind, opts){
       var set1, set0;
       if (kind === "crit"){ set1 = DIGITS.NoCri1; set0 = DIGITS.NoCri0; }
       else if (kind === "heal"){ set1 = DIGITS.NoBlue1; set0 = DIGITS.NoBlue0; }
+      else if (kind === "violet"){ set1 = DIGITS.NoViolet1; set0 = DIGITS.NoViolet0; }
       else { set1 = DIGITS.NoRed1; set0 = DIGITS.NoRed0; }
       var chars = String(text).split("");
       var x = kind === "crit" ? 30 : 0, overlap = 0, placed = [];
@@ -726,6 +812,7 @@ function noDamageNumber(skill){ return skill && (skill._id === "5221009" || skil
 // ---------- 死亡／分裂／重生 ----------
 
 function startDie(inst, ts){
+  if (inst.free) freeOnDeathStart(inst, ts);
   clearMobStatus(inst);
   inst.state = "die";
   setAction(inst, "die1");
@@ -783,6 +870,7 @@ function finishShagiraChild(inst, ts){
 }
 
 function onDieComplete(inst, ts){
+  if (inst.free){ freeDieComplete(inst, ts); return; }
   if (inst.shagiraGroup){ finishShagiraChild(inst, ts); return; }
   if (inst.mob.onDeath && inst.mob.onDeath.length){ splitMob(inst, ts); return; }
   respawn(inst);
@@ -790,6 +878,7 @@ function onDieComplete(inst, ts){
 
 function onClick(inst){
   if (inst.state === "die" || inst.stunnedUntil > performance.now()) return;
+  if (inst.free){ freeClickHit(inst); return; }
 
   var kb = randRange(20, 30);
   inst.x += (inst.dir === 1 ? -kb : kb);
@@ -989,7 +1078,13 @@ function tickPoison(inst, ts){
   p.nextAt += POISON_TICK_MS;
   if (p.nextAt <= ts) p.nextAt = ts + POISON_TICK_MS;
   var dmg = Math.max(1, Math.round(rollSkillDamage(inst.mob) / 4)); // 推定：每跳約一般傷害的 1/4
-  // 血量條由被攻擊次數決定（迷你預覽與完整頁都是），中毒只跳數字、不動血條、不致死
+  if (inst.free){
+    // 真實數值模式：中毒扣血但不致死（留 1 滴，推定）
+    var pr = freePlayerAttack(inst, { kind: "attack_magic", elemAttr: "s", stats: { mad: 40 } });
+    dmg = pr.miss ? 1 : Math.max(1, Math.round(pr.dmg / 4));
+    inst.hp = Math.max(1, inst.hp - dmg);
+  }
+  // 迷你預覽與舊舞台的血量條由被攻擊次數決定，中毒只跳數字、不動血條、不致死
   spawnDamage(inst, String(dmg), "normal", { idx: 0 });
 }
 
@@ -1023,6 +1118,7 @@ function tickFx(dt, ts){
 // 角色目前所在那層的地面 y（忽略 Alt 跳的瞬間彈起，只看第幾層；巨人之林用
 // char.tier／爬繩中的 char.absY，寺院固定用 GROUND_Y）。
 function charGroundY(){
+  if (STAGE_KEY === "monkey") return char.absY;
   if (STAGE_KEY === "golem"){
     if (char.climbing || char.falling) return char.absY;
     return TIER_Y[char.tier];
@@ -1186,6 +1282,7 @@ var MINI_PUSH_HITS = 10;
 
 function mobHalfW(m){ return ((m.action && m.action.fw) || 40) / 2 * (m.scale || 1); }
 function mobBounds(m){
+  if (m.free && m.walkMin != null) return [m.walkMin, m.walkMax];
   if (STAGE_KEY === "golem"){
     for (var t in TIER_Y){ if (TIER_Y[t] === m.groundY && TIER_FLOOR[t]) return [TIER_FLOOR[t][0] + 10, TIER_FLOOR[t][1] - 10]; }
   }
@@ -1203,7 +1300,8 @@ function startMobMove(m, ts, speed, decel, target, sign){
 function pushMob(m, skill, dmg, ts){
   if (m.state === "die" || m.stunnedUntil > ts) return 0;
   var type = PUSH_TYPE_BY_SKILL[skill && skill._id] || 1;
-  if (type === 1 && dmg < MOB_PUSHED) type = 0;
+  if (type === 1 && dmg < (m.free ? (m.stats.pushed || 0) : MOB_PUSHED)) type = m.free ? -1 : 0;
+  if (type === -1) return 0; // 傷害沒到 info/pushed：不被打斷、不後退（真實數值模式）
   var away = m.x > char.x ? 1 : (m.x < char.x ? -1 : char.dir);
   if (type === 0 || type === 1){
     if (type === 0){ m.state = "hit"; setAction(m, "hit1"); m.hitUntil = ts + HIT_DURATION; return 0; }
@@ -1324,14 +1422,29 @@ function fullCountHit(mob, tag, oneShot){
   mob.hp = Math.max(0, mob.hpMax * (FULL_HITS - Math.min(FULL_HITS, mob.fullHits)) / FULL_HITS);
 }
 function applySkillDamage(mob, dmg, ts, skill, i, noDelay, tag){
-  if (MINI_MODE) mob.hp = Math.max(0, mob.hp - dmg);
+  var numKind = "normal", missed = false;
+  if (mob.free){
+    var rr = freePlayerAttack(mob, skill);
+    missed = rr.miss; dmg = rr.dmg;
+    if (rr.crit) numKind = "crit";
+    if (!missed){
+      mob.hp = Math.max(0, mob.hp - dmg);
+      if (rr.em !== 1) spawnLabel(mob, rr.em === 0 ? "免疫" : (rr.em < 1 ? "抗性" : "弱點"));
+    }
+  } else if (MINI_MODE) mob.hp = Math.max(0, mob.hp - dmg);
   else fullCountHit(mob, tag, !!ONE_SHOT_IDS[skill && skill._id]);
-  pushMob(mob, skill, dmg, ts);
-  if (!isFinishSkill(skill)) comboGain(ts);
-  if (!noDamageNumber(skill)){
+  if (!missed){
+    pushMob(mob, skill, dmg, ts);
+    if (!isFinishSkill(skill)) comboGain(ts);
+  }
+  if (missed){
+    var om = hitOpts(skill, i);
+    if (noDelay) om.delay = 0;
+    spawnDamage(mob, "", "miss", om);
+  } else if (!noDamageNumber(skill)){
     var o = hitOpts(skill, i);
     if (noDelay) o.delay = 0;
-    spawnDamage(mob, String(dmg), "normal", o);
+    spawnDamage(mob, String(dmg), numKind, o);
   }
   if (mob.hp <= 0 && mob.state !== "die"){
     startDie(mob, ts);
@@ -1719,7 +1832,11 @@ function castHeal(skill, ts){
     if (!UNDEAD_IDS[m.id]) return;
     var dmg = rollSkillDamage(m.mob);
     m.state = "hit"; setAction(m, "hit1"); m.hitUntil = ts + HIT_DURATION;
-    if (MINI_MODE) m.hp = Math.max(0, m.hp - dmg); else fullCountHit(m, fullCastTag, false);
+    if (m.free){
+      var hr = freePlayerAttack(m, { kind: "attack_magic", elemAttr: "h", stats: { mad: 100 } });
+      dmg = hr.dmg; m.hp = Math.max(0, m.hp - dmg);
+      if (m.hp <= 0 && m.state !== "die") startDie(m, ts);
+    } else if (MINI_MODE) m.hp = Math.max(0, m.hp - dmg); else fullCountHit(m, fullCastTag, false);
     spawnDamage(m, String(dmg), "normal");
     if (hitKeys.length) spawnFxOnce(fxOf(skill, hitKeys[0]), m.x, m.groundY, char.dir);
   });
@@ -2025,6 +2142,15 @@ var char = {
 };
 
 function charSet(){ return SETS[char.setKey]; }
+// 5106：Lv80 預設裝備的整套動作（char80.json，sets 以武器套為 key，動作 key、格數、delay 與 char.json 相同）。迷你預覽不載入、不使用。
+var CHAR80 = null;
+var CHAR80_IMG_BASE = "../assets/showcase/char80/";
+function char80Action(key){
+  if (!CHAR80) return null;
+  var s = CHAR80[char.setKey];
+  if (!s){ var cs = SETS[char.setKey]; s = cs && cs.alias ? CHAR80[cs.alias] : null; }   // 舊別名套（cleric 等）借它對應的武器套
+  return s && s.actions[key] ? s.actions[key] : null;
+}
 
 // ---------- 鬥神變身（5111005 -> Morph 1000 藍白、5121003 -> Morph 1001 金橘） ----------
 // 變身期間整個角色用變身圖取代紙娃娃（不疊裝備、不改色）。動作對照：站／走／跳／警戒／趴 等同名直接用；
@@ -2037,7 +2163,7 @@ function morphActionFor(key, kind){
   var acts = m.actions, name = MORPH_ALIAS[key] || key;
   if (!acts[name]){
     if (kind === "skill") name = "stabO1";
-    else if (kind === "climb") name = "stand";
+    else if (kind === "climb" || kind === "hurt") name = "stand";
     else return null;
   }
   return acts[name] ? { name: name, a: acts[name] } : null;
@@ -2127,10 +2253,15 @@ function resolveAction(skill, setKey){
 function setCharAction(kind, explicitKey){
   var key;
   if (kind === "skill") key = explicitKey;
-  else if (kind === "stand" || kind === "climb") key = charSet().stand; // 素材沒有爬繩動作，借用 stand（回報）
+  else if (kind === "stand") key = charSet().stand;
+  else if (kind === "climb") key = charSet().actions.rope ? "rope" : (charSet().actions.ladder ? "ladder" : charSet().stand); // 5101 補了 ladder／rope；舊別名套沒有就借 stand
   else if (kind === "walk") key = charSet().walk;
+  else if (kind === "hurt") key = charSet().actions.alert ? "alert" : charSet().stand; // 推定：被打動作借 alert
   else key = "jump";
   var a = charSet().actions[key];
+  var a80 = a && !MINI_MODE ? char80Action(key) : null;
+  if (a80) a = a80; // 5106：完整舞台的所有動作（站、走、跳、攻擊、爬繩…）都用 Lv80 預設裝備整套圖，換武器套就換圖
+  if (kind === "stand" && CUR_DOLL && !MINI_MODE) a = CUR_DOLL; // 套用計算機時：站姿用計算機存下的紙娃娃圖，其他動作維持上面的 Lv80 預設同武器套
   if (!a && !(kind === "skill" && char.morph && MORPH[char.morph.id] && MORPH[char.morph.id].actions[key])) return;
   char.morphHit = null;
   var ma = morphActionFor(key, kind);
@@ -2154,6 +2285,7 @@ function charHalfW(){
 
 function clampCharX(){
   var h = charHalfW();
+  if (STAGE_KEY === "monkey"){ char.x = clamp(char.x, MONKEY_CAM_X[0] + 4, MONKEY_CAM_X[1] - 4); return; }
   if (STAGE_KEY === "golem" && !char.falling && !char.climbing){
     var floor = TIER_FLOOR[char.tier];
     if (floor) { char.x = clamp(char.x, floor[0]+4, floor[1]-4); return; }
@@ -2170,13 +2302,20 @@ function charStealthed(){
 }
 function renderChar(){
   var gy = charGroundY();
-  placeSprite(charEl, char.action._morph ? MORPH_IMG_BASE : CHAR_IMG_BASE, char.action, char.x, gy - char.y, 1, char.dir, 0, 0, char.frameIndex, charStealthed() ? STEALTH_ALPHA : 1);
+  var op = charStealthed() ? STEALTH_ALPHA : 1;
+  if (!MINI_MODE){
+    var nowT = performance.now();
+    if (nowT < PLAYER.invUntil && Math.floor(nowT / AI.flickerMs) % 2) op *= 0.35; // 受擊後 1500ms 閃爍
+  }
+  placeSprite(charEl, char.action._morph ? MORPH_IMG_BASE : (char.action._base != null ? char.action._base : CHAR_IMG_BASE), char.action, char.x, gy - char.y, 1, char.dir, 0, 0, char.frameIndex, op);
   var top = gy - char.y - char.action.footY;
   charDmgStack.style.left = char.x + "px";
   charDmgStack.style.top = top + "px";
 }
 
 function doJump(){
+  if (playerStunned()) return;
+  if (STAGE_KEY === "monkey"){ monkeyJump(); return; }
   if (!SETS || char.jumping || char.casting || char.climbing || char.falling) return;
   char.jumping = true;
   char.vy = JUMP_V;
@@ -2351,6 +2490,7 @@ function startCharge(id, skill, info, now){
 function doSkill(force, idOverride){
   var id = idOverride || currentSkillId;
   if (!SETS || !id) return null;
+  if (playerStunned()) return null;
   if (char.climbing || char.falling) return null;
   var now = performance.now();
   if (!force && (now < char.skillCooldownUntil || char.casting)) return null;
@@ -2443,6 +2583,7 @@ function buildSkillIndex(){
   Object.keys(FX).forEach(function(id){
     var s = FX[id];
     if (s.subKind === "mount") return;
+    if (/（4轉）|第(?:[4-9]|10)次/.test(s.jobName || "")) return; // 四轉技能在舞台隱藏（Lv80 還沒轉）
     var g = s.group || "冒險家";
     var byJob = (skillsByGroup[g] = skillsByGroup[g] || {});
     (byJob[s.jobName] = byJob[s.jobName] || []).push(id);
@@ -2585,7 +2726,9 @@ function selectSkillById(id){
   // 坐騎已經被規格 3 過濾掉，但貴族／傳說／新手等還留著不少 weaponTypes 是空陣列的
   // 技能（沒有武器限制，例：法老的憤怒攻擊）；這種保留角色目前的武器套，不然會把
   // char.setKey 設成 undefined，後面 SETS[undefined] 會整頁壞掉（回報的坑）。
+  var prevSet = char.setKey;
   if (skill.weaponTypes && skill.weaponTypes.length) char.setKey = skill.weaponTypes[0];
+  if (char.setKey !== prevSet) refreshPlayer(false); // 換武器套：預設裝備跟著換圖與數值
   if (!char.casting){
     var moving = keys.left || keys.right;
     setCharAction(char.jumping ? "jump" : (moving ? "walk" : "stand"));
@@ -2647,6 +2790,917 @@ bindHold(document.getElementById("btnSkill"), function(){ btnSkillHeld = true; d
 document.getElementById("btnCast").addEventListener("click", function(){ doSkill(false); if (stageEl) stageEl.focus({preventScroll:true}); });
 setInterval(function(){ var nm = document.getElementById("castName"); if (!nm) return; nm.textContent = (currentSkillId && FX[currentSkillId]) ? "目前技能：" + FX[currentSkillId].name : "先在下面選一個技能"; }, 300);
 
+// ---------- 自由舞台：怪物系統（選怪、真實數值、AI、分裂、重生） ----------
+// 數值出處：研究筆記三十四節。標「推定」的是客戶端查不到、照筆記的推定規則做；
+// 所有可調的數字都集中在 AI、PLAYER 這兩個表，改一個數字就能調整行為。
+var AI = {
+  maxAlive: 20,                 // 全場活怪上限
+  respawnMs: 7000,              // 死亡後在原出生點重生的等待時間
+  walkMs: [1000, 3000],         // 走路持續時間（推定）
+  standMs: [500, 2000],         // 停下持續時間（推定）
+  turnChance: 0.5,              // 每次開始走路時隨機轉向的機率（推定）
+  edgePad: 6,                   // 離平台邊緣多近就回頭
+  splitOffset: 40,              // 分裂子怪左右偏移（推定，位置偏移客戶端查不到）
+  jumpChance: 0.25,             // 跳怪每次開始走路時起跳的機率（推定）
+  jumpVy: 0.45,                 // 怪起跳初速 px/ms（推定）
+  flyDx: 120, flyDy: 40,        // 飛行怪每次換目標的漂移範圍（客戶端 ea67318c）
+  flyHover: 70, flyAltMin: 15, flyAltMax: 130, // 飛行高度（離地，推定）
+  flyRetargetMs: [2000, 4000],  // 換目標間隔（推定，客戶端計時單位沒解）
+  hitFrac: 0.5,                 // 攻擊沒有 effectAfter 時，命中時刻 = 動作總長 × 這個值（推定）
+  ballSpeed: 0.4,               // 飛行道具速度 px/ms（推定）
+  bodyShrink: 0.6, bodyMaxH: 110, // 碰撞體大小 = 站姿圖大小 × 0.6，高度上限（推定）
+  knockSpeed: 0.15, knockMs: 300, // 玩家被打後退：150 px/s 線性減速到 0，0.3 秒（推定）
+  invMs: 1500, flickerMs: 100, hurtMs: 300     // 受擊後 1500ms 無敵閃爍（客戶端 f85f4d21）
+};
+// 玩家數值表：預設值只在資料還沒載入時用；載入後由 refreshPlayer() 依 Lv80 預設裝備或計算機存檔填入。
+// str／dex／int／luk 是含裝備與 buff 的四圍總和；amin／amax 是第三十節的攻擊力範圍（含熟練度）。
+var PLAYER = {
+  level: 80, hpMax: 6000, hp: 6000, pad: 100, mad: 500, mastery: 10,
+  acc: 200, eva: 60, pdd: 130, mdd: 110,
+  str: 300, dex: 60, int: 4, luk: 4, amin: 0, amax: 0, group: 1,
+  invUntil: 0, hurtUntil: 0, stunUntil: 0, kbT0: 0, kbEnd: 0, kbDir: 0
+};
+var JOB_BY_SET = { sword1h:1, axe1h:1, blunt1h:1, sword2h:1, axe2h:1, blunt2h:1, spear:1, polearm:1,
+  wand:2, staff:2, bow:3, crossbow:3, dagger:4, claw:4, knuckle:5, gun:5 };
+var STATS_BY_GROUP = {
+  1: { str: 300, dex: 60, int: 4, luk: 4 }, 2: { str: 4, dex: 4, int: 400, luk: 100 },
+  3: { str: 60, dex: 300, int: 4, luk: 4 }, 4: { str: 4, dex: 100, int: 4, luk: 300 },
+  5: { str: 300, dex: 60, int: 4, luk: 4 }
+};
+var WEAPON_MUL = { sword1h:4.0, axe1h:4.4, blunt1h:4.4, sword2h:4.6, axe2h:4.8, blunt2h:4.8, spear:5.0, polearm:5.0,
+  wand:4.0, staff:4.0, bow:3.4, crossbow:3.6, dagger:3.6, claw:3.6, knuckle:4.8, gun:3.6 };
+var CRIT_BY_SET = { bow: { prop: 40, pct: 200 }, crossbow: { prop: 40, pct: 200 }, claw: { prop: 50, pct: 200 } };
+// 怪物技能（Skill/MobSkill 的實際數值，interval 單位秒）
+var MOB_SKILLS = {
+  "100_2": { kind: "buff", stat: "pad", x: 130, time: 30, interval: 40, label: "攻擊力提升" },
+  "101_2": { kind: "buff", stat: "mad", x: 130, time: 30, interval: 40, label: "魔法攻擊提升" },
+  "102_2": { kind: "buff", stat: "takenP", x: 60, time: 30, interval: 40, label: "物理防禦提升" },
+  "103_2": { kind: "buff", stat: "takenM", x: 60, time: 30, interval: 40, label: "魔法防禦提升" },
+  "123_8": { kind: "stun", prop: 60, time: 2, interval: 15, lt: [-200, -120], rb: [200, 20], label: "暈眩術" },
+  "200_1": { kind: "summon", ids: [7130200], hp: 75, limit: 5, interval: 45, label: "召喚" }
+};
+var MOB_PICK_IDS = ["8130100", "6230602", "6130101", "5150000", "7130103", "7130102", "6300002", "6130102",
+  "4230101", "8140100", "6400002", "8140000", "7130200", "7130000", "6300005", "8150000", "7130100", "7130101", "8220001", "3210800"];
+var STDPDD = {};
+var SEL = {};
+var SEL_TOUCHED = false;
+var FREE_ACTIVE = false;
+var respawnQ = [];
+var hudCache = "";
+
+function freeAliveCount(){
+  var n = 0;
+  for (var i = 0; i < instances.length; i++){ var m = instances[i]; if (m.free && !m._dead && m.state !== "die") n++; }
+  return n;
+}
+function playerFootY(){ return charGroundY() - char.y; }
+function playerProfile(){
+  return { group: PLAYER.group, str: PLAYER.str, dex: PLAYER.dex, int: PLAYER.int, luk: PLAYER.luk };
+}
+function playerStunned(){ return !MINI_MODE && performance.now() < PLAYER.stunUntil; }
+function hurtKind(kind, ts){
+  return (!MINI_MODE && ts < PLAYER.hurtUntil && kind !== "skill" && kind !== "climb") ? "hurt" : kind;
+}
+
+// ---- 玩家數值：Lv80 預設裝備與套用計算機 ----
+// 公式與能力值計算機頁相同（研究筆記第三十節攻擊力、三十二節 HP／MP 推定）；兩邊要一起改。
+// 輸入是計算機的狀態物件 S（職業、等級、加點、裝備欄、buff），輸出舞台用的數值。
+var KS = (function(){
+  var AP_KEYS = ["str", "dex", "int", "luk"];
+  var CATS = {
+    war:   { n: "劍士",       base: 100, b1: 10, br: [110, 120, 130], main: "str", group: 1 },
+    mage:  { n: "法師",       base: 200, b1: 8,  br: [210, 220, 230], main: "int", group: 2 },
+    thief: { n: "盜賊",       base: 400, b1: 10, br: [410, 420],      main: "luk", group: 4 },
+    arch:  { n: "弓箭手",     base: 300, b1: 10, br: [310, 320],      main: "dex", group: 3 },
+    pirB:  { n: "海盜（打）", base: 500, b1: 10, br: [510],           main: "str", group: 5 },
+    pirG:  { n: "海盜（槍）", base: 500, b1: 10, br: [520],           main: "dex", group: 5 }
+  };
+  var COEF = {
+    30: ["str", 4.0, 4.0, ["dex"]], 31: ["str", 4.4, 3.2, ["dex"]], 32: ["str", 4.4, 3.2, ["dex"]],
+    37: ["str", 4.4, 3.2, ["dex"]], 38: ["str", 4.4, 3.2, ["dex"]],
+    40: ["str", 4.6, 4.6, ["dex"]], 41: ["str", 4.8, 3.4, ["dex"]], 42: ["str", 4.8, 3.4, ["dex"]],
+    43: ["str", 5.0, 3.0, ["dex"]], 44: ["str", 5.0, 3.0, ["dex"]],
+    45: ["dex", 3.4, 3.4, ["str"]], 46: ["dex", 3.6, 3.6, ["str"]], 47: ["luk", 3.6, 3.6, ["str", "dex"]],
+    48: ["str", 4.8, 4.8, ["dex"]], 49: ["dex", 3.6, 3.6, ["str"]]
+  };
+  var AMMO_PREFIX = { 45: 2060, 46: 2061, 47: 2070, 49: 2330 };
+  var MASTERY_RULE = {
+    30: { first: [1100000, 1200000] }, 40: { first: [1100000, 1200000] },
+    31: { first: [1100001] }, 41: { first: [1100001] }, 32: { first: [1200001] }, 42: { first: [1200001] },
+    33: { first: [4200000] }, 43: { first: [1300000], add: [1321007] }, 44: { first: [1300001], add: [1321007] },
+    45: { first: [3100000], upg: 3120005 }, 46: { first: [3200000], upg: 3220004 },
+    47: { first: [4100000] }, 48: { first: [5100001] }, 49: { first: [5200000] }
+  };
+  var MASTERY4 = { 3120005: 1, 3220004: 1, 1321007: 1 };
+  var SHIELD_SK = [1110001, 1210001, 4210000];
+  var ACC_SK = [3000000, 4000000, 5000000];
+  var SPEED_SK = [3110000, 3210000];
+  var STAT_KEYS = ["STR", "DEX", "INT", "LUK", "MHP", "MMP", "PAD", "MAD", "PDD", "MDD", "ACC", "EVA", "CRAFT", "SPEED", "JUMP"];
+  var SLOT_KEYS = ["wpn", "shield", "hat", "top", "suit", "bottom", "glove", "shoe", "cape", "face", "eye", "ear", "pend", "belt", "medal", "ring1", "ring2", "ring3", "ring4"];
+  var DOLL_ORDER = ["hat", "top", "suit", "bottom", "shoe", "glove", "cape", "shield", "face", "eye", "ear", "wpn"];
+  // HP／MP 推定（5097）：起點 50／5，擴展技能依 SP 模擬，其餘每級固定 k，由玩家實測點反解。
+  // 盜賊、海盜（打）沒有實測點：借用同系（盜賊→弓箭手、海盜打→海盜槍）的 k，標推定。
+  var HPMP_PT = { war: [78, 5278, 521], mage: [100, 1545, 7183], arch: [18, 536, 291], pirG: [41, 1500, 1056] };
+  var HPMP_BORROW = { thief: "arch", pirB: "pirG" };
+  var MHP0 = 50, MMP0 = 5;
+
+  function int(v){ var n = parseInt(v, 10); return isNaN(n) ? 0 : n; }
+  function clampN(v, lo, hi){ return Math.min(hi, Math.max(lo, v)); }
+  function catOf(k){ return CATS[k] || CATS.war; }
+  function tierOf(c, lvl){ return lvl >= 120 ? 4 : lvl >= 70 ? 3 : lvl >= 30 ? 2 : lvl >= c.b1 ? 1 : 0; }
+  function branchIdx(c, catK, wt, branch){
+    if (c.br.length === 1) return 0;
+    if (branch >= 0 && branch < c.br.length) return branch;
+    if (catK === "war") return (wt === 32 || wt === 42) ? 1 : (wt === 43 || wt === 44) ? 2 : 0;
+    if (catK === "arch") return wt === 46 ? 1 : 0;
+    if (catK === "thief") return wt === 33 ? 1 : 0;
+    return 0;
+  }
+  function jobFor(catK, lvl, wt, branch){
+    var c = catOf(catK), t = tierOf(c, lvl);
+    if (t === 0) return 0;
+    if (t === 1) return c.base;
+    return c.br[branchIdx(c, catK, wt, branch)] + (t - 2);
+  }
+  function curWt(S){ return S.manual ? int(S.manWt) : (S.slots && S.slots.wpn ? int(S.slots.wpn.wt) : 0); }
+  function coefOf(wt, job){
+    var cat = Math.floor(job / 100) % 10;
+    if (wt === 33) return cat === 4 ? ["luk", 3.6, 3.6, ["str", "dex"]] : ["str", 4.0, 4.0, ["dex"]];
+    if (wt === 39) return job === 500 ? ["str", 3.0, 3.0, ["dex"]] : ["str", 4.2, 4.2, ["dex"]];
+    return COEF[wt] || null;
+  }
+  function jobChain(D, job){
+    var jm = {}, out = {}, id = job;
+    D.sk.jobs.forEach(function(j){ jm[j.id] = j; });
+    while (id != null && jm[id]){ out[id] = 1; id = jm[id].p; }
+    return out;
+  }
+  function skLevel(D, id, chain, lvl){
+    var sk = D.sk.skills[id];
+    if (!sk || !chain[sk.job]) return 0;
+    if (MASTERY4[id] && lvl <= 120) return 0;
+    return sk.max;
+  }
+  function skVal(D, id, key, chain, lvl){
+    var n = skLevel(D, id, chain, lvl);
+    return n > 0 ? (D.sk.skills[id].lv[n - 1][key] || 0) : 0;
+  }
+  function expLvAt(catK, lv){
+    if (catK !== "war" && catK !== "mage") return 0;
+    var b1 = catOf(catK).b1; if (lv < b1) return 0;
+    return clampN(1 + 3 * (lv - b1) - 5, 0, 10);
+  }
+  function expSum(catK, lv){
+    var t = 0;
+    for (var L = 1; L < lv; L++) t += expLvAt(catK, L);
+    return t * (catK === "war" ? 4 : 2);
+  }
+  var HPMP_K = {};
+  Object.keys(HPMP_PT).forEach(function(k){
+    var pt = HPMP_PT[k], L = pt[0], e = expSum(k, L);
+    HPMP_K[k] = { hp: (pt[1] - MHP0 - (k === "war" ? e : 0)) / (L - 1), mp: (pt[2] - MMP0 - (k === "mage" ? e : 0)) / (L - 1) };
+  });
+  function hpmpBase(catK, lv){
+    var kk = HPMP_K[catK] ? catK : HPMP_BORROW[catK];
+    if (!kk) return null;
+    var k = HPMP_K[kk], e = expSum(kk, lv);
+    return { hp: Math.round(MHP0 + k.hp * (lv - 1) + (kk === "war" ? e : 0)),
+             mp: Math.round(MMP0 + k.mp * (lv - 1) + (kk === "mage" ? e : 0)), guess: kk !== catK };
+  }
+  function buffSum(S, D, chain){
+    var t = {};
+    ["pad", "mad", "pdd", "mdd", "acc", "eva", "speed", "jump", "stat", "atk", "hp", "mp"].forEach(function(k){ t[k] = int(S.buff && S.buff[k]); });
+    (D.buffs || []).forEach(function(e){
+      if (!(S.bchk && S.bchk[e.k])) return;
+      if (!(S.buffAll || e.jobs.some(function(j){ return chain[j]; }))) return;
+      Object.keys(e.eff).forEach(function(k){ t[k] = (t[k] || 0) + e.eff[k]; });
+    });
+    return t;
+  }
+  function normalize(S){
+    var o = { cat: "war", branch: -1, lvl: 1, ap: { str: 0, dex: 0, int: 0, luk: 0 }, slots: {}, manual: false, man: {}, manWt: 0,
+      ammo: 0, buff: {}, bchk: {}, buffAll: false, m: "" };
+    Object.keys(o).forEach(function(k){ if (S && S[k] !== undefined && S[k] !== null) o[k] = S[k]; });
+    if (!CATS[o.cat]) o.cat = "war";
+    if (typeof o.slots !== "object") o.slots = {};
+    return o;
+  }
+  function apTotal(lvl){ return AP_PER_LEVEL_X * Math.max(0, lvl - 1); }
+  var AP_PER_LEVEL_X = 5;
+  function dollSig(S){
+    var eq = [];
+    DOLL_ORDER.forEach(function(k){ var e = S.slots[k]; if (e && e.id) eq.push(k + ":" + e.id); });
+    return eq.join(",");
+  }
+
+  // 計算（照客戶端公式的順序與取整）。D = { sk, buffs, ammo }
+  function compute(S, D){
+    var catK = S.cat, c = catOf(catK);
+    var lvl = clampN(int(S.lvl) || 1, 1, 200), wt0 = curWt(S), job = jobFor(catK, lvl, wt0, S.branch), cat = Math.floor(job / 100) % 10;
+    var chain = jobChain(D, job);
+    var sum = {}; STAT_KEYS.forEach(function(k){ sum[k] = 0; });
+    var wt = 0;
+    if (S.manual){
+      STAT_KEYS.forEach(function(k){ sum[k] = int(S.man && S.man[k]); });
+      wt = int(S.manWt);
+    } else {
+      var shLv = SHIELD_SK.filter(function(id){ return skLevel(D, id, chain, lvl) > 0; })[0];
+      var shPct = shLv ? skVal(D, shLv, "x", chain, lvl) : 100;
+      SLOT_KEYS.forEach(function(sk){
+        var e = S.slots[sk]; if (!e) return;
+        STAT_KEYS.forEach(function(k){
+          var v = int(e.st && e.st[k]);
+          if (sk === "shield" && k === "PDD") v = Math.floor(v * shPct / 100);
+          sum[k] += v;
+        });
+      });
+      wt = S.slots.wpn ? int(S.slots.wpn.wt) : 0;
+    }
+    var noWeapon = wt === 0, wtEff = noWeapon ? (cat === 5 ? 39 : 0) : wt;
+    var raw = {};
+    AP_KEYS.forEach(function(k){ raw[k] = (k === c.main ? 13 : 4) + Math.max(0, int(S.ap && S.ap[k])); });
+    var B = buffSum(S, D, chain), tot = {};
+    AP_KEYS.forEach(function(k){ tot[k] = raw[k] + sum[k.toUpperCase()] + Math.floor(raw[k] * B.stat / 100); });
+    var hb = hpmpBase(catK, lvl);
+    var mhp = hb ? Math.floor((hb.hp + sum.MHP) * (100 + B.hp) / 100) : 0;
+    var mmp = hb ? Math.floor((hb.mp + sum.MMP) * (100 + B.mp) / 100) : 0;
+    var padBase = sum.PAD;
+    if (noWeapon && cat === 5) padBase += Math.floor(Math.min(10 + 0.7 * lvl, 31));
+    padBase = clampN(padBase, 0, 1999);
+    var ammoPad = 0;
+    if (AMMO_PREFIX[wt] && S.ammo){
+      var a = (D.ammo || []).filter(function(x){ return x.i === S.ammo; })[0];
+      if (a && Math.floor(a.i / 1000) === AMMO_PREFIX[wt]) ammoPad = a.p;
+    }
+    var padTot = clampN(Math.floor((padBase + B.pad + ammoPad) * (100 + B.atk) / 100), 0, 1999);
+    var mAuto = 0, rule = MASTERY_RULE[wt];
+    if (rule && !noWeapon){
+      var f = rule.first.filter(function(id){ return skLevel(D, id, chain, lvl) > 0; })[0];
+      mAuto = f ? skVal(D, f, "mastery", chain, lvl) : 0;
+      if (rule.upg && skLevel(D, rule.upg, chain, lvl) > 0) mAuto = skVal(D, rule.upg, "mastery", chain, lvl);
+      (rule.add || []).forEach(function(id){ mAuto += skVal(D, id, "mastery", chain, lvl); });
+    }
+    var mStr = String(S.m == null ? "" : S.m).trim(), mOv = mStr === "" ? null : int(mStr);
+    var m = mOv === null ? mAuto : mOv;
+    if (wtEff === 39 || wtEff === 0) m = (mOv === null ? 0 : m);
+    var mastery = (m * 5 + 10) / 100, amin = 0, amax = 0, cf = coefOf(wtEff, job);
+    if (cf){
+      var main = tot[cf[0]], sub = cf[3].reduce(function(x, k){ return x + tot[k]; }, 0);
+      amin = Math.floor(padTot * (sub + mastery * 0.9 * (main * cf[2])) / 100);
+      amax = Math.floor(padTot * (main * cf[1] + sub) / 100);
+    }
+    var accB, evaB;
+    if (Math.floor(job / 10) === 51){ accB = Math.floor(tot.dex * 0.9 + tot.luk * 0.3); evaB = Math.floor(tot.dex * 1.5 + Math.floor(tot.luk / 2)); }
+    else if (Math.floor(job / 10) === 52){ accB = Math.floor(tot.dex * 0.6 + tot.luk * 0.3); evaB = Math.floor(tot.dex / 8) + Math.floor(tot.luk / 2); }
+    else if (cat >= 3){ accB = Math.floor(tot.dex * 0.6 + tot.luk * 0.3); evaB = Math.floor(tot.dex / 4) + Math.floor(tot.luk / 2); }
+    else { accB = Math.floor(tot.dex * 0.8 + tot.luk * 0.5); evaB = Math.floor(tot.dex / 4) + Math.floor(tot.luk / 2); }
+    var accP = 0, evaP = 0;
+    ACC_SK.forEach(function(id){ accP += skVal(D, id, "x", chain, lvl); evaP += skVal(D, id, "y", chain, lvl); });
+    accB = clampN(accB + sum.ACC + accP, 0, 999); evaB = clampN(evaB + sum.EVA + evaP, 0, 999);
+    var accT = clampN(accB + B.acc, 0, 999), evaT = clampN(evaB + B.eva, 0, 999);
+    var pddT = clampN(clampN(sum.PDD, 0, 1999) + B.pdd, 0, 1999);
+    var madB = clampN(tot.int + sum.MAD, 0, 1999);
+    var madT = clampN(Math.floor((madB + B.mad) * (100 + B.atk) / 100), 0, 1999);
+    var mddT = clampN(clampN(tot.int + sum.MDD, 0, 1999) + B.mdd, 0, 1999);
+    var spd = 100 + sum.SPEED;
+    SPEED_SK.forEach(function(id){ spd += skVal(D, id, "speed", chain, lvl); });
+    var jobRow = D.sk.jobs.filter(function(x){ return x.id === job; })[0];
+    return { lvl: lvl, job: job, jobName: jobRow ? jobRow.n.replace(/[（(].*?[）)]/g, "") : "初心者", cat: catK, group: c.group,
+      wt: wt, wtEff: wtEff, m: m, amin: amin, amax: amax, padTot: padTot, mad: madT, pdd: pddT, mdd: mddT, acc: accT, eva: evaT,
+      str: tot.str, dex: tot.dex, int: tot.int, luk: tot.luk, spd: clampN(spd + B.speed, 100, 140), jmp: clampN(100 + sum.JUMP + B.jump, 100, 123),
+      mhp: mhp, mmp: mmp, hasHp: !!hb, hpGuess: !!(hb && hb.guess) };
+  }
+  return { CATS: CATS, compute: compute, normalize: normalize, apTotal: apTotal, dollSig: dollSig, catOf: catOf };
+})();
+
+var WT_TO_SET = { 30: "sword1h", 31: "axe1h", 32: "blunt1h", 33: "dagger", 37: "wand", 38: "staff", 40: "sword2h", 41: "axe2h",
+  42: "blunt2h", 43: "spear", 44: "polearm", 45: "bow", 46: "crossbow", 47: "claw", 48: "knuckle", 49: "gun" };
+var CAT_OF_CLASS = { warrior: "war", mage: "mage", thief: "thief", archer: "arch", brawler: "pirB", gunslinger: "pirG" };
+var CLASS_BY_GROUP = { 1: "warrior", 2: "mage", 3: "archer", 4: "thief", 5: "brawler" };
+var CLASS_OF_ALIAS = { cleric: "mage", mage: "mage", warrior: "warrior", archer: "archer" };
+var PRESET_SLOT = { "帽子": "hat", "上衣": "top", "套服": "suit", "褲裙": "bottom", "手套": "glove", "鞋子": "shoe", "披風": "cape", "盾牌": "shield" };
+var DOLL80_IMG_BASE = "../assets/showcase/";
+var PRESET = null;        // preset80.json
+var CALC_D = null;        // { sk, buffs, ammo }（計算機資料）
+var CALC_ON = null;       // 套用計算機時 { S, setKey, doll }
+var CUR_DOLL = null;      // 站姿用的整套紙娃娃圖（動作物件），null = 用舞台原本的角色圖
+var PLAYER_TAG = "";
+var PLAYER_RES = null;
+
+function dollAction(file, base, w, h, cx, fy){
+  return { file: file, fw: w, fh: h, frames: 1, delays: [1000], centerX: cx, footY: fy, _base: base };
+}
+function presetPick(setKey){
+  var cls = null, v = null;
+  Object.keys(PRESET.classes).forEach(function(ck){
+    var vs = PRESET.classes[ck].variants;
+    Object.keys(vs).forEach(function(vk){ if (!v && vs[vk].key === setKey){ cls = ck; v = vs[vk]; } });
+  });
+  if (!v){
+    cls = CLASS_OF_ALIAS[setKey] || CLASS_BY_GROUP[JOB_BY_SET[setKey] || 1];
+    var c = PRESET.classes[cls];
+    v = c.variants[c.default];
+  }
+  return { cls: cls, v: v, c: PRESET.classes[cls] };
+}
+function presetState(pk){
+  var c = pk.c, cat = CAT_OF_CLASS[pk.cls];
+  var S = KS.normalize({ cat: cat, lvl: PRESET.level });
+  var main = KS.catOf(cat).main;
+  S.ap = { str: 0, dex: 0, int: 0, luk: 0 };
+  S.ap[main] = KS.apTotal(PRESET.level);      // 5088 的 AP 規則：每級 5 點，主屬性全點
+  var byId = {};
+  Object.keys(c.armor).forEach(function(part){ byId[c.armor[part].id] = { part: part, e: c.armor[part] }; });
+  pk.v.equipIds.forEach(function(id){
+    var st = {}, src = id === pk.v.weapon.id ? pk.v.weapon : (byId[id] && byId[id].e);
+    if (!src) return;
+    ["STR", "DEX", "INT", "LUK", "MHP", "MMP", "PAD", "MAD", "PDD", "MDD", "ACC", "EVA", "CRAFT", "SPEED", "JUMP"].forEach(function(k){ if (src[k]) st[k] = src[k]; });
+    var o = { id: id, name: src.name, st: st };
+    if (id === pk.v.weapon.id){ o.wt = Math.floor(id / 10000) % 100; S.slots.wpn = o; }
+    else S.slots[PRESET_SLOT[byId[id].part]] = o;
+  });
+  return S;
+}
+function calcDollFor(S){
+  if (S.manual) return null;
+  var d = null;
+  try { d = JSON.parse(localStorage.getItem("kd-calc-doll") || "null"); } catch (e) {}
+  if (!d || typeof d.url !== "string" || d.url.indexOf("data:image/png") !== 0 || d.sig !== KS.dollSig(S)) return null;
+  return dollAction(d.url, "", 170, 150, 85, 138);
+}
+// 依目前模式（Lv80 預設／計算機）重算玩家數值、紙娃娃圖與 HUD。武器套（char.setKey）一變就要呼叫。
+function refreshPlayer(fillHp){
+  if (MINI_MODE || !CALC_D || (!PRESET && !CALC_ON)) return;
+  var S, r, doll = null, tag;
+  if (CALC_ON){
+    S = CALC_ON.S;
+    r = KS.compute(S, CALC_D);
+    doll = CALC_ON.doll && char.setKey === CALC_ON.setKey ? CALC_ON.doll : null;
+    tag = "計算機";
+  } else {
+    var pk = presetPick(char.setKey);
+    S = presetState(pk);
+    r = KS.compute(S, CALC_D);
+    var v = pk.v;
+    doll = CHAR80 ? null : dollAction(v.file, DOLL80_IMG_BASE, v.w, v.h, v.centerX, v.footY);   // char80 載入後站姿也走 char80 的動畫
+    tag = "預設";
+  }
+  var wasFull = PLAYER.hp >= PLAYER.hpMax;
+  PLAYER.level = r.lvl; PLAYER.pad = r.padTot; PLAYER.mad = r.mad; PLAYER.pdd = r.pdd; PLAYER.mdd = r.mdd;
+  PLAYER.acc = r.acc; PLAYER.eva = r.eva; PLAYER.str = r.str; PLAYER.dex = r.dex; PLAYER.int = r.int; PLAYER.luk = r.luk;
+  PLAYER.amin = r.amin; PLAYER.amax = r.amax; PLAYER.group = r.group;
+  PLAYER.mastery = r.cat === "mage" ? 10 : r.m;          // 魔法精通沒進計算機，法師沿用 10（推定）
+  if (r.hasHp){ PLAYER.hpMax = Math.max(1, r.mhp); PLAYER.mpMax = r.mmp; }
+  PLAYER.hp = (fillHp || wasFull) ? PLAYER.hpMax : Math.min(PLAYER.hp, PLAYER.hpMax);
+  PHYS_SPEED_PCT = r.spd; PHYS_JUMP_PCT = r.jmp;
+  PLAYER_RES = r;
+  CUR_DOLL = doll;
+  PLAYER_TAG = "Lv" + r.lvl + " " + r.jobName + "（" + tag + "）";
+  hudCache = "";
+  if (char.kind === "stand" && !char.morph) setCharAction("stand");
+}
+function hudStatsText(){
+  var r = PLAYER_RES;
+  if (!r) return "";
+  return "攻擊 " + PLAYER.amin + "~" + PLAYER.amax + "　魔攻 " + PLAYER.mad + "　命中 " + PLAYER.acc + "　迴避 " + PLAYER.eva +
+    "　物防 " + PLAYER.pdd + "　魔防 " + PLAYER.mdd + (r.hpGuess ? "　（HP 為推定）" : "");
+}
+function applyMsg(html){ var el = document.getElementById("applyMsg"); if (el) el.innerHTML = html || ""; }
+function applyCalc(){
+  if (MINI_MODE || !CALC_D) return;
+  var raw = null, S = null;
+  try { raw = localStorage.getItem("kd-calc-v3"); } catch (e) {}
+  try { S = raw ? JSON.parse(raw) : null; } catch (e) { S = null; }
+  if (!S || typeof S !== "object"){
+    applyMsg("還沒有計算機的存檔，請先到<a href=\"../calc/\">能力值計算機</a>設定職業、等級與裝備，再回來按一次。");
+    return false;
+  }
+  S = KS.normalize(S);
+  var wt = S.manual ? Number(S.manWt) || 0 : (S.slots.wpn ? Number(S.slots.wpn.wt) || 0 : 0);
+  var key = WT_TO_SET[wt];
+  if (key && SETS[key]) char.setKey = key;
+  CALC_ON = { S: S, setKey: char.setKey, doll: calcDollFor(S) };
+  refreshPlayer(true);
+  var r = PLAYER_RES;
+  applyMsg("已套用計算機：Lv" + r.lvl + " " + r.jobName + "，攻擊 " + PLAYER.amin + "~" + PLAYER.amax + "，HP " + PLAYER.hpMax +
+    (S.manual ? "（手動輸入模式，沒有裝備圖，站姿用舞台原本的角色圖）" : (CALC_ON.doll ? "" : "（計算機尚未存下紙娃娃圖，站姿用舞台原本的角色圖；開一次計算機頁面就會存）")));
+  return true;
+}
+function applyPresetMode(){
+  if (MINI_MODE || !PRESET) return;
+  CALC_ON = null;
+  refreshPlayer(true);
+  applyMsg("已回到 Lv" + PRESET.level + " 預設裝備（依目前武器套選圖與數值）。");
+}
+function loadPlayerData(){
+  if (MINI_MODE) return Promise.resolve();
+  return Promise.all([
+    loadJSON("../data/showcase/preset80.json"), loadJSON("../data/calc/skills.json"),
+    loadJSON("../data/calc/buffs.json"), loadJSON("../data/calc/ammo.json"),
+    loadJSON("../data/showcase/char80.json").catch(function(){ return null; })
+  ]).then(function(r){
+    PRESET = r[0]; CALC_D = { sk: r[1], buffs: r[2], ammo: r[3] };
+    if (r[4] && r[4].sets){
+      CHAR80 = r[4].sets;
+      Object.keys(CHAR80).forEach(function(k){ Object.keys(CHAR80[k].actions).forEach(function(n){ CHAR80[k].actions[n]._base = CHAR80_IMG_BASE; }); });
+    }
+    refreshPlayer(true);
+  }).catch(function(err){ console.warn("player preset not loaded", err && err.message); });
+}
+
+// 重置：人物回舞台中心、HP 回滿、怪全部清掉並依出生點重生、特效／投射物／狀態清空、鏡頭歸位
+function freeReset(){
+  if (MINI_MODE || !SETS) return;
+  keys.left = keys.right = keys.up = keys.down = false;
+  altHeld = false; ctrlHeld = false; btnSkillHeld = false;
+  char.skillCooldownUntil = 0; char.castEndAt = 0;
+  if (STAGE_KEY === "monkey") spawnMonkeyStage();
+  else if (STAGE_KEY === "golem") spawnGolemStage();
+  else spawnTempleStage();
+  if (STAGE_KEY === "temple"){ char.x = Math.round(STAGE_W / 2); clampCharX(); }
+  if (STAGE_KEY === "monkey") applyMonkeyCam();
+  PLAYER.stunUntil = 0; PLAYER.hurtUntil = 0; PLAYER.invUntil = 0; PLAYER.kbEnd = 0;
+  PLAYER.hp = PLAYER.hpMax; hudCache = "";
+  setCharAction("stand");
+  applyMsg("已重置：人物回中心、HP 回滿、怪物重生、特效清空。");
+}
+
+// ---- 選怪清單 ----
+function mobPickLabel(id){ var m = MOBS[id]; return m.name + "（Lv." + ((m.stats && m.stats.level) || m.lv) + "）"; }
+function stageDefaultSel(key){
+  var ids = [];
+  if (key === "golem") GOLEM.mobs.forEach(function(e){ if (ids.indexOf(String(e.mob)) < 0) ids.push(String(e.mob)); });
+  else if (key === "monkey") ids = ["4230101"];
+  else ids = BOSS_ORDER.slice();
+  var out = {};
+  ids.forEach(function(id){ if (MOB_PICK_IDS.indexOf(id) >= 0) out[id] = true; });
+  return out;
+}
+function selIds(){ return MOB_PICK_IDS.filter(function(id){ return SEL[id]; }); }
+function syncSelUI(){
+  Array.prototype.forEach.call(mobSelGridEl.querySelectorAll("input"), function(cb){ cb.checked = !!SEL[cb.value]; });
+  mobSelCountEl.textContent = String(selIds().length);
+}
+function buildMobSelector(){
+  var ids = MOB_PICK_IDS.slice().sort(function(a, b){ return ((MOBS[a].stats && MOBS[a].stats.level) || MOBS[a].lv) - ((MOBS[b].stats && MOBS[b].stats.level) || MOBS[b].lv); });
+  ids.forEach(function(id){
+    var lab = document.createElement("label");
+    var cb = document.createElement("input");
+    cb.type = "checkbox"; cb.value = id;
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(mobPickLabel(id)));
+    mobSelGridEl.appendChild(lab);
+  });
+  mobSelGridEl.addEventListener("change", function(ev){
+    var cb = ev.target;
+    if (!cb || cb.type !== "checkbox") return;
+    SEL[cb.value] = cb.checked; SEL_TOUCHED = true;
+    syncSelUI(); refreshFreeMobs();
+  });
+  document.getElementById("mobSelAll").addEventListener("click", function(){
+    MOB_PICK_IDS.forEach(function(id){ SEL[id] = true; }); SEL_TOUCHED = true; syncSelUI(); refreshFreeMobs();
+  });
+  document.getElementById("mobSelNone").addEventListener("click", function(){
+    SEL = {}; SEL_TOUCHED = true; syncSelUI(); refreshFreeMobs();
+  });
+  document.getElementById("mobSelDefault").addEventListener("click", function(){
+    SEL = stageDefaultSel(STAGE_KEY); SEL_TOUCHED = false; syncSelUI(); refreshFreeMobs();
+  });
+}
+function refreshFreeMobs(){ if (FREE_ACTIVE && !MINI_MODE) spawnFreeMobs(); }
+
+// ---- 出生點 ----
+function monkeyGroundY(pid, x, fb){
+  var list = MK.platSegs[pid];
+  if (!list) return fb;
+  for (var i = 0; i < list.length; i++){ if (x >= list[i].x1 && x <= list[i].x2) return mkSegY(list[i], x); }
+  return fb;
+}
+function freePoints(){
+  var pts = [];
+  if (STAGE_KEY === "monkey"){
+    MONKEY.mobs.forEach(function(e, i){
+      pts.push({ x: e.x, y: e.y, pid: e.platform, walk: e.walk, dir: e.flip ? -1 : 1, upper: !!e.upperSpawn });
+    });
+  } else if (STAGE_KEY === "golem"){
+    GOLEM.mobs.forEach(function(e){
+      pts.push({ x: e.x, y: TIER_Y[e.tier], walk: e.walk, dir: e.flip ? -1 : 1, upper: false });
+    });
+  } else {
+    var n = 10;
+    for (var i = 0; i < n; i++) pts.push({ x: 320 + i * (STAGE_W - 440) / (n - 1), y: GROUND_Y, walk: null, dir: i % 2 ? -1 : 1, upper: false });
+  }
+  return pts;
+}
+function shuffled(a){
+  var b = a.slice();
+  for (var i = b.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = b[i]; b[i] = b[j]; b[j] = t; }
+  return b;
+}
+
+// ---- 建立怪 ----
+function makeFreeMob(id, o){
+  var mob = MOBS[id];
+  if (!mob) return null;
+  var st = mob.stats || {};
+  var inst = makeInstance(id, o.x, null, { groundY: o.y });
+  var wmin = o.walkMin, wmax = o.walkMax;
+  if (wmin == null){ wmin = inst.extL * inst.scale + 4; wmax = STAGE_W - inst.extR * inst.scale - 4; }
+  inst.walkMin = wmin; inst.walkMax = wmax;
+  inst.free = true; inst.stats = st; inst.pt = o.pt || null; inst.child = !!o.child; inst.pid = o.pid || null;
+  inst.hpMax = inst.hp = st.maxHP || 100;
+  inst.dir = o.dir || (Math.random() < 0.5 ? -1 : 1);
+  inst.fly = !!mob.actions.fly && !mob.actions.move;
+  inst.canJump = !!(mob.actions.jump && mob.actions.move);
+  inst.speedPx = inst.fly ? Combat.mobFlySpeed(st.flySpeed || 0, true) : Combat.mobWalkSpeed(st.speed || 0, true);
+  inst.alt = inst.fly ? AI.flyHover : 0; inst.vy = 0;
+  inst.attacks = [];
+  Object.keys(mob.actions).forEach(function(k){
+    var a = mob.actions[k];
+    if (/^attack\d+$/.test(k) && a.info && a.info.range && a.info.type != null) inst.attacks.push({ name: k, info: a.info });
+  });
+  var now = performance.now();
+  inst.skillList = (mob.mobSkills || []).map(function(ms){
+    var def = MOB_SKILLS[ms.skill + "_" + ms.level];
+    return def ? { def: def, action: "skill" + ms.action, nextAt: now + def.interval * 1000 * randRange(0.3, 1) } : null;
+  }).filter(Boolean);
+  inst.buffs = {};
+  inst.nextAtkAt = now + randRange(300, 1200);
+  var w = actionFor(mob, "stand") || actionFor(mob, "walk");
+  inst.bodyHW = Math.max(10, w.a.fw * 0.5 * inst.scale * AI.bodyShrink);
+  inst.bodyH = Math.min(AI.bodyMaxH, w.a.fh * inst.scale * AI.bodyShrink + 10);
+  inst.state = "stand"; inst.aiUntil = now + randRange(0, 900);
+  if (inst.fly){ inst.state = "walk"; inst.fyAt = 0; setAction(inst, "walk"); }
+  else setAction(inst, mob.actions.stand ? "stand" : "walk");
+  inst.fadeIn = 0; inst.fadeInStart = now;
+  bindMobEvents(inst);
+  instances.push(inst);
+  return inst;
+}
+function spawnFreeAt(pt){
+  var ids = selIds();
+  if (!ids.length) return null;
+  var id = pick(ids), o = { x: pt.x, y: pt.y, dir: pt.dir, pt: pt, pid: pt.pid };
+  if (pt.pid && MK.plats[pt.pid]){
+    var pl = MK.plats[pt.pid];
+    var lo = Math.max(pt.walk[0], pl.x1 + AI.edgePad), hi = Math.min(pt.walk[1], pl.x2 - AI.edgePad);
+    if (hi - lo < 20){ lo = pt.x - 10; hi = pt.x + 10; }
+    o.walkMin = lo; o.walkMax = hi;
+  } else if (pt.walk){
+    o.walkMin = pt.walk[0]; o.walkMax = pt.walk[1];
+  }
+  return makeFreeMob(id, o);
+}
+function spawnFreeMobs(){
+  // 先收掉目前所有自由舞台的怪，再依勾選重新出怪
+  for (var i = instances.length - 1; i >= 0; i--){
+    if (instances[i].free){ removeDom(instances[i]); instances.splice(i, 1); }
+  }
+  respawnQ = [];
+  var pts = freePoints();
+  var order = shuffled(pts.filter(function(p){ return p.upper; })).concat(shuffled(pts.filter(function(p){ return !p.upper; })));
+  order.slice(0, AI.maxAlive).forEach(function(p){ spawnFreeAt(p); });
+}
+function spawnChild(parent, childId, side){
+  var o = { x: parent.x + side * AI.splitOffset, y: parent.groundY, dir: side, pid: parent.pid, child: true,
+            walkMin: parent.walkMin, walkMax: parent.walkMax };
+  o.x = clamp(o.x, parent.walkMin, parent.walkMax);
+  return makeFreeMob(String(childId), o);
+}
+
+// ---- 死亡、分裂、重生 ----
+function freeOnDeathStart(inst, ts){
+  if (inst.pt && !inst.deathQueued){
+    inst.deathQueued = true;
+    respawnQ.push({ pt: inst.pt, at: ts + AI.respawnMs });
+  }
+  if (!inst.fly){ inst.alt = 0; inst.vy = 0; }
+  inst.atk = null; inst.sk = null;
+}
+function freeDieComplete(inst, ts){
+  inst._dead = true;
+  var kids = inst.mob.onDeath;
+  if (!kids || inst.child) return;
+  kids.forEach(function(cid, i){
+    if (freeAliveCount() < AI.maxAlive) spawnChild(inst, cid, i % 2 === 0 ? -1 : 1);
+  });
+}
+function tickRespawns(ts){
+  for (var i = respawnQ.length - 1; i >= 0; i--){
+    var q = respawnQ[i];
+    if (ts < q.at) continue;
+    if (!selIds().length){ respawnQ.splice(i, 1); continue; }
+    if (freeAliveCount() >= AI.maxAlive) continue;
+    spawnFreeAt(q.pt);
+    respawnQ.splice(i, 1);
+  }
+}
+
+// ---- 玩家打怪（combat.js） ----
+function freeTakenMult(inst, magic){
+  var b = inst.buffs[magic ? "takenM" : "takenP"], now = performance.now();
+  return (b && now < b.until) ? b.x / 100 : 1;
+}
+function freeBuffMult(inst, stat){
+  var b = inst.buffs[stat], now = performance.now();
+  return (b && now < b.until) ? b.x / 100 : 1;
+}
+function freePlayerAttack(inst, skill){
+  var P = playerProfile(), ms = inst.stats, st = (skill && skill.stats) || {};
+  var mlv = ms.level || inst.mob.lv, diff = mlv - PLAYER.level;
+  var elem = skill && skill.elemAttr ? String(skill.elemAttr) : null;
+  var magic = !!skill && skill.kind === "attack_magic";
+  var em = Combat.elemMultiplier(ms.elemAttr, elem);
+  var hit = magic ? Combat.playerMagicHit(P.int, P.luk, ms.eva || 0, diff) : Combat.playerHit(PLAYER.acc, ms.eva || 0, diff);
+  if (!hit) return { miss: true, dmg: 0, crit: false, em: 1 };
+  var totalPct = (buffDamageMultiplier() - 1) * 100, r;
+  if (magic){
+    r = Combat.playerMagicDamage(PLAYER.mad, PLAYER.mastery, P.int, st.mad || 100, ms.MDDamage || 0, ms.elemAttr, elem, null, { totalPct: totalPct });
+  } else {
+    var rg = PLAYER.amax > 0 ? { min: PLAYER.amin, max: PLAYER.amax }
+      : Combat.physRange(PLAYER.pad, P.str, P.dex, PLAYER.mastery, WEAPON_MUL[char.setKey]);
+    var cr = CRIT_BY_SET[char.setKey];
+    r = Combat.playerPhysDamage(rg.min, rg.max, PLAYER.level, mlv, ms.PDDamage || 0, st.damage || 100, ms.elemAttr, elem,
+      cr ? cr.pct : 0, null, { critProp: cr ? cr.prop : 0, totalPct: totalPct });
+  }
+  var dmg = Math.max(1, Math.round(r.dmg * freeTakenMult(inst, magic)));
+  return { miss: false, dmg: dmg, crit: r.crit, em: em };
+}
+function freeClickHit(inst){
+  var now = performance.now();
+  applySkillDamage(inst, 0, now, { _id: "click", kind: "attack_melee", fx: {}, stats: { damage: 100 } }, 0, true, null);
+}
+
+// ---- 怪的 AI ----
+function mobBaseY(inst){ return inst.groundY - (inst.alt || 0); }
+function playerInMobRange(inst, range, dir){
+  var px = char.x, py = playerFootY() - 30, by = mobBaseY(inst);
+  if (range.lt && range.rb){
+    var xLo, xHi;
+    if (dir === -1){ xLo = range.lt[0]; xHi = range.rb[0]; } else { xLo = -range.rb[0]; xHi = -range.lt[0]; }
+    var rx = px - inst.x, ry = py - by;
+    return rx >= xLo && rx <= xHi && ry >= range.lt[1] - Y_EPS && ry <= range.rb[1] + Y_EPS;
+  }
+  if (range.r != null){
+    var sp = range.sp || [0, 0];
+    var cx = inst.x + sp[0] * (dir === -1 ? 1 : -1), cy = by + sp[1];
+    var ddx = px - cx, ddy = py - cy;
+    return ddx * ddx + ddy * ddy <= range.r * range.r;
+  }
+  return false;
+}
+function aiToStand(inst, ts, ms){
+  if (inst.fly){ inst.state = "walk"; setAction(inst, "walk"); return; }
+  inst.state = "stand"; inst.aiUntil = ts + ms;
+  setAction(inst, inst.mob.actions.stand ? "stand" : "walk");
+  if (!inst.mob.actions.stand){ inst.frameIndex = 0; inst.frameT = 0; }
+}
+function aiToWalk(inst, ts){
+  inst.state = "walk";
+  inst.aiUntil = ts + randRange(AI.walkMs[0], AI.walkMs[1]);
+  if (Math.random() < AI.turnChance) inst.dir = -inst.dir;
+  if (inst.canJump && Math.random() < AI.jumpChance){ inst.vy = AI.jumpVy; inst.alt = 0.01; setAction(inst, "jump"); }
+  else setAction(inst, "walk");
+}
+function freeAirTick(inst, dt){
+  if (inst.fly || (inst.alt <= 0 && inst.vy === 0)) return;
+  inst.alt += inst.vy * dt;
+  inst.vy -= GRAVITY * dt;
+  if (inst.alt <= 0){
+    inst.alt = 0; inst.vy = 0;
+    if (inst.state === "walk") setAction(inst, "walk");
+  }
+}
+function freeFlyTick(inst, ts, dt){
+  advanceFrame(inst, dt);
+  if (!inst.fyAt || ts >= inst.fyAt){
+    inst.fx = clamp(inst.x + randRange(-AI.flyDx, AI.flyDx), inst.walkMin, inst.walkMax);
+    inst.fy = clamp(inst.alt + randRange(-AI.flyDy, AI.flyDy), AI.flyAltMin, AI.flyAltMax);
+    inst.fyAt = ts + randRange(AI.flyRetargetMs[0], AI.flyRetargetMs[1]);
+  }
+  var dx = inst.fx - inst.x, dy = inst.fy - inst.alt, dist = Math.sqrt(dx * dx + dy * dy), step = inst.speedPx * dt / 1000;
+  if (Math.abs(dx) > 2) inst.dir = dx > 0 ? 1 : -1;
+  if (dist <= step){ inst.x = inst.fx; inst.alt = inst.fy; }
+  else { inst.x += dx / dist * step; inst.alt += dy / dist * step; }
+}
+function freeMoveTick(inst, ts, dt){
+  if (inst.fly){ freeFlyTick(inst, ts, dt); return; }
+  freeAirTick(inst, dt);
+  if (inst.state === "walk"){
+    advanceFrame(inst, dt);
+    inst.x += inst.dir * inst.speedPx * dt / 1000;
+    if (inst.x <= inst.walkMin){ inst.x = inst.walkMin; inst.dir = 1; }
+    else if (inst.x >= inst.walkMax){ inst.x = inst.walkMax; inst.dir = -1; }
+    if (ts >= inst.aiUntil && inst.alt <= 0) aiToStand(inst, ts, randRange(AI.standMs[0], AI.standMs[1]));
+  } else {
+    if (inst.mob.actions.stand && inst.actionName === "stand") advanceFrame(inst, dt);
+    if (inst.fadeIn != null && inst.fadeIn < 1){ inst.fadeIn = Math.min(1, (ts - inst.fadeInStart) / 400); if (inst.fadeIn >= 1) inst.fadeIn = null; }
+    if (ts >= inst.aiUntil) aiToWalk(inst, ts);
+  }
+  if (inst.pid) inst.groundY = monkeyGroundY(inst.pid, inst.x, inst.groundY);
+}
+
+function spawnMobFx(node, x, gy, dir){
+  if (!node) return;
+  var el = newFxEl(node);
+  var now = performance.now();
+  activeFx.push({ mode: "once", el: el, action: node, imgBase: MOB_IMG_BASE, frameIndex: 0, frameT: 0,
+    x: x, groundY: gy, dir: dir, startTs: now, totalDur: actionTotalMs(node) });
+  EFFECT_TICK++;
+}
+function spawnMobBall(node, x0, y0, x1, y1, ms, dir){
+  var el = newFxEl(node);
+  var t0 = performance.now();
+  activeFx.push({ mode: "loop", el: el, action: node, imgBase: MOB_IMG_BASE, frameIndex: 0, frameT: 0, expiresAt: t0 + ms,
+    getPos: function(){
+      var k = clamp((performance.now() - t0) / ms, 0, 1);
+      return { x: x0 + (x1 - x0) * k, groundY: y0 + (y1 - y0) * k, dir: dir };
+    } });
+  EFFECT_TICK++;
+}
+
+function mobHitPlayer(inst, info, ts){
+  if (ts < PLAYER.invUntil) return false;
+  var P = playerProfile(), st = inst.stats, diff = (st.level || inst.mob.lv) - PLAYER.level;
+  if (Combat.mobAttackDodged(PLAYER.eva, st.acc || 100, diff, P.group === 4)){
+    spawnDamage(char, "", "vmiss");
+    return false;
+  }
+  var dmg;
+  if (info && info.magic === 1){
+    dmg = Combat.mobMagicDamage((st.MADamage || 0) * freeBuffMult(inst, "mad"), PLAYER.mdd, P.str, P.dex, P.luk, P.group * 100, null);
+  } else {
+    var pad = ((info && info.PADamage != null) ? info.PADamage : (st.PADamage || 0)) * freeBuffMult(inst, "pad");
+    dmg = Combat.mobPhysDamage(pad, PLAYER.pdd, Combat.standardPdd(STDPDD, P.group, PLAYER.level),
+      { str: P.str, dex: P.dex, int: P.int, luk: P.luk }, PLAYER.level, diff, P.group === 1, null);
+  }
+  PLAYER.hp = Math.max(1, PLAYER.hp - dmg); // 玩家不死：最低留 1 滴
+  PLAYER.invUntil = ts + AI.invMs;
+  PLAYER.hurtUntil = ts + AI.hurtMs;
+  PLAYER.kbT0 = ts; PLAYER.kbEnd = ts + AI.knockMs;
+  PLAYER.kbDir = char.x >= inst.x ? 1 : -1;
+  spawnDamage(char, String(dmg), "violet");
+  if (info && info.fx && info.fx.hit) spawnMobFx(info.fx.hit, char.x, playerFootY() - 30, inst.dir);
+  return true;
+}
+function mobStrike(inst, a, ts){
+  var info = a.atk.info, ball = info.fx && info.fx.ball;
+  if ((info.type === 1 || info.type === 2) && ball){
+    var x0 = inst.x, y0 = mobBaseY(inst) - 40, x1 = char.x, y1 = playerFootY() - 30;
+    var ms = Math.max(120, Math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0)) / AI.ballSpeed);
+    spawnMobBall(ball, x0, y0, x1, y1, ms, inst.dir);
+    later(function(){ mobHitPlayer(inst, info, performance.now()); }, ms);
+    return;
+  }
+  if (playerInMobRange(inst, info.range, inst.dir)) mobHitPlayer(inst, info, ts);
+}
+function startMobAttack(inst, ts, atk){
+  var info = atk.info;
+  inst.state = "attack"; inst.alt = inst.fly ? inst.alt : 0; inst.vy = 0;
+  setAction(inst, atk.name);
+  var total = actionTotalMs(inst.action);
+  inst.atk = { atk: atk, info: info, t0: ts, total: total, done: false,
+    hitAt: info.effectAfter > 0 ? info.effectAfter : total * AI.hitFrac };
+  if (info.fx && info.fx.effect) spawnMobFx(info.fx.effect, inst.x, mobBaseY(inst), inst.dir);
+}
+function freeAttackTick(inst, ts, dt){
+  advanceFrame(inst, dt);
+  var a = inst.atk, el = ts - a.t0;
+  if (!a.done && el >= a.hitAt){ a.done = true; mobStrike(inst, a, ts); }
+  if (el >= a.total){
+    var wait = a.info.attackAfter || 500;
+    inst.atk = null;
+    inst.nextAtkAt = ts + wait;
+    aiToStand(inst, ts, wait);
+  }
+}
+
+function startMobSkill(inst, ts, sk){
+  var has = !!inst.mob.actions[sk.action];
+  inst.state = "skill"; inst.alt = inst.fly ? inst.alt : 0; inst.vy = 0;
+  if (has) setAction(inst, sk.action);
+  inst.sk = { sk: sk, t0: ts, total: has ? actionTotalMs(inst.action) : 600, applied: false };
+}
+function applyMobSkill(inst, sk, ts){
+  var d = sk.def;
+  spawnLabel(inst, d.label);
+  if (d.kind === "buff"){
+    inst.buffs[d.stat] = { x: d.x, until: ts + d.time * 1000 };
+  } else if (d.kind === "stun"){
+    var dir = inst.dir, xLo, xHi;
+    if (dir === -1){ xLo = d.lt[0]; xHi = d.rb[0]; } else { xLo = -d.rb[0]; xHi = -d.lt[0]; }
+    var rx = char.x - inst.x, ry = playerFootY() - 30 - mobBaseY(inst);
+    if (rx >= xLo && rx <= xHi && ry >= d.lt[1] - Y_EPS && ry <= d.rb[1] + Y_EPS && Math.random() * 100 < d.prop){
+      PLAYER.stunUntil = ts + d.time * 1000;
+      spawnLabel(char, "暈眩");
+    }
+  } else if (d.kind === "summon"){
+    d.ids.forEach(function(cid, i){
+      if (freeAliveCount() >= AI.maxAlive || freeSummonCount(inst) >= d.limit) return;
+      var c = spawnChild(inst, cid, i % 2 === 0 ? -1 : 1);
+      if (c) c.summoner = inst;
+    });
+  }
+}
+function freeSummonCount(inst){
+  var n = 0;
+  instances.forEach(function(m){ if (m.free && m.summoner === inst && !m._dead && m.state !== "die") n++; });
+  return n;
+}
+function freeSkillTick(inst, ts, dt){
+  advanceFrame(inst, dt);
+  var s = inst.sk, el = ts - s.t0;
+  if (!s.applied && el >= s.total * 0.5){ s.applied = true; applyMobSkill(inst, s.sk, ts); }
+  if (el >= s.total){
+    inst.sk = null;
+    aiToStand(inst, ts, 400);
+    inst.nextAtkAt = Math.max(inst.nextAtkAt, ts + 400);
+  }
+}
+function freeSkillReady(inst, sk, ts){
+  var d = sk.def;
+  if (d.kind === "summon"){
+    return inst.hp / inst.hpMax * 100 <= d.hp && freeSummonCount(inst) < d.limit && freeAliveCount() < AI.maxAlive;
+  }
+  return true;
+}
+
+function freeChooseAction(inst, ts){
+  if (inst.alt > 0 && !inst.fly) return;
+  for (var i = 0; i < inst.skillList.length; i++){
+    var sk = inst.skillList[i];
+    if (ts < sk.nextAt) continue;
+    if (!freeSkillReady(inst, sk, ts)){ sk.nextAt = ts + 3000; continue; }
+    sk.nextAt = ts + sk.def.interval * 1000;
+    startMobSkill(inst, ts, sk);
+    return;
+  }
+  if (ts < inst.nextAtkAt || !inst.attacks.length) return;
+  var toward = char.x >= inst.x ? 1 : -1, list = [];
+  for (var j = 0; j < inst.attacks.length; j++){
+    if (playerInMobRange(inst, inst.attacks[j].info.range, toward)) list.push(inst.attacks[j]);
+  }
+  if (!list.length) return;
+  inst.dir = toward;
+  startMobAttack(inst, ts, pick(list));
+}
+function freeContact(inst, ts){
+  if (!inst.stats.bodyAttack || ts < PLAYER.invUntil) return;
+  if (Math.abs(char.x - inst.x) > inst.bodyHW + 12) return;
+  var by = mobBaseY(inst), pf = playerFootY();
+  if (pf < by - inst.bodyH || pf - 60 > by) return;
+  mobHitPlayer(inst, null, ts);
+}
+function freeTick(inst, ts, dt){
+  var st = inst.state;
+  if (st === "die"){
+    advanceFrame(inst, dt);
+    if (inst.parts) inst.parts.forEach(function(p){ advanceFrame(p, dt); });
+    var elapsed = ts - inst.dieStart, animDur = actionTotalMs(inst.action);
+    if (elapsed > animDur) inst.dieOpacity = Math.max(0, 1 - (elapsed - animDur) / Math.max(1, (DIE_TOTAL - animDur)));
+    if (elapsed >= DIE_TOTAL) onDieComplete(inst, ts);
+    return;
+  }
+  if (inst.fadeIn != null && inst.fadeIn < 1 && st !== "stand"){
+    inst.fadeIn = Math.min(1, (ts - inst.fadeInStart) / 400); if (inst.fadeIn >= 1) inst.fadeIn = null;
+  }
+  if (st === "hit"){
+    if (ts >= inst.hitUntil && !inst.mv) aiToStand(inst, ts, 250);
+    freeAirTick(inst, dt);
+  } else if (st === "attack"){
+    freeAttackTick(inst, ts, dt);
+  } else if (st === "skill"){
+    freeSkillTick(inst, ts, dt);
+  } else {
+    freeMoveTick(inst, ts, dt);
+    if (inst.state === "walk" || inst.state === "stand") freeChooseAction(inst, ts);
+  }
+  if (inst.pid) inst.groundY = monkeyGroundY(inst.pid, inst.x, inst.groundY);
+  freeContact(inst, ts);
+}
+
+// ---- 玩家被打：後退、HUD ----
+function tickPlayerHurt(dt, ts){
+  if (ts < PLAYER.kbEnd && !char.climbing){
+    var k = 1 - (ts - PLAYER.kbT0) / AI.knockMs;
+    var nx = char.x + PLAYER.kbDir * AI.knockSpeed * k * dt;
+    if (STAGE_KEY === "monkey") nx = mkWallClamp(char.x, nx, char.absY);
+    char.x = nx;
+    clampCharX();
+  }
+}
+function updateHud(){
+  var alive = freeAliveCount();
+  var key = PLAYER.hp + "|" + PLAYER.hpMax + "|" + alive + "|" + respawnQ.length + "|" + PLAYER_TAG;
+  if (key === hudCache) return;
+  hudCache = key;
+  hudTagEl.textContent = PLAYER_TAG;
+  hudStatsEl.textContent = hudStatsText();
+  hudTextEl.textContent = "HP " + PLAYER.hp + " / " + PLAYER.hpMax;
+  hudBarEl.style.width = (PLAYER.hp / PLAYER.hpMax * 100) + "%";
+  hudMobsEl.textContent = "怪物 " + alive + " / " + AI.maxAlive + "　待重生 " + respawnQ.length;
+}
+
 // ---------- 主迴圈 ----------
 
 // 一般（寺院）移動：左右走＋Alt跳，單層地面，邏輯沿用 5052。
@@ -2655,7 +3709,7 @@ function tickCharFlat(dt, ts){
   tickBackstep(ts);
   if (char.jumping){
     char.y += char.vy * dt;
-    char.vy -= GRAVITY * dt;
+    char.vy = Math.max(-FALL_SPEED, char.vy - GRAVITY * dt);
     tickCharAir(dt);
     if (char.y <= 0){ char.y = 0; char.vy = 0; char.jumping = false; char.vx = 0; }
   }
@@ -2668,6 +3722,7 @@ function tickCharFlat(dt, ts){
   if (char.casting && ts >= char.castEndAt){ char.casting = false; }
 
   var kind = char.casting ? "skill" : (char.jumping ? "jump" : (moving ? "walk" : "stand"));
+  kind = hurtKind(kind, ts);
   if (kind !== char.kind) setCharAction(kind);
   advanceFrame(char, dt);
   renderChar();
@@ -2679,13 +3734,14 @@ function tickCharGolem(dt, ts){
   tickBackstep(ts);
   if (char.jumping){
     char.y += char.vy * dt;
-    char.vy -= GRAVITY * dt;
+    char.vy = Math.max(-FALL_SPEED, char.vy - GRAVITY * dt);
     tickCharAir(dt);
     if (char.y <= 0){ char.y = 0; char.vy = 0; char.jumping = false; char.vx = 0; }
   }
   var moving = false;
   if (char.falling){
-    char.absY += FALL_SPEED * dt;
+    char.fvy = Math.min(FALL_SPEED, (char.fvy || 0) + GRAVITY * dt);
+    char.absY += char.fvy * dt;
     if (char.tier === 3 && char.absY >= TIER_Y[2]){
       char.absY = TIER_Y[2]; char.falling = false; char.tier = 2;
       clampCharX();
@@ -2709,8 +3765,8 @@ function tickCharGolem(dt, ts){
     } else {
       var floor = TIER_FLOOR[char.tier];
       if (floor){
-        if (char.x < floor[0]){ char.x = floor[0]; char.falling = true; char.absY = TIER_Y[char.tier]; }
-        else if (char.x > floor[1]){ char.x = floor[1]; char.falling = true; char.absY = TIER_Y[char.tier]; }
+        if (char.x < floor[0]){ char.x = floor[0]; char.falling = true; char.fvy = 0; char.absY = TIER_Y[char.tier]; }
+        else if (char.x > floor[1]){ char.x = floor[1]; char.falling = true; char.fvy = 0; char.absY = TIER_Y[char.tier]; }
       }
     }
   }
@@ -2718,13 +3774,183 @@ function tickCharGolem(dt, ts){
 
   var kind = char.casting ? "skill" :
     (char.jumping ? "jump" : (char.climbing ? "climb" : (char.falling ? "jump" : (moving ? "walk" : "stand"))));
+  kind = hurtKind(kind, ts);
   if (kind !== char.kind) setCharAction(kind);
-  advanceFrame(char, dt);
+  if (!(char.climbing && !(keys.up !== keys.down))) advanceFrame(char, dt);
   renderChar();
 }
 
+// ---------- 猴子森林Ⅱ：多層 foothold、牆、繩子、鏡頭跟隨 ----------
+// 位置單位 stage px，速度 px/ms（客戶端 px/s ÷ 1000）。char.absY＝腳底 y，向下為正；char.vy 向上為正
+// （跟舊舞台一致，二段跳／後跳等移動技能直接沿用）；char.jumping＝在空中（含走出平台邊緣掉落）。
+function mkSegY(sg, x){ return sg.y1 + (sg.y2 - sg.y1) * (x - sg.x1) / (sg.x2 - sg.x1); }
+function mkPrepare(){
+  MK.segs = []; MK.plats = {}; MK.platSegs = {}; MK.walls = MONKEY.walls || []; MK.ropes = MONKEY.ladders || [];
+  MONKEY.platforms.forEach(function(p){
+    MK.plats[p.id] = { x1:p.x1, x2:p.x2, yMax:p.yMax, kind:p.kind };
+    MK.platSegs[p.id] = [];
+    p.segments.forEach(function(sg){
+      if (sg.x2 <= sg.x1) return;
+      var seg = { x1:sg.x1, y1:sg.y1, x2:sg.x2, y2:sg.y2, pid:p.id };
+      MK.segs.push(seg); MK.platSegs[p.id].push(seg);
+    });
+  });
+}
+// 站著／走路：找腳邊的地板（高度差在 up 往上、down 往下範圍內最接近的那段）
+function mkFindGround(x, foot, up, down){
+  var best = null, bd = 1e9;
+  for (var i=0;i<MK.segs.length;i++){
+    var sg = MK.segs[i];
+    if (x < sg.x1 || x > sg.x2) continue;
+    if (MK.dropId && sg.pid === MK.dropId) continue;
+    var y = mkSegY(sg, x), d = y - foot;
+    if (d < -up || d > down) continue;
+    var ad = Math.abs(d);
+    if (ad < bd){ bd = ad; best = { y:y, pid:sg.pid }; }
+  }
+  return best;
+}
+// 空中往下掉：這一格從 prevY 掉到 newY 之間碰到的最高一段地板（只能從上方落地，從下方可穿過）
+function mkFindLanding(x, prevY, newY){
+  var best = null;
+  for (var i=0;i<MK.segs.length;i++){
+    var sg = MK.segs[i];
+    if (x < sg.x1 || x > sg.x2) continue;
+    if (MK.dropId && sg.pid === MK.dropId) continue;
+    var y = mkSegY(sg, x);
+    if (y >= prevY - 0.5 && y <= newY + 0.001 && (!best || y < best.y)) best = { y:y, pid:sg.pid };
+  }
+  return best;
+}
+// 水平移動撞牆：牆是垂直 foothold，腳在 y1~y2（頭部在 y2 以上）時擋住
+function mkWallClamp(x, nx, foot){
+  for (var i=0;i<MK.walls.length;i++){
+    var w = MK.walls[i];
+    if (foot < w.y1 - 2 || foot - WALL_HEAD >= w.y2) continue;
+    if ((x < w.x && nx >= w.x) || (x > w.x && nx <= w.x)) return w.x + (x < w.x ? -0.5 : 0.5);
+  }
+  return nx;
+}
+function mkNearRope(x, foot, mode){
+  var best = null, bd = 1e9;
+  for (var i=0;i<MK.ropes.length;i++){
+    var r = MK.ropes[i], dx = Math.abs(r.x - x);
+    if (dx > ROPE_GRAB_DX) continue;
+    var ok = mode === "down" ? (foot >= r.y1 - 6 && foot <= r.y2) :
+             mode === "up" ? (foot >= r.y1 && foot <= r.y2 + 30) : (foot >= r.y1 && foot <= r.y2);
+    if (ok && dx < bd){ bd = dx; best = r; }
+  }
+  return best;
+}
+function mkGrab(r){
+  MK.rope = r; char.climbing = true; char.jumping = false; char.casting = false;
+  char.vx = 0; char.vy = 0; char.x = r.x; char.absY = clamp(char.absY, r.y1, r.y2);
+  MK.dropId = null;
+}
+function monkeyJump(){
+  if (!SETS || char.casting || char.falling) return;
+  var now = performance.now();
+  if (char.climbing){
+    var d = (keys.right && !keys.left) ? 1 : ((keys.left && !keys.right) ? -1 : 0);
+    if (!d) return; // 繩上要按方向鍵才能跳出
+    char.climbing = false; char.jumping = true; MK.rope = null;
+    char.dir = d; char.vy = ROPE_JUMP_VY; char.vx = d * ROPE_JUMP_VX * PHYS_SPEED_PCT / 100;
+    MK.noGrabUntil = now + 350;
+    return;
+  }
+  if (char.jumping) return;
+  if (keys.down){
+    // 下跳：平台上按 ↓＋跳，往上 196、穿過腳下平台落到下層（最下面的地面不能穿）
+    var pl = MK.plats[MK.curPid];
+    if (pl && pl.kind !== "ground"){
+      char.jumping = true; char.vy = DOWN_JUMP_VY; char.vx = 0; MK.dropId = MK.curPid;
+    }
+    return;
+  }
+  var d2 = (keys.right && !keys.left) ? 1 : ((keys.left && !keys.right) ? -1 : 0);
+  char.jumping = true;
+  char.vy = JUMP_V * PHYS_JUMP_PCT / 100;
+  // 起跳時橫向速度不足最高走速的 0.8 倍就補到 0.8 倍（客戶端 fea61029）；這裡走路是等速，直接帶走速
+  char.vx = d2 ? d2 * Math.max(WALK_SPEED * PHYS_SPEED_PCT / 100, 0.8 * WALK_SPEED * PHYS_SPEED_PCT / 100) : 0;
+}
+function applyMonkeyCam(){
+  var cx = clamp(char.x - MONKEY_VIEW_W / 2, MONKEY_CAM_X[0], MONKEY_CAM_X[1] - MONKEY_VIEW_W);
+  var cy = clamp(char.absY - MONKEY_VIEW_H * 0.6, MONKEY_CAM_TOP, MONKEY_CAM_BOTTOM - MONKEY_VIEW_H);
+  MK.camX = cx; MK.camY = cy;
+  var s = MK.scale || 1;
+  stageEl.style.transform = "scale(" + s + ") translate(" + (-cx) + "px," + (-cy) + "px)";
+}
+function tickCharMonkey(dt, ts){
+  if (char.morph && ts >= char.morph.until) setMorph(null);
+  tickBackstep(ts);
+  var moving = false, climbMoving = false;
+  if (char.climbing){
+    var r = MK.rope;
+    if (keys.up && !keys.down){ char.absY -= CLIMB_SPEED * PHYS_SPEED_PCT / 100 * dt; climbMoving = true; }
+    else if (keys.down && !keys.up){ char.absY += CLIMB_SPEED * PHYS_SPEED_PCT / 100 * dt; climbMoving = true; }
+    if (char.absY <= r.y1){
+      var gt = mkFindGround(r.x, r.y1, 8, 32);
+      if (gt && keys.up){ char.absY = gt.y; char.climbing = false; MK.curPid = gt.pid; MK.rope = null; }
+      else char.absY = r.y1;
+    } else if (char.absY >= r.y2){
+      var gb = mkFindGround(r.x, r.y2, 0, 30);
+      char.climbing = false; MK.rope = null;
+      if (gb){ char.absY = gb.y; MK.curPid = gb.pid; }
+      else { char.jumping = true; char.vy = 0; char.vx = 0; }
+    }
+  } else if (char.jumping){
+    var prevY = char.absY;
+    char.vy = Math.max(-FALL_SPEED, char.vy - GRAVITY * dt);
+    char.absY -= char.vy * dt;
+    if (char.vx){
+      char.x = mkWallClamp(char.x, char.x + char.vx * dt, char.absY);
+      clampCharX();
+    }
+    if (MK.dropId){
+      var dp = MK.plats[MK.dropId];
+      if (!dp || char.x < dp.x1 || char.x > dp.x2 || char.absY > dp.yMax + 8) MK.dropId = null;
+    }
+    if (char.vy < 0){
+      var lg = mkFindLanding(char.x, prevY, char.absY);
+      if (lg){ char.absY = lg.y; char.jumping = false; char.vy = 0; char.vx = 0; MK.curPid = lg.pid; MK.dropId = null; }
+    }
+    if (char.jumping && (keys.up || keys.down) && ts >= MK.noGrabUntil && !char.casting){
+      var ar = mkNearRope(char.x, char.absY, "air");
+      if (ar && !(char.vy > 0 && MK.dropId)) mkGrab(ar);
+    }
+  } else {
+    if (!char.casting){
+      var dx = (keys.right && !keys.left) ? 1 : ((keys.left && !keys.right) ? -1 : 0);
+      if (dx){
+        char.dir = dx; moving = true;
+        var nx = mkWallClamp(char.x, char.x + dx * WALK_SPEED * PHYS_SPEED_PCT / 100 * dt, char.absY);
+        char.x = nx; clampCharX();
+      }
+      var ropeHit = null;
+      if (keys.up && !keys.down) ropeHit = mkNearRope(char.x, char.absY, "up");
+      else if (keys.down && !keys.up) ropeHit = mkNearRope(char.x, char.absY, "down");
+      if (ropeHit && ts >= MK.noGrabUntil){ mkGrab(ropeHit); moving = false; }
+    }
+    if (!char.climbing){
+      var g = mkFindGround(char.x, char.absY, 14, 16);
+      if (g){ char.absY = g.y; MK.curPid = g.pid; }
+      else { char.jumping = true; char.vy = 0; char.vx = moving ? char.dir * WALK_SPEED * PHYS_SPEED_PCT / 100 : 0; }
+    }
+  }
+  if (char.casting && ts >= char.castEndAt){ char.casting = false; }
+
+  var kind = char.casting ? "skill" :
+    (char.climbing ? "climb" : (char.jumping ? "jump" : (moving ? "walk" : "stand")));
+  kind = hurtKind(kind, ts);
+  if (kind !== char.kind) setCharAction(kind);
+  if (kind !== "climb" || climbMoving) advanceFrame(char, dt);
+  renderChar();
+  applyMonkeyCam();
+}
+
 function tickChar(dt, ts){
-  if (STAGE_KEY === "golem") tickCharGolem(dt, ts);
+  if (STAGE_KEY === "monkey") tickCharMonkey(dt, ts);
+  else if (STAGE_KEY === "golem") tickCharGolem(dt, ts);
   else tickCharFlat(dt, ts);
 }
 
@@ -2741,6 +3967,7 @@ function tick(ts){
     tickTint(inst, ts);
     tickPush(inst, ts, dt);
     if (inst.stunnedUntil && ts < inst.stunnedUntil){ render(inst); continue; } // 停住動畫與移動，血量條照常更新
+    if (inst.free){ freeTick(inst, ts, dt); render(inst); continue; }
 
     if (inst.state === "walk"){
       advanceFrame(inst, dt);
@@ -2799,7 +4026,11 @@ function tick(ts){
   }
 
   if (MINI_MODE) miniTick(ts);
+  else if (FREE_ACTIVE){ tickRespawns(ts); tickPlayerHurt(dt, ts); updateHud(); }
+  var stunKeys = null;
+  if (playerStunned()){ stunKeys = [keys.left, keys.right, keys.up, keys.down]; keys.left = keys.right = keys.up = keys.down = false; }
   tickChar(dt, ts);
+  if (stunKeys){ keys.left = stunKeys[0]; keys.right = stunKeys[1]; keys.up = stunKeys[2]; keys.down = stunKeys[3]; }
   tickProjectiles(dt, ts);
   tickSummons(dt, ts);
   tickMists(ts);
@@ -2834,6 +4065,8 @@ function resetCommonFxState(){
   stopCombo();
   renderBuffBar(performance.now());
   pendingRespawns = [];
+  respawnQ = [];
+  FREE_ACTIVE = false;
   mobLayerEl.innerHTML = "";
   instances = [];
 }
@@ -2874,22 +4107,47 @@ function spawnStage(onlyId){
 function spawnGolemStage(){
   resetCommonFxState();
 
-  GOLEM.mobs.forEach(function(entry){
-    var dir0 = entry.flip ? -1 : 1;
-    var inst = makeInstance(String(entry.mob), entry.x, null, {
-      groundY: TIER_Y[entry.tier],
-      walkMin: entry.walk[0], walkMax: entry.walk[1],
-      fixedRespawn: { x: entry.x, dir: dir0 }
-    });
-    inst.dir = dir0;
-    bindMobEvents(inst);
-    instances.push(inst);
-  });
-
   char.x = GOLEM.player.x; char.tier = GOLEM.player.tier || 2; char.absY = TIER_Y[char.tier];
   char.y = 0; char.vy = 0; char.jumping = false; char.casting = false; char.dir = 1;
   char.climbing = false; char.falling = false;
+  startFreeMobs();
 
+  lastTs = 0;
+  rafId = requestAnimationFrame(tick);
+}
+
+// 三個舞台共用：玩家 HP 回滿、依勾選出怪（寺院／巨人之林用既有點位，猴子森林Ⅱ用 30 個出生點）
+function startFreeMobs(){
+  PLAYER.hp = PLAYER.hpMax; PLAYER.invUntil = 0; PLAYER.hurtUntil = 0; PLAYER.stunUntil = 0; PLAYER.kbEnd = 0;
+  hudCache = "";
+  if (!SEL_TOUCHED){ SEL = stageDefaultSel(STAGE_KEY); }
+  syncSelUI();
+  FREE_ACTIVE = true;
+  spawnFreeMobs();
+}
+
+// 寺院：玩家站左側，怪從 10 個等距出生點出現。
+function spawnTempleStage(){
+  resetCommonFxState();
+  char.x = 70;
+  char.y = 0; char.vy = 0; char.jumping = false; char.casting = false; char.dir = 1;
+  char.tier = 2; char.climbing = false; char.falling = false;
+  clampCharX();
+  startFreeMobs();
+  lastTs = 0;
+  rafId = requestAnimationFrame(tick);
+}
+
+// 猴子森林Ⅱ：30 個出生點（上層三平台優先），最多 20 隻。
+function spawnMonkeyStage(){
+  resetCommonFxState();
+  char.x = MONKEY.player.x; char.absY = MONKEY.player.y;
+  char.y = 0; char.vy = 0; char.vx = 0; char.jumping = false; char.casting = false; char.dir = 1;
+  char.climbing = false; char.falling = false; char.tier = 2;
+  MK.rope = null; MK.dropId = null; MK.curPid = MONKEY.player.platform; MK.noGrabUntil = 0;
+  setCharAction("stand");
+  applyMonkeyCam();
+  startFreeMobs();
   lastTs = 0;
   rafId = requestAnimationFrame(tick);
 }
@@ -2897,18 +4155,22 @@ function spawnGolemStage(){
 // 規格 1：舞台切換（巨人之林／被詛咒的寺院），預設巨人之林。
 function switchStage(key){
   STAGE_KEY = key;
-  if (key === "golem"){
+  stageEl.style.transform = "";
+  if (key === "monkey"){
+    STAGE_W = MONKEY.width; STAGE_H = MONKEY.height; STAGE_FOOT_Y = MONKEY.footY; GROUND_Y = STAGE_FOOT_Y;
+    buildBackdrop(MONKEY, STAGE_MONKEY_IMG_BASE);
+    layoutStage();
+    spawnMonkeyStage();
+  } else if (key === "golem"){
     STAGE_W = GOLEM_W; STAGE_H = GOLEM.height; STAGE_FOOT_Y = GOLEM.footY; GROUND_Y = STAGE_FOOT_Y;
-    mobPickWrapEl.style.display = "none";
     buildBackdrop(GOLEM, STAGE_GOLEM_IMG_BASE);
     layoutStage();
     spawnGolemStage();
   } else {
     STAGE_W = TEMPLE_W; STAGE_H = TEMPLE_H; STAGE_FOOT_Y = TEMPLE_FOOT_Y; GROUND_Y = STAGE_FOOT_Y;
-    mobPickWrapEl.style.display = "";
     buildBackdrop(STAGE, STAGE_IMG_BASE);
     layoutStage();
-    spawnStage(pickEl.value || null);
+    spawnTempleStage();
   }
   updateDragonVisibility();
 }
@@ -3317,10 +4579,14 @@ Promise.all([
   loadJSON(TIMING_JSON).catch(function(){ return {}; }),
   loadJSON(MORPH_JSON).catch(function(){ return {}; }),
   loadJSON(BASICFX_JSON).catch(function(){ return {}; }),
-  loadJSON(BULLET_JSON).catch(function(){ return {}; })
+  loadJSON(BULLET_JSON).catch(function(){ return {}; }),
+  loadJSON(STAGE_MONKEY_JSON),
+  loadJSON(STDPDD_JSON).catch(function(){ return {}; })
 ]).then(function(res){
   MOBS = res[0]; DIGITS = res[1]; CHARD = res[2]; FX = res[3]; applyCharLevel(FX); STAGE = res[4]; GOLEM = res[5]; DRAGON = res[6]; STATUS = res[7]; ACTION_TIMING = res[8] || {};
   MORPH = res[9] || {}; BASICFX = res[10] || {};
+  MONKEY = res[12]; mkPrepare();
+  STDPDD = res[13] || {};
   Object.keys(res[11] || {}).forEach(function(id){
     var b = res[11][id];
     BULLET[id] = { file: b.file, fw: b.fw, fh: b.fh, frames: b.frames, delays: b.delays, centerX: b.originX, footY: b.originY, _base: BULLET_IMG_BASE };
@@ -3348,6 +4614,9 @@ Promise.all([
   buildGroupRow();
 
   stagePickEl.addEventListener("change", function(){ switchStage(stagePickEl.value); });
+  document.getElementById("btnApplyCalc").addEventListener("click", function(){ applyCalc(); if (stageEl) stageEl.focus({preventScroll:true}); });
+  document.getElementById("btnPreset").addEventListener("click", function(){ applyPresetMode(); if (stageEl) stageEl.focus({preventScroll:true}); });
+  document.getElementById("btnReset").addEventListener("click", function(){ freeReset(); if (stageEl) stageEl.focus({preventScroll:true}); });
 
   // ?skill=ID&mini=1 → 迷你預覽模式（職業技能頁 iframe 嵌入）；
   // ?skill=ID（沒有 mini）→ 完整舞台並直接跳到該技能；兩者都沒有就跟原來一樣。
@@ -3367,6 +4636,7 @@ Promise.all([
   } else {
     switchStage("golem");
     if (paramSkill && FX[paramSkill]) jumpToSkillId(paramSkill);
+    loadPlayerData();
   }
 
   // ---------- Playwright 自動化測試用的除錯掛鉤（不影響一般使用） ----------
@@ -3387,6 +4657,12 @@ Promise.all([
     rangeDxs: function(id){ var sk = FX[id], st = Object.assign({}, sk.stats, { mobCount: 99 }); sk._id = String(id); return { fb: rangedFallbackRange(sk), lt: !!sk.stats.lt, range: sk.stats.range || null, dxs: pickTargetsRect(char.x, charGroundY(), st, char.dir, rangedFallbackRange(sk)).map(function(m){ return Math.round(m.x - char.x); }), all: instances.map(function(m){ return Math.round(m.x - char.x); }).sort(function(a,b){return a-b;}) }; },
     setFacing: function(dir){ char.dir = dir; }, // 只給截圖腳本用，調角色面向避開怪物擋住召喚物/特效
     pressUp: function(v){ keys.up = !!v; },
+    pressLeft: function(v){ keys.left = !!v; },
+    pressRight: function(v){ keys.right = !!v; },
+    jump: function(){ doJump(); },
+    setPos: function(x, y){ char.x = x; if (y != null) char.absY = y; char.jumping = false; char.climbing = false; char.vy = 0; char.vx = 0; },
+    setPhys: function(sp, jp){ PHYS_SPEED_PCT = sp; PHYS_JUMP_PCT = jp; },
+    monkeyState: function(){ return { x: char.x, y: char.absY, vy: char.vy, vx: char.vx, jumping: char.jumping, climbing: char.climbing, kind: char.kind, action: char.actionName, plat: MK.curPid, drop: MK.dropId, cam: [MK.camX, MK.camY] }; },
     pressDown: function(v){ keys.down = !!v; },
 
     cast: function(){
@@ -3445,7 +4721,50 @@ Promise.all([
     hitEnd: function(){ return hitEndAt; },
     projInfo: function(){ var n = performance.now(); return projectiles.map(function(p){ return { t0: Math.round(p.t0 - n), t1: Math.round(p.t1 - n), x0: p.x0, x1: p.x1, flight: Math.round(p.t1 - p.t0), file: p.action.file, flip: p.flip, ang: p.ang, rot: p.rotPeriod }; }); },
     morphState: function(){ return { morph: char.morph, action: char.actionName, img: char.action && char.action.file, isMorph: !!(char.action && char.action._morph), hit: char.morphHit, vx: char.vx, y: char.y, x: char.x, cam: MINI_CAM_X }; },
-    postSkill: function(id){ window.postMessage({ type:"kd-skill", id: id }, "*"); }
+    postSkill: function(id){ window.postMessage({ type:"kd-skill", id: id }, "*"); },
+    // 自由舞台怪物系統測試掛鉤
+    free: function(){
+      return {
+        stage: STAGE_KEY, alive: freeAliveCount(), queue: respawnQ.length, sel: selIds(), cap: AI.maxAlive,
+        player: { hp: PLAYER.hp, hpMax: PLAYER.hpMax, inv: Math.round(PLAYER.invUntil - performance.now()), x: Math.round(char.x), y: Math.round(playerFootY()) },
+        mobs: instances.filter(function(m){ return m.free; }).map(function(m){
+          return { id: m.id, name: m.mob.name, x: Math.round(m.x), y: Math.round(m.groundY), alt: Math.round(m.alt || 0), state: m.state, act: m.actionName,
+                   hp: m.hp, hpMax: m.hpMax, child: m.child, fly: m.fly, dir: m.dir, culled: !!m._culled };
+        })
+      };
+    },
+    setSel: function(ids){ SEL = {}; ids.forEach(function(id){ SEL[String(id)] = true; }); SEL_TOUCHED = true; syncSelUI(); refreshFreeMobs(); },
+    setAI: function(k, v){ AI[k] = v; },
+    setPlayer: function(k, v){ PLAYER[k] = v; },
+    player: function(){ return Object.assign({}, PLAYER, { tag: PLAYER_TAG, calc: !!CALC_ON, doll: CUR_DOLL ? CUR_DOLL.file.slice(0, 40) : null, res: PLAYER_RES, speed: PHYS_SPEED_PCT, jump: PHYS_JUMP_PCT, setKey: char.setKey }); },
+    applyCalc: function(){ return applyCalc(); },
+    applyPreset: function(){ applyPresetMode(); },
+    reset: function(){ freeReset(); },
+    presetReady: function(){ return !!(PRESET && CALC_D); },
+    killMob: function(i, hp){ var m = instances.filter(function(x){ return x.free; })[i]; if (!m) return false; m.hp = hp == null ? 0 : hp; if (m.hp <= 0) startDie(m, performance.now()); return true; },
+    hitMob: function(i, skillId){
+      var m = instances.filter(function(x){ return x.free; })[i];
+      if (!m) return null;
+      var sk = skillId ? FX[skillId] : { _id: "click", kind: "attack_melee", fx: {}, stats: { damage: 100 } };
+      if (sk) sk._id = String(skillId || "click");
+      var before = m.hp;
+      applySkillDamage(m, 0, performance.now(), sk, 0, true, null);
+      return { before: before, after: m.hp };
+    },
+    probeHit: function(i, skillId, n){
+      var m = instances.filter(function(x){ return x.free; })[i];
+      var sk = FX[skillId], out = { miss: 0, crit: 0, min: 1e9, max: 0, em: 1 };
+      for (var k = 0; k < n; k++){
+        var r = freePlayerAttack(m, sk);
+        if (r.miss){ out.miss++; continue; }
+        if (r.crit) out.crit++;
+        out.em = r.em; out.min = Math.min(out.min, r.dmg); out.max = Math.max(out.max, r.dmg);
+      }
+      return out;
+    },
+    teleportNear: function(i, dx){ var m = instances.filter(function(x){ return x.free; })[i]; if (!m) return false; char.x = m.x + (dx || 0); if (STAGE_KEY === "monkey") { char.absY = m.groundY; MK.curPid = m.pid; } else if (STAGE_KEY === "golem") { /* 同層 */ } return true; },
+    forceSkill: function(i){ var m = instances.filter(function(x){ return x.free; })[i]; if (!m || !m.skillList.length) return false; m.skillList.forEach(function(s){ s.nextAt = 0; }); return true; },
+    setMobHp: function(i, hp){ var m = instances.filter(function(x){ return x.free; })[i]; if (m) m.hp = hp; }
   };
 }).catch(function(err){
   stageEl.innerHTML = "<p style='padding:16px;color:#a33'>素材載入失敗：" + err.message + "</p>";
