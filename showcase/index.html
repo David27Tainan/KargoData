@@ -60,6 +60,9 @@
 .kd-back-layer{ position:absolute; pointer-events:none; }
 .kd-ground-layer{ position:absolute; pointer-events:none; }
 .kd-mob-layer{ position:absolute; inset:0; }
+.kd-range-box, .kd-hit-box{ position:absolute; box-sizing:border-box; pointer-events:none; z-index:4; display:none; }
+.kd-range-box{ border:2px solid rgba(40,200,70,.95); background:rgba(40,200,70,.14); }
+.kd-hit-box{ border:2px solid rgba(235,45,45,.95); background:rgba(235,45,45,.10); }
 .kd-mob, .kd-char, .kd-summon{
   position:absolute; left:0; top:0; background-repeat:no-repeat; cursor:pointer;
   will-change:transform, left, top;
@@ -207,6 +210,9 @@ body.kd-mini .kd-mini-caption{
         <option value="monkey">猴子森林Ⅱ</option>
       </select>
     </label>
+    <label class="kd-rangebox-wrap" title="綠框＝目前技能打得到的範圍，紅框＝怪物的碰撞框（遊戲資料每格圖自帶）；兩框重疊才打得到">
+      <input type="checkbox" id="rangeBoxChk"> 顯示範圍框（綠＝技能、紅＝怪物）
+    </label>
     <label class="kd-comboAdv-wrap" id="comboAdvWrap" style="display:none">
       <input type="checkbox" id="comboAdv"> 已學進階鬥氣（上限 10 顆）
     </label>
@@ -326,6 +332,13 @@ var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-moti
 // 5 隻舞台王怪（沿用 5048 追加指示後的名單）。
 var BOSS_ORDER = ["8130100", "6230602", "6130101", "5150000", "7130102"];
 var UNDEAD_IDS = { "6230602": true };
+// 不死族判定：以怪物資料 info/undead 為準（骷髏指揮官、骷髏士官、天使猴、殭屍蘑菇王…），
+// 上面的表只是資料缺欄位時的備援。
+function isUndead(inst){
+  var st = (inst.stats && inst.stats.undead != null) ? inst.stats : (inst.mob && inst.mob.stats) || {};
+  if (st.undead != null) return !!Number(st.undead);
+  return !!UNDEAD_IDS[inst.id];
+}
 
 // 換武器套後，technique.action 為 null，或 action 指定的動作該武器套沒有時的預設攻擊動作
 // （規格 3 最後兩條）。
@@ -730,7 +743,7 @@ function render(inst){
 }
 
 function removeDom(inst){
-  [inst.el, inst.hpEl, inst.dmgStack].forEach(function(n){ if (n && n.parentNode) n.parentNode.removeChild(n); });
+  [inst.el, inst.hpEl, inst.dmgStack, inst.boxEl].forEach(function(n){ if (n && n.parentNode) n.parentNode.removeChild(n); });
   if (inst.parts) inst.parts.forEach(function(p){ if (p.el.parentNode) p.el.parentNode.removeChild(p.el); });
 }
 
@@ -1142,37 +1155,96 @@ function nearestLiveTarget(x){
 // 範圍夠高（例：天怒 lt=[-400,-350] rb=[400,250]，兩層落差 360，差一點點搆到，給
 // Y_EPS=15 的容許誤差，回報裁定）。originY 是施放者目前所在那層的地面 y。
 function mobsInRect(originX, originY, lt, rb, dir, maxCount){
-  var xLo, xHi;
-  if (dir === -1){ xLo = lt[0]; xHi = rb[0]; } else { xLo = -rb[0]; xHi = -lt[0]; }
-  var yLo = lt[1] - Y_EPS, yHi = rb[1] + Y_EPS;
-  var matched = liveTargets().filter(function(m){
-    var relX = m.x - originX;
-    var relY = (m.groundY != null ? m.groundY : originY) - originY;
-    return relX >= xLo && relX <= xHi && relY >= yLo && relY <= yHi;
-  });
-  matched.sort(function(a,b){ return Math.abs(a.x-originX) - Math.abs(b.x-originX); });
-  return matched.slice(0, maxCount);
+  return pickTargetsRect(originX, originY, { lt: lt, rb: rb, mobCount: maxCount }, dir, null);
 }
 
 // 沒有 lt/rb、只有 range 的技能：只打同一層（groundY 相同）的怪（規格 2）。
 function mobsInRange(originX, originY, range, dir, maxCount){
-  var matched = liveTargets().filter(function(m){
-    var sameTier = Math.abs((m.groundY != null ? m.groundY : originY) - originY) < 1;
-    if (!sameTier) return false;
-    if (dir === 1) return m.x >= originX && (m.x-originX) <= range;
-    return m.x <= originX && (originX-m.x) <= range;
-  });
+  return pickTargetsRect(originX, originY, { range: range, mobCount: maxCount }, dir, null);
+}
+
+// ---- 矩形判定（「綠框碰到紅框就打得到」）----
+// 怪物碰撞框：遊戲資料每個動作每一格都有 lt／rb（相對 origin，y 往下為正、腳底 = 0）；沒有的動作退回整張圖的大小（推定）。
+// 素材預設面左，面右時左右鏡射；縮放以 origin 為中心，跟畫圖一致。
+function mobBodyRect(inst){
+  var a = inst.action;
+  if (!a) return null;
+  var r = a.rects ? a.rects[(inst.frameIndex || 0) % a.rects.length] : null;
+  var sc = inst.scale || 1, lx, rx, ty, by;
+  if (r){ lx = r[0]; ty = r[1]; rx = r[2]; by = r[3]; }
+  else { lx = -a.centerX; ty = -a.footY; rx = a.fw - a.centerX; by = a.fh - a.footY; }
+  if (inst.dir === 1){ var t = lx; lx = -rx; rx = -t; }
+  var x = inst.x, y = (inst.groundY != null ? inst.groundY : GROUND_Y) - (inst.alt || 0);
+  return { x1: x + lx * sc, x2: x + rx * sc, y1: y + ty * sc, y2: y + by * sc };
+}
+// 技能攻擊框：有 lt/rb 就用（面左原始座標，面右鏡射；y 給 Y_EPS 容許），只有 range 的技能用面前 range 寬、
+// RANGE_BOX_H 高的框（高度推定約角色身高）。originY = 施放者腳底 y。
+var RANGE_BOX_H = 80;
+function skillRangeRect(stats, originX, originY, dir, fallbackRange){
+  var x1, x2, y1, y2;
+  if (stats.lt && stats.rb){
+    if (dir === -1){ x1 = stats.lt[0]; x2 = stats.rb[0]; } else { x1 = -stats.rb[0]; x2 = -stats.lt[0]; }
+    y1 = stats.lt[1] - Y_EPS; y2 = stats.rb[1] + Y_EPS;
+  } else {
+    var range = stats.range || fallbackRange;
+    if (!range) return null;
+    if (dir === 1){ x1 = 0; x2 = range; } else { x1 = -range; x2 = 0; }
+    y1 = -RANGE_BOX_H; y2 = Y_EPS;
+  }
+  return { x1: originX + x1, x2: originX + x2, y1: originY + y1, y2: originY + y2 };
+}
+function rectsOverlap(a, b){ return a.x1 <= b.x2 && a.x2 >= b.x1 && a.y1 <= b.y2 && a.y2 >= b.y1; }
+
+// kind 通用的範圍選怪：優先 lt/rb，其次 range，再沒有就用 fallbackRange（面前距離）。
+// 判定 = 技能框與怪物碰撞框有重疊（跟畫面上的綠框、紅框完全一樣），由近到遠取 mobCount 隻。
+function pickTargetsRect(originX, originY, stats, dir, fallbackRange){
+  var maxCount = stats.mobCount || 1;
+  var R = skillRangeRect(stats, originX, originY, dir, fallbackRange);
+  if (!R) return [];
+  var matched = liveTargets().filter(function(m){ var b = mobBodyRect(m); return b && rectsOverlap(R, b); });
   matched.sort(function(a,b){ return Math.abs(a.x-originX) - Math.abs(b.x-originX); });
   return matched.slice(0, maxCount);
 }
-
-// kind 通用的範圍選怪：優先 lt/rb，其次 range，再沒有就用 fallbackRange（面前距離）。
-function pickTargetsRect(originX, originY, stats, dir, fallbackRange){
-  var maxCount = stats.mobCount || 1;
-  if (stats.lt && stats.rb) return mobsInRect(originX, originY, stats.lt, stats.rb, dir, maxCount);
-  if (stats.range) return mobsInRange(originX, originY, stats.range, dir, maxCount);
-  if (fallbackRange) return mobsInRange(originX, originY, fallbackRange, dir, maxCount);
-  return [];
+// 目前選的技能用哪個備援距離（跟各 cast 函式一致）
+function fallbackRangeFor(skill){
+  if (!skill || !skill.stats) return null;
+  switch (skill.kind){
+    case "attack_melee": return skill.stats.range || 200;
+    case "attack_magic": return ballList(skill).length ? rangedFallbackRange(skill) : (skill.stats.range || 120);
+    case "attack_ranged": return rangedFallbackRange(skill);
+    case "heal": case "other": return 150;
+    default: return null;
+  }
+}
+var RANGE_BOX_ON = false, rangeBoxEl = null;
+function setRangeBoxOn(on){
+  RANGE_BOX_ON = !!on;
+  try { localStorage.setItem("kd-rangebox", RANGE_BOX_ON ? "1" : "0"); } catch (e) {}
+  if (!RANGE_BOX_ON){
+    if (rangeBoxEl) rangeBoxEl.style.display = "none";
+    instances.forEach(function(m){ if (m.boxEl) m.boxEl.style.display = "none"; });
+  }
+}
+function placeBox(el, R){
+  el.style.left = Math.round(R.x1) + "px"; el.style.top = Math.round(R.y1) + "px";
+  el.style.width = Math.max(1, Math.round(R.x2 - R.x1)) + "px"; el.style.height = Math.max(1, Math.round(R.y2 - R.y1)) + "px";
+  el.style.display = "block";
+}
+function drawRangeBoxes(){
+  if (!RANGE_BOX_ON || MINI_MODE) return;
+  if (!rangeBoxEl){ rangeBoxEl = document.createElement("div"); rangeBoxEl.className = "kd-range-box"; }
+  if (rangeBoxEl.parentNode !== mobLayerEl) mobLayerEl.appendChild(rangeBoxEl); // 換舞台會清空怪物層，框要掛回去
+  var sk = currentSkillId ? FX[currentSkillId] : null;
+  var R = sk && sk.stats && !(sk.kind === "heal" && !(sk.stats.lt && sk.stats.rb) && !sk.stats.mobCount)
+    ? skillRangeRect(sk.stats, char.x, charGroundY(), char.dir, fallbackRangeFor(sk)) : null;
+  if (R) placeBox(rangeBoxEl, R); else rangeBoxEl.style.display = "none";
+  instances.forEach(function(m){
+    var b = (!m._dead && m.state !== "die" && !m._culled) ? mobBodyRect(m) : null;
+    if (!b){ if (m.boxEl) m.boxEl.style.display = "none"; return; }
+    if (!m.boxEl){ m.boxEl = document.createElement("div"); m.boxEl.className = "kd-hit-box"; }
+    if (m.boxEl.parentNode !== mobLayerEl) mobLayerEl.appendChild(m.boxEl);
+    placeBox(m.boxEl, b);
+  });
 }
 
 function collectHitKeys(skill){
@@ -1829,7 +1901,7 @@ function castHeal(skill, ts){
   var targets = pickTargetsRect(char.x, charGroundY(), stats, char.dir, 150);
   var hitKeys = collectHitKeys(skill);
   targets.forEach(function(m){
-    if (!UNDEAD_IDS[m.id]) return;
+    if (!isUndead(m)) return;
     var dmg = rollSkillDamage(m.mob);
     m.state = "hit"; setAction(m, "hit1"); m.hitUntil = ts + HIT_DURATION;
     if (m.free){
@@ -2285,7 +2357,7 @@ function charHalfW(){
 
 function clampCharX(){
   var h = charHalfW();
-  if (STAGE_KEY === "monkey"){ char.x = clamp(char.x, MONKEY_CAM_X[0] + 4, MONKEY_CAM_X[1] - 4); return; }
+  if (STAGE_KEY === "monkey"){ var px = MONKEY.playerX || MONKEY_CAM_X; char.x = clamp(char.x, px[0] + 4, px[1] - 4); return; }
   if (STAGE_KEY === "golem" && !char.falling && !char.climbing){
     var floor = TIER_FLOOR[char.tier];
     if (floor) { char.x = clamp(char.x, floor[0]+4, floor[1]-4); return; }
@@ -2316,7 +2388,23 @@ function renderChar(){
 function doJump(){
   if (playerStunned()) return;
   if (STAGE_KEY === "monkey"){ monkeyJump(); return; }
-  if (!SETS || char.jumping || char.casting || char.climbing || char.falling) return;
+  if (!SETS || char.jumping || char.casting || char.falling) return;
+  if (STAGE_KEY === "golem"){
+    // 巨人之林也要能繩上跳、下跳（跟猴子森林Ⅱ同一套數字：繩上跳 277.5、下跳 196）。
+    // 這裡的掉落用 fvy（往下為正），所以往上跳是負值。
+    if (char.climbing){
+      var d = (keys.right && !keys.left) ? 1 : ((keys.left && !keys.right) ? -1 : 0);
+      if (!d) return; // 繩上要按方向鍵才能跳出
+      char.climbing = false; char.falling = true; char.fvy = -ROPE_JUMP_VY; char.fvx = d * ROPE_JUMP_VX * PHYS_SPEED_PCT / 100;
+      char.dir = d; char.dropTier = 0; char.tier = 3; // 當作從上層往下掉：經過第3層地板可落地，再往下落到第2層
+      return;
+    }
+    if (keys.down && char.tier === 3){
+      char.falling = true; char.fvy = -DOWN_JUMP_VY * PHYS_JUMP_PCT / 100; char.fvx = 0; char.dropTier = 3; char.absY = TIER_Y[3];
+      return;
+    }
+  }
+  if (char.climbing) return;
   char.jumping = true;
   char.vy = JUMP_V;
 }
@@ -2728,7 +2816,17 @@ function selectSkillById(id){
   // char.setKey 設成 undefined，後面 SETS[undefined] 會整頁壞掉（回報的坑）。
   var prevSet = char.setKey;
   if (skill.weaponTypes && skill.weaponTypes.length) char.setKey = skill.weaponTypes[0];
-  if (char.setKey !== prevSet) refreshPlayer(false); // 換武器套：預設裝備跟著換圖與數值
+  if (char.setKey !== prevSet){
+    // 套用計算機的是某一隻角色；換到別的職業群（例：法師存檔 → 劍士）就不能再用那份數值，
+    // 否則命中、攻擊都是別人的。這時自動回到該職業的 Lv80 預設並提示。
+    if (CALC_ON && (JOB_BY_SET[char.setKey] || 1) !== (JOB_BY_SET[CALC_ON.setKey] || 1)){
+      CALC_ON = null;
+      refreshPlayer(true);
+      applyMsg("換了職業，計算機的數值不適用，已改回 Lv" + (PRESET ? PRESET.level : 80) + " 預設裝備；要用計算機請再按一次「套用計算機」。");
+    } else {
+      refreshPlayer(false); // 換武器套：預設裝備跟著換圖與數值
+    }
+  }
   if (!char.casting){
     var moving = keys.left || keys.right;
     setCharAction(char.jumping ? "jump" : (moving ? "walk" : "stand"));
@@ -3070,7 +3168,25 @@ var KS = (function(){
       str: tot.str, dex: tot.dex, int: tot.int, luk: tot.luk, spd: clampN(spd + B.speed, 100, 140), jmp: clampN(100 + sum.JUMP + B.jump, 100, 123),
       mhp: mhp, mmp: mmp, hasHp: !!hb, hpGuess: !!(hb && hb.guess) };
   }
-  return { CATS: CATS, compute: compute, normalize: normalize, apTotal: apTotal, dollSig: dollSig, catOf: catOf };
+  // 自動配點（客戶端能力值視窗 AUTO 鈕的規則，實跑驗證）：先把副屬性（含裝備後的總值）補到門檻，
+  // 剩下的 AP 全部給主屬性。門檻（L = 等級）：劍士 DEX=min(2L, L+30)、法師 LUK=L+3、弓箭手 STR=L+5、
+  // 弩弓手 STR=L、盜賊 DEX=min(2L, L+40)、打手 DEX=min(2L, L+20)、槍手 STR=L。
+  // 這裡是「到了該等級一次配完」，跟每升一級按一次 AUTO 的結果可能差幾點（推定）。
+  function autoAp(cat, lvl, wt, gearSum){
+    var c = CATS[cat] || CATS.war, L = lvl, sec, thr;
+    if (cat === "war"){ sec = "dex"; thr = Math.min(2 * L, L + 30); }
+    else if (cat === "mage"){ sec = "luk"; thr = L + 3; }
+    else if (cat === "arch"){ sec = "str"; thr = wt === 46 ? L : L + 5; }
+    else if (cat === "thief"){ sec = "dex"; thr = Math.min(2 * L, L + 40); }
+    else if (cat === "pirB"){ sec = "dex"; thr = Math.min(2 * L, L + 20); }
+    else { sec = "str"; thr = L; }
+    var total = apTotal(lvl), have = 4 + int(gearSum && gearSum[sec.toUpperCase()]);
+    var secAp = Math.min(total, Math.max(0, thr - have));
+    var ap = { str: 0, dex: 0, int: 0, luk: 0 };
+    ap[sec] = secAp; ap[c.main] = total - secAp;
+    return ap;
+  }
+  return { CATS: CATS, compute: compute, normalize: normalize, apTotal: apTotal, autoAp: autoAp, dollSig: dollSig, catOf: catOf };
 })();
 
 var WT_TO_SET = { 30: "sword1h", 31: "axe1h", 32: "blunt1h", 33: "dagger", 37: "wand", 38: "staff", 40: "sword2h", 41: "axe2h",
@@ -3106,9 +3222,6 @@ function presetPick(setKey){
 function presetState(pk){
   var c = pk.c, cat = CAT_OF_CLASS[pk.cls];
   var S = KS.normalize({ cat: cat, lvl: PRESET.level });
-  var main = KS.catOf(cat).main;
-  S.ap = { str: 0, dex: 0, int: 0, luk: 0 };
-  S.ap[main] = KS.apTotal(PRESET.level);      // 5088 的 AP 規則：每級 5 點，主屬性全點
   var byId = {};
   Object.keys(c.armor).forEach(function(part){ byId[c.armor[part].id] = { part: part, e: c.armor[part] }; });
   pk.v.equipIds.forEach(function(id){
@@ -3119,6 +3232,10 @@ function presetState(pk){
     if (id === pk.v.weapon.id){ o.wt = Math.floor(id / 10000) % 100; S.slots.wpn = o; }
     else S.slots[PRESET_SLOT[byId[id].part]] = o;
   });
+  // AP 依客戶端自動配點規則（副屬性補到門檻、其餘給主屬性；每級 5 點）
+  var gear = { STR: 0, DEX: 0, INT: 0, LUK: 0 };
+  Object.keys(S.slots).forEach(function(k){ var st = S.slots[k] && S.slots[k].st; if (st) Object.keys(gear).forEach(function(g){ gear[g] += Number(st[g]) || 0; }); });
+  S.ap = KS.autoAp(cat, PRESET.level, S.slots.wpn ? S.slots.wpn.wt : 0, gear);
   return S;
 }
 function calcDollFor(S){
@@ -3646,9 +3763,9 @@ function freeChooseAction(inst, ts){
 }
 function freeContact(inst, ts){
   if (!inst.stats.bodyAttack || ts < PLAYER.invUntil) return;
-  if (Math.abs(char.x - inst.x) > inst.bodyHW + 12) return;
-  var by = mobBaseY(inst), pf = playerFootY();
-  if (pf < by - inst.bodyH || pf - 60 > by) return;
+  // 碰撞 = 怪物碰撞框（紅框）與角色身體（腳底往上 60、左右各 15，推定）重疊
+  var b = mobBodyRect(inst), pf = playerFootY();
+  if (!b || char.x + 15 < b.x1 || char.x - 15 > b.x2 || pf < b.y1 || pf - 60 > b.y2) return;
   mobHitPlayer(inst, null, ts);
 }
 function freeTick(inst, ts, dt){
@@ -3740,10 +3857,17 @@ function tickCharGolem(dt, ts){
   }
   var moving = false;
   if (char.falling){
+    var prevAbsY = char.absY;
     char.fvy = Math.min(FALL_SPEED, (char.fvy || 0) + GRAVITY * dt);
     char.absY += char.fvy * dt;
-    if (char.tier === 3 && char.absY >= TIER_Y[2]){
-      char.absY = TIER_Y[2]; char.falling = false; char.tier = 2;
+    if (char.fvx){ char.x += char.fvx * dt; clampCharX(); }
+    var f3 = TIER_FLOOR[3];
+    if (char.fvy > 0 && char.dropTier !== 3 && f3 && char.x >= f3[0] && char.x <= f3[1] && prevAbsY <= TIER_Y[3] && char.absY >= TIER_Y[3]){
+      // 繩上跳落到第3層地板
+      char.absY = TIER_Y[3]; char.falling = false; char.tier = 3; char.fvx = 0; char.dropTier = 0;
+      clampCharX();
+    } else if (char.tier === 3 && char.absY >= TIER_Y[2]){
+      char.absY = TIER_Y[2]; char.falling = false; char.tier = 2; char.fvx = 0; char.dropTier = 0;
       clampCharX();
     } else if (char.tier === 2 && char.absY > STAGE_H + 60){
       // 掉出畫面：回到第2層起點（規格 1）
@@ -3765,8 +3889,8 @@ function tickCharGolem(dt, ts){
     } else {
       var floor = TIER_FLOOR[char.tier];
       if (floor){
-        if (char.x < floor[0]){ char.x = floor[0]; char.falling = true; char.fvy = 0; char.absY = TIER_Y[char.tier]; }
-        else if (char.x > floor[1]){ char.x = floor[1]; char.falling = true; char.fvy = 0; char.absY = TIER_Y[char.tier]; }
+        if (char.x < floor[0]){ char.x = floor[0]; char.falling = true; char.fvy = 0; char.fvx = 0; char.dropTier = 0; char.absY = TIER_Y[char.tier]; }
+        else if (char.x > floor[1]){ char.x = floor[1]; char.falling = true; char.fvy = 0; char.fvx = 0; char.dropTier = 0; char.absY = TIER_Y[char.tier]; }
       }
     }
   }
@@ -3785,6 +3909,9 @@ function tickCharGolem(dt, ts){
 // （跟舊舞台一致，二段跳／後跳等移動技能直接沿用）；char.jumping＝在空中（含走出平台邊緣掉落）。
 function mkSegY(sg, x){ return sg.y1 + (sg.y2 - sg.y1) * (x - sg.x1) / (sg.x2 - sg.x1); }
 function mkPrepare(){
+  // 裁過的舞台（只留上面三層會生怪的平台）自帶固定鏡頭與可走範圍；沒有就用整張地圖的常數
+  if (MONKEY.camX){ MONKEY_CAM_X = MONKEY.camX; MONKEY_CAM_TOP = MONKEY.camTop || 0; MONKEY_CAM_BOTTOM = MONKEY.camBottom; }
+  if (MONKEY.view){ MONKEY_VIEW_W = MONKEY.view.w; MONKEY_VIEW_H = MONKEY.view.h; }
   MK.segs = []; MK.plats = {}; MK.platSegs = {}; MK.walls = MONKEY.walls || []; MK.ropes = MONKEY.ladders || [];
   MONKEY.platforms.forEach(function(p){
     MK.plats[p.id] = { x1:p.x1, x2:p.x2, yMax:p.yMax, kind:p.kind };
@@ -4039,6 +4166,7 @@ function tick(ts){
   tickBuffs(ts);
   tickCombo(ts);
   tickParallax();
+  drawRangeBoxes();
 
   rafId = requestAnimationFrame(tick);
 }
@@ -4615,6 +4743,15 @@ Promise.all([
 
   stagePickEl.addEventListener("change", function(){ switchStage(stagePickEl.value); });
   document.getElementById("btnApplyCalc").addEventListener("click", function(){ applyCalc(); if (stageEl) stageEl.focus({preventScroll:true}); });
+  (function(){
+    var chk = document.getElementById("rangeBoxChk");
+    if (!chk) return;
+    var saved = null;
+    try { saved = localStorage.getItem("kd-rangebox"); } catch (e) {}
+    chk.checked = saved == null ? true : saved === "1";
+    setRangeBoxOn(chk.checked);
+    chk.addEventListener("change", function(){ setRangeBoxOn(chk.checked); if (stageEl) stageEl.focus({preventScroll:true}); });
+  })();
   document.getElementById("btnPreset").addEventListener("click", function(){ applyPresetMode(); if (stageEl) stageEl.focus({preventScroll:true}); });
   document.getElementById("btnReset").addEventListener("click", function(){ freeReset(); if (stageEl) stageEl.focus({preventScroll:true}); });
 
