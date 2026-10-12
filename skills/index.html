@@ -396,7 +396,7 @@ function updateSkillPreview(sk){
     previewFrameEl.hidden = false;
     if (previewFrameEl.contentWindow) previewFrameEl.contentWindow.postMessage({ type:'kd-skill', id: sk.id }, '*');
   }
-  skPreviewPlayEl.href = '../showcase/?skill=' + sk.id;
+  skPreviewPlayEl.href = '../calc/?skill=' + sk.id + '#showcase';
 }
 
 /* ---------- 韓文佔位名稱（含 [TW] 或韓文字元）一律不顯示 ---------- */

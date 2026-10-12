@@ -193,7 +193,7 @@ body.kd-mini .kd-mini-caption{
 </style>
 </head>
 <body class="kd-body">
-<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../skills/" aria-current="page">職業技能</a><a href="../calc/">能力值計算機</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a><a class="kd-ext" href="https://maplestockdata.vercel.app/?i=maple-sidesria&amp;tf=1h&amp;type=area" target="_blank" rel="noopener">楓股數據 ↗</a><a class="kd-mail" href="mailto:maplestockdata@gmail.com">聯絡我：maplestockdata@gmail.com</a></div></div>
+<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>1.15.3</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../skills/">職業技能</a><a href="../calc/" aria-current="page">能力值計算機</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a><a class="kd-ext" href="https://maplestockdata.vercel.app/?i=maple-sidesria&amp;tf=1h&amp;type=area" target="_blank" rel="noopener">楓股數據 ↗</a><a class="kd-mail" href="mailto:maplestockdata@gmail.com">聯絡我：maplestockdata@gmail.com</a></div></div>
 <main class="kd-wrap">
 <header class="kd-hero">
   <p class="kd-eyebrow">MapleStory Classic · 1.15.3</p>
@@ -1210,7 +1210,7 @@ function fallbackRangeFor(skill){
   if (!skill || !skill.stats) return null;
   switch (skill.kind){
     case "attack_melee": return skill.stats.range || 200;
-    case "attack_magic": return ballList(skill).length ? rangedFallbackRange(skill) : (skill.stats.range || 120);
+    case "attack_magic": return skill.stats.range || rangedFallbackRange(skill); // 沒 lt/rb 的魔法（魔力爪、冰錐術）跟火焰箭一樣是長條
     case "attack_ranged": return rangedFallbackRange(skill);
     case "heal": case "other": return 150;
     default: return null;
@@ -1235,8 +1235,9 @@ function drawRangeBoxes(){
   if (!rangeBoxEl){ rangeBoxEl = document.createElement("div"); rangeBoxEl.className = "kd-range-box"; }
   if (rangeBoxEl.parentNode !== mobLayerEl) mobLayerEl.appendChild(rangeBoxEl); // 換舞台會清空怪物層，框要掛回去
   var sk = currentSkillId ? FX[currentSkillId] : null;
+  var boxStats = sk && EXPLODE_ARROW_IDS[currentSkillId] ? {} : (sk && sk.stats); // 爆炸箭的綠框是箭的射程（lt/rb 是爆炸範圍）
   var R = sk && sk.stats && !(sk.kind === "heal" && !(sk.stats.lt && sk.stats.rb) && !sk.stats.mobCount)
-    ? skillRangeRect(sk.stats, char.x, charGroundY(), char.dir, fallbackRangeFor(sk)) : null;
+    ? skillRangeRect(boxStats, char.x, charGroundY(), char.dir, fallbackRangeFor(sk)) : null;
   if (R) placeBox(rangeBoxEl, R); else rangeBoxEl.style.display = "none";
   instances.forEach(function(m){
     var b = (!m._dead && m.state !== "die" && !m._culled) ? mobBodyRect(m) : null;
@@ -1294,6 +1295,28 @@ function ballList(skill){
   if (fx.ball) arr.push(fx.ball);
   Object.keys(fx).filter(function(k){ return /^ball(\/\d+|\d+)$/.test(k); }).sort().forEach(function(k){ arr.push(fx[k]); });
   return arr;
+}
+
+// 個別技能的展示修正：
+// 吸血術 4101005：客戶端沒有 ball、動作是 vampire（拳套套有這個動作），是貼身的一下；距離同普通攻擊 120（推定）。
+function patchSkills(fxAll){
+  var dr = fxAll["4101005"];
+  if (dr){ dr.kind = "attack_melee"; dr.action = ["vampire"]; dr.stats = dr.stats || {}; dr.stats.range = 120; }
+}
+
+// 預載圖片：換武器套時把整套角色圖、選技能時把該技能的特效圖先抓下來，第一次施放才不會因為圖還沒載入而人物消失
+var preloaded = {};
+function preloadImg(url){ if (!url || preloaded[url]) return; preloaded[url] = true; var im = new Image(); im.src = url; }
+function preloadSet(setKey){
+  if (MINI_MODE || !SETS) return;
+  var cs = SETS[setKey];
+  if (cs) Object.keys(cs.actions).forEach(function(k){ preloadImg(CHAR_IMG_BASE + cs.actions[k].file); });
+  var s = CHAR80 && (CHAR80[setKey] || (cs && cs.alias ? CHAR80[cs.alias] : null));
+  if (s) Object.keys(s.actions).forEach(function(k){ preloadImg(CHAR80_IMG_BASE + s.actions[k].file); });
+}
+function preloadSkillFx(skill){
+  if (MINI_MODE) return;
+  Object.keys(skill.fx || {}).forEach(function(k){ var n = skill.fx[k]; if (n && n.file) preloadImg((n._base || FX_IMG_BASE) + n.file); });
 }
 
 // CharLevel/N/effect、CharLevel/N/hit/M：展示一律用最高等級那組，載入時直接蓋掉 effect／hit/M（推定：客戶端是依角色等級挑）
@@ -1470,8 +1493,18 @@ function queueHit(skill, inst, delay, idx, hitKey, opts){
     var now = performance.now();
     if (opts.rapid && MINI_MODE){ miniCastId++; miniHurtThisCast = false; }
     if (hitKey) spawnFxOnce(fxOf(skill, hitKey), inst.x, inst.groundY, dir);
-    applySkillDamage(inst, rollSkillDamage(inst.mob), now, skill, idx, !!opts.noDelay, tag);
+    var r = applySkillDamage(inst, rollSkillDamage(inst.mob), now, skill, idx, !!opts.noDelay, tag, opts.mult, opts.crit);
     if (opts.status) maybeStun(inst, skill.stats, now, skill);
+    if (!r.missed && !opts.shadow){
+      if (shadowActive()) later(function(){
+        if (inst._dead || inst.state === "die") return;
+        // 數字排在原本那幾下的上面（同四連箭的多段往上疊），不跟原本的數字重疊
+        var st = (skill && skill.stats) || {};
+        var above = idx + (st.attackCount || st.bulletCount || 1);
+        applySkillDamage(inst, rollSkillDamage(inst.mob), performance.now(), skill, above, true, tag, shadowPct(skill) / 100);
+      }, SHADOW_LAG_MS);
+      if (pickpocketActive() && Math.random() * 100 < PICKPOCKET.prop) dropMeso(inst);
+    }
   };
   var end = performance.now() + delay;
   if (end > hitEndAt) hitEndAt = end;
@@ -1493,18 +1526,21 @@ function fullCountHit(mob, tag, oneShot){
   }
   mob.hp = Math.max(0, mob.hpMax * (FULL_HITS - Math.min(FULL_HITS, mob.fullHits)) / FULL_HITS);
 }
-function applySkillDamage(mob, dmg, ts, skill, i, noDelay, tag){
-  var numKind = "normal", missed = false;
+// mult：這一下的傷害倍率（影分身 50%、致命一擊 250%）；forceCrit：數字用暴擊色
+function applySkillDamage(mob, dmg, ts, skill, i, noDelay, tag, mult, forceCrit){
+  var numKind = forceCrit ? "crit" : "normal", missed = false;
   if (mob.free){
     var rr = freePlayerAttack(mob, skill);
     missed = rr.miss; dmg = rr.dmg;
     if (rr.crit) numKind = "crit";
+    if (mult != null) dmg = Math.max(1, Math.round(dmg * mult));
     if (!missed){
       mob.hp = Math.max(0, mob.hp - dmg);
       if (rr.em !== 1) spawnLabel(mob, rr.em === 0 ? "免疫" : (rr.em < 1 ? "抗性" : "弱點"));
     }
   } else if (MINI_MODE) mob.hp = Math.max(0, mob.hp - dmg);
   else fullCountHit(mob, tag, !!ONE_SHOT_IDS[skill && skill._id]);
+  if (mult != null && !mob.free) dmg = Math.max(1, Math.round(dmg * mult));
   if (!missed){
     pushMob(mob, skill, dmg, ts);
     if (!isFinishSkill(skill)) comboGain(ts);
@@ -1521,6 +1557,7 @@ function applySkillDamage(mob, dmg, ts, skill, i, noDelay, tag){
   if (mob.hp <= 0 && mob.state !== "die"){
     startDie(mob, ts);
   }
+  return { missed: missed, dmg: dmg };
 }
 
 // ---------- 地上留存的特效（致命毒霧 2111003 等 tile/N） ----------
@@ -1704,11 +1741,18 @@ function tickCombo(ts){
 
 // ---------- 依 kind 的技能處理（規格 3；5056 規格 2 加 y 範圍判定） ----------
 
+// 落葉斬 4211002：衝過去打，施放後人物滑到目標怪身後（有目標：怪的位置再往前 DASH_PAST；沒目標：往前 DASH_NONE；推定）
+var DASH_IDS = { "4211002": 1 };
+var DASH_PAST = 40, DASH_NONE = 200;
 function castMelee(skill, ts){
   var stats = skill.stats;
   var gy = charGroundY();
   playEffects(skill, char.x, gy-char.y, char.dir);
   var targets = pickTargetsRect(char.x, gy, stats, char.dir, stats.range || 200);
+  if (DASH_IDS[skill._id] && !MINI_MODE){
+    var to = targets.length ? targets[0].x + char.dir * DASH_PAST : char.x + char.dir * DASH_NONE;
+    char.slide = { from: char.x, to: to, start: performance.now(), dur: Math.min(actionTotalMs(char.action), 300) };
+  }
   var hitKeys = collectHitKeys(skill);
   var count = stats.attackCount || 1;
   var D = actionHitMs(char.actionName);
@@ -1718,6 +1762,8 @@ function castMelee(skill, ts){
       queueHit(skill, m, base, i, hitKeys.length ? hitKeys[i % hitKeys.length] : null, { status: i === count - 1 });
     }
   });
+  lastMeleeTargets = targets;
+  return targets;
 }
 
 // ---------- 投射物（二十九節第 1、2 項） ----------
@@ -1792,7 +1838,33 @@ function castRanged(skill, ts){
   var balls = ballList(skill);
   if (!balls.length) balls = [bulletArt()]; // 沒有 ball：丟消耗品 bullet（該武器沒有素材時只有傷害沒有畫面）
   playEffects(skill, char.x, charGroundY()-char.y, char.dir);
+  if (EXPLODE_ARROW_IDS[skill._id]){ castExplodeArrow(skill, balls); return; }
   castBallAttack(skill, balls);
+}
+
+// 爆炸箭（炸彈箭、烈火箭、寒冰箭）：箭沿長條射程飛向最近一隻怪，打到才以技能 lt/rb 在那隻怪身上爆炸，
+// 爆炸框內最多 mobCount 隻一起吃傷害；落點特效（烈火／寒冰）改以那隻怪為中心（推定：客戶端爆炸中心沒追到）。
+var EXPLODE_ARROW_IDS = { "3101005":1, "3111003":1, "3211003":1 };
+function castExplodeArrow(skill, balls){
+  var stats = skill.stats, gy = charGroundY(), D = actionHitMs(char.actionName), fb = stats.range || rangedFallbackRange(skill);
+  var first = pickTargetsRect(char.x, gy, {}, char.dir, fb)[0];
+  if (!first){ fireProjectile(skill, balls[0], 0, { range: fb, launchMs: D }); return; }
+  var startX = char.x + char.dir * 20, dir = char.dir;
+  var flight = Math.max(1, PROJ_MS_PER_PX * Math.abs(first.x - startX));
+  fireProjectile(skill, balls[0], 0, { targetX: first.x, launchMs: D, mob: first });
+  var hitKeys = collectHitKeys(skill), at = Math.round(D + flight);
+  hitEndAt = Math.max(hitEndAt, performance.now() + at);
+  later(function(){
+    if (first._dead || first.state === "die") return;
+    var cx = first.x, cgy = first.groundY;
+    var R = skillRangeRect(stats, cx, cgy, dir, null);
+    var targets = R ? liveTargets().filter(function(m){ var b = mobBodyRect(m); return b && rectsOverlap(R, b); }) : [];
+    targets.sort(function(a,b){ return Math.abs(a.x-cx) - Math.abs(b.x-cx); });
+    targets = targets.slice(0, stats.mobCount || 6);
+    if (targets.indexOf(first) < 0) targets.unshift(first);
+    targets.forEach(function(m, i){ queueHit(skill, m, 0, 0, hitKeys.length ? hitKeys[i % hitKeys.length] : null, { noDelay: true, status: true }); });
+    if (RANDOM_SPECIAL_IDS[skill._id]) castSpecials(skill, performance.now(), { x: cx, gy: cgy });
+  }, at);
 }
 
 function castMagic(skill, ts){
@@ -1801,7 +1873,7 @@ function castMagic(skill, ts){
   playEffects(skill, char.x, gy-char.y, char.dir);
   var balls = ballList(skill);
   if (balls.length){ castBallAttack(skill, balls); return; }
-  var targets = pickTargetsRect(char.x, gy, stats, char.dir, stats.range || 120);
+  var targets = pickTargetsRect(char.x, gy, stats, char.dir, fallbackRangeFor(skill));
   var hitKeys = collectHitKeys(skill);
   var D = actionHitMs(char.actionName);
   targets.forEach(function(m, i){
@@ -1929,9 +2001,11 @@ function renderBuffBar(ts){
 
 function tickBuffs(ts){
   var changed = false;
+  var rideEnded = false;
   Object.keys(activeBuffs).forEach(function(id){
-    if (ts >= activeBuffs[id].expiresAt){ delete activeBuffs[id]; changed = true; }
+    if (ts >= activeBuffs[id].expiresAt){ delete activeBuffs[id]; changed = true; if (RIDE_IDS[id]) rideEnded = true; }
   });
+  if (rideEnded && char.kind !== "skill") setCharAction(char.kind);
   renderBuffBar(ts);
 }
 
@@ -1952,6 +2026,137 @@ function loopOnChar(holder, key, node, expiresAt){
   activeFx.push(entry);
   holder.loops[key] = entry;
   EFFECT_TICK++;
+}
+
+// ---------- 影分身 4111002／14111000 ----------
+// 客戶端 Lv30：分身普攻 x=80%、技能 y=50%；fx special/<動作> 是分身每個動作的圖。
+// 展示：buff 期間在角色後方畫分身（同動作同格，往後退 SHADOW_BACK px；推定：客戶端是晚幾格播，沒追到格數），
+// 每一下命中後 SHADOW_LAG_MS 再補一下 50%（普攻 80%）的傷害。
+var SHADOW_IDS = { "4111002":1, "14111000":1 };
+var SHADOW_BACK = 22, SHADOW_LAG_MS = 180, SHADOW_ALPHA = 0.85;
+var shadowEl = null;
+function shadowBuff(){
+  for (var id in activeBuffs){ if (SHADOW_IDS[id]) return activeBuffs[id]; }
+  return null;
+}
+function shadowActive(){ return !MINI_MODE && !!shadowBuff(); }
+function shadowPct(skill){
+  var b = shadowBuff(), st = b && b.skill.stats || {};
+  var basic = skill && skill._id === "basic";
+  return basic ? (st.x || 80) : (st.y || 50);
+}
+function renderShadow(){
+  var b = shadowActive() ? shadowBuff() : null;
+  if (!b || !char.action || char.action._morph){ if (shadowEl) shadowEl.style.display = "none"; return; }
+  var fx = b.skill.fx || {};
+  var node = fx["special/" + char.actionName] || fx["special/" + charSet().stand] || fx["special/stand1"] || fx["special/alert"];
+  if (!node){ if (shadowEl) shadowEl.style.display = "none"; return; }
+  if (!shadowEl){ shadowEl = document.createElement("div"); shadowEl.className = "kd-fx"; }
+  if (shadowEl.parentNode !== stageEl || shadowEl.nextSibling !== charEl) stageEl.insertBefore(shadowEl, charEl); // 永遠貼在角色後面
+  shadowEl.style.display = "";
+  var fi = Math.min(char.frameIndex || 0, (node.frames || 1) - 1);
+  placeSprite(shadowEl, FX_IMG_BASE, node, char.x - char.dir * SHADOW_BACK, charGroundY() - char.y, 1, char.dir, 0, 0, fi, SHADOW_ALPHA);
+}
+
+// ---------- 勇者掠奪術 4211003 掉楓幣、楓幣炸彈 4211006 ----------
+// 客戶端：4211003 Lv20 prop 60%、time 180；4211006 lt(-300,-120) rb(0,50)、mobCount 6、attackCount 20、hit/0～8 是每枚楓幣的爆炸圖。
+// 展示：buff 期間每一下命中 60% 機率在怪腳下掉一枚楓幣（四種楓幣圖隨機；落地小跳 MESO_HOP_MS，推定）。
+// 楓幣炸彈：綠框內的楓幣（最多 attackCount 枚）每 MESO_STEP_MS 引爆一枚（hit/N 隨機一張），每枚對框內最多 mobCount 隻各打一下
+// （每枚一段，傷害照技能 100%；推定：客戶端是依楓幣金額算，封包裡沒追到）。沒有楓幣就只做動作。
+var PICKPOCKET_IDS = { "4211003":1 };
+var PICKPOCKET = { prop: 60 };
+var MESO_EXPLOSION_ID = "4211006";
+var MESO_JSON = "../data/showcase/meso.json", MESO_IMG_BASE = "../assets/showcase/meso/";
+var MESO = null, mesos = [];
+var MESO_HOP_MS = 400, MESO_HOP_H = 36, MESO_STEP_MS = 60;
+function pickpocketActive(){
+  if (MINI_MODE) return false;
+  for (var id in activeBuffs){ if (PICKPOCKET_IDS[id]) return true; }
+  return false;
+}
+function dropMeso(inst){
+  if (!MESO) return;
+  var ids = Object.keys(MESO);
+  if (!ids.length) return;
+  var node = MESO[pick(ids)];
+  var x0 = inst.x, dx = randRange(-30, 30), gy = inst.groundY, born = performance.now();
+  var entry = {
+    mode: "loop", el: newFxEl(node), action: node, imgBase: MESO_IMG_BASE, frameIndex: 0, frameT: 0, expiresAt: Infinity,
+    meso: true, x: x0 + dx, groundY: gy, dir: 1,
+    getPos: function(){
+      var t = Math.min(1, (performance.now() - born) / MESO_HOP_MS);
+      return { x: x0 + dx * t, groundY: gy - MESO_HOP_H * Math.sin(Math.PI * t), dir: 1 };
+    }
+  };
+  activeFx.push(entry);
+  mesos.push(entry);
+  EFFECT_TICK++;
+}
+function removeMeso(m){
+  m.expiresAt = 0;
+  var i = mesos.indexOf(m);
+  if (i >= 0) mesos.splice(i, 1);
+}
+function castMesoExplosion(skill, ts){
+  var stats = skill.stats, gy = charGroundY(), dir = char.dir;
+  playEffects(skill, char.x, gy - char.y, dir);
+  var R = skillRangeRect(stats, char.x, gy, dir, null);
+  var inBox = R ? mesos.filter(function(m){ return m.x >= R.x1 && m.x <= R.x2 && m.groundY >= R.y1 && m.groundY <= R.y2; }) : [];
+  inBox = inBox.slice(0, stats.attackCount || 20);
+  if (!inBox.length){ spawnLabel(char, "範圍內沒有楓幣"); return; }
+  var hitKeys = collectHitKeys(skill), D = actionHitMs(char.actionName), tag = fullCastTag;
+  var targets = pickTargetsRect(char.x, gy, stats, dir, null);
+  inBox.forEach(function(m, i){
+    later(function(){
+      removeMeso(m);
+      if (hitKeys.length) spawnFxOnce(fxOf(skill, pick(hitKeys)), m.x, m.groundY, dir);
+      targets.forEach(function(t){
+        if (t._dead || t.state === "die") return;
+        applySkillDamage(t, rollSkillDamage(t.mob), performance.now(), skill, i, true, tag);
+      });
+    }, D + i * MESO_STEP_MS);
+  });
+  hitEndAt = Math.max(hitEndAt, performance.now() + D + inBox.length * MESO_STEP_MS);
+}
+
+// ---------- 致命暗殺 4221001 ----------
+// 客戶端 attackCount=3（動作 assassination），另有動作 assassinationS = 最後一擊（criticalDamage 250%、prop 90%），合計 4 段。
+// 展示：3 段打完接著播 assassinationS 打第 4 段；90% 機率 250%（數字用暴擊色），不中就普通一下（推定）。
+var ASSASSINATE = { "4221001": { action: "assassinationS", prop: 90, crit: 250 } };
+var lastMeleeTargets = [];
+function queueFinalStrike(id, skill, now){
+  var A = ASSASSINATE[id];
+  var act = charSet().actions[A.action];
+  if (!act || MINI_MODE) return 0;
+  var first = actionTotalMs(char.action), second = actionTotalMs(act), targets = lastMeleeTargets.slice();
+  later(function(){
+    if (!char.casting) return;
+    setCharAction("skill", A.action);
+    char.castEndAt = performance.now() + second;
+    var D2 = actionHitMs(A.action);
+    targets.forEach(function(m){
+      var hit = Math.random() * 100 < A.prop;
+      queueHit(skill, m, D2, 3, null, { mult: hit ? A.crit / 100 : 1, crit: hit, status: true });
+    });
+  }, first);
+  return second;
+}
+
+// ---------- 海盜船 5221006 ----------
+// 客戶端 Character/TamingMob/01932000（鯨魚號）；展示：buff 期間站／走／跳改用火槍套的 ride_stand1／ride_walk1／ride_jump 合成圖
+// （人物 sit 動作坐在船上）。再按一次海盜船或放其他技能就下船（推定：客戶端船上只能用船的技能，四轉技能舞台不列）。
+var RIDE_IDS = { "5221006":1 };
+var RIDE_ACTION = { stand: "ride_stand1", walk: "ride_walk1", jump: "ride_jump" };
+function rideActive(){
+  if (MINI_MODE) return false;
+  for (var id in activeBuffs){ if (RIDE_IDS[id]) return true; }
+  return false;
+}
+function dismount(){
+  var had = false;
+  Object.keys(activeBuffs).forEach(function(id){ if (RIDE_IDS[id]){ delete activeBuffs[id]; had = true; } });
+  if (had){ renderBuffBar(performance.now()); if (char.kind !== "skill") setCharAction(char.kind); }
+  return had;
 }
 
 function castBuff(id, skill, ts){
@@ -2174,6 +2379,7 @@ function genericCast(id, skill, ts){
     dragonCast(skill);
     return;
   }
+  if (String(id) === MESO_EXPLOSION_ID && !MINI_MODE){ castMesoExplosion(skill, ts); dragonCast(skill); return; }
   switch (skill.kind){
     case "attack_melee": castMelee(skill, ts); break;
     case "attack_ranged": castRanged(skill, ts); break;
@@ -2334,6 +2540,7 @@ function setCharAction(kind, explicitKey){
   var a80 = a && !MINI_MODE ? char80Action(key) : null;
   if (a80) a = a80; // 5106：完整舞台的所有動作（站、走、跳、攻擊、爬繩…）都用 Lv80 預設裝備整套圖，換武器套就換圖
   if (kind === "stand" && CUR_DOLL && !MINI_MODE) a = CUR_DOLL; // 套用計算機時：站姿用計算機存下的紙娃娃圖，其他動作維持上面的 Lv80 預設同武器套
+  if (RIDE_ACTION[kind] && rideActive()){ var ra = char80Action(RIDE_ACTION[kind]); if (ra) a = ra; } // 海盜船：坐在船上的合成圖
   if (!a && !(kind === "skill" && char.morph && MORPH[char.morph.id] && MORPH[char.morph.id].actions[key])) return;
   char.morphHit = null;
   var ma = morphActionFor(key, kind);
@@ -2375,10 +2582,7 @@ function charStealthed(){
 function renderChar(){
   var gy = charGroundY();
   var op = charStealthed() ? STEALTH_ALPHA : 1;
-  if (!MINI_MODE){
-    var nowT = performance.now();
-    if (nowT < PLAYER.invUntil && Math.floor(nowT / AI.flickerMs) % 2) op *= 0.35; // 受擊後 1500ms 閃爍
-  }
+  // 受擊後的無敵閃爍不畫（試玩不需要；無敵時間本身仍在）
   placeSprite(charEl, char.action._morph ? MORPH_IMG_BASE : (char.action._base != null ? char.action._base : CHAR_IMG_BASE), char.action, char.x, gy - char.y, 1, char.dir, 0, 0, char.frameIndex, op);
   var top = gy - char.y - char.action.footY;
   charDmgStack.style.left = char.x + "px";
@@ -2449,14 +2653,18 @@ function chargeExtraMs(skill){
 // 箭雨 3111004、升龍弩 3211004、烈火箭 3111003、寒冰箭 3211003 帶 special/x、y、fall：玩家技能端沒有程式讀它們，
 // 所以不做從天而降的位移，只在範圍內隨機 x、貼地連放 special/0；其他帶 x／y 的技能語意沒追到，仍然不播。
 var RANDOM_SPECIAL_IDS = { "3111004":1, "3211004":1, "3111003":1, "3211003":1 };
-function castSpecials(skill, ts){
+// 落點特效同時疊放幾次（展示調整：末日烈焰、箭雨、升龍弩看起來太稀疏，各疊 3 次）
+var SPECIAL_STACK = { "2111002":3, "3111004":3, "3211004":3 };
+// origin：{x, gy} 指定落點中心（爆炸箭在怪身上爆）；沒給就以角色為中心
+function castSpecials(skill, ts, origin){
   var fx = skill.fx || {}, p = skill.params || {};
   var keys = Object.keys(fx).filter(function(k){ return /^special\/\d+$/.test(k); });
   var landing = !!RANDOM_SPECIAL_IDS[skill._id];
   if (!keys.length || (!landing && (p["special/x"] != null || p["special/y"] != null))) return;
   if (landing) keys = [keys[0]]; // 只播 special/0
-  var count = p["special/count"] || 1, start = p["special/start"] || 0, itv = p["special/interval"] || 60;
-  var st = skill.stats || {}, dir = char.dir, gy = charGroundY(), ox = char.x;
+  var count = (p["special/count"] || 1) * (SPECIAL_STACK[skill._id] || 1), start = p["special/start"] || 0, itv = p["special/interval"] || 60;
+  var st = skill.stats || {}, dir = char.dir, gy = origin ? origin.gy : charGroundY(), ox = origin ? origin.x : char.x;
+  if (SPECIAL_STACK[skill._id]) itv = Math.max(10, Math.round(itv / SPECIAL_STACK[skill._id]));
   for (var i = 0; i < count; i++){
     var x, y;
     if (st.lt && st.rb){
@@ -2602,6 +2810,10 @@ function doSkill(force, idOverride){
     skill._rot = ((skill._rot == null ? -1 : skill._rot) + 1) % acts.length;
     info = { action: acts[skill._rot] };
   }
+  if (rideActive()){
+    var wasRiding = dismount();           // 船上放任何技能先下船；再按一次海盜船只下船不再上船
+    if (wasRiding && RIDE_IDS[id]){ char.skillCooldownUntil = now + SKILL_COOLDOWN; return { action: char.actionName, weaponSet: char.setKey, extraMs: 0 }; }
+  }
   char.casting = true;
   fullCastTag++;
   char.skillCooldownUntil = now + SKILL_COOLDOWN;
@@ -2625,8 +2837,13 @@ function doSkill(force, idOverride){
   }
   playAfterimage(skill);
   genericCast(id, skill, now);
+  if (ASSASSINATE[id]){
+    var secondMs = queueFinalStrike(id, skill, now);
+    char.castEndAt += secondMs;
+    return { action: info.action, weaponSet: char.setKey, extraMs: secondMs };
+  }
   if (RANDOM_SPECIAL_IDS[skill._id]){
-    castSpecials(skill, now);
+    if (!EXPLODE_ARROW_IDS[skill._id]) castSpecials(skill, now); // 爆炸箭的落點特效等箭打到怪才放
     var sp = skill.params || {};
     return { action: info.action, weaponSet: char.setKey, extraMs: (sp["special/start"] || 0) + (sp["special/count"] || 1) * (sp["special/interval"] || 60) + (sp["special/duration"] || 0) };
   }
@@ -2831,6 +3048,8 @@ function selectSkillById(id){
     var moving = keys.left || keys.right;
     setCharAction(char.jumping ? "jump" : (moving ? "walk" : "stand"));
   }
+  preloadSet(char.setKey);
+  preloadSkillFx(skill);
   highlightSkillRow();
   var advWrap = document.getElementById("comboAdvWrap");
   if (advWrap) advWrap.style.display = (id === "1111002" && !MINI_MODE) ? "" : "none";
@@ -3319,6 +3538,7 @@ function loadPlayerData(){
     PRESET = r[0]; CALC_D = { sk: r[1], buffs: r[2], ammo: r[3] };
     if (r[4] && r[4].sets){
       CHAR80 = r[4].sets;
+      preloadSet(char.setKey);
       Object.keys(CHAR80).forEach(function(k){ Object.keys(CHAR80[k].actions).forEach(function(n){ CHAR80[k].actions[n]._base = CHAR80_IMG_BASE; }); });
     }
     refreshPlayer(true);
@@ -3843,6 +4063,7 @@ function tickCharFlat(dt, ts){
   if (kind !== char.kind) setCharAction(kind);
   advanceFrame(char, dt);
   renderChar();
+  renderShadow();
 }
 
 // 巨人之林（規格 1）：第2層／第3層走動、爬繩子換層、走出平台邊緣往下掉。
@@ -3902,6 +4123,7 @@ function tickCharGolem(dt, ts){
   if (kind !== char.kind) setCharAction(kind);
   if (!(char.climbing && !(keys.up !== keys.down))) advanceFrame(char, dt);
   renderChar();
+  renderShadow();
 }
 
 // ---------- 猴子森林Ⅱ：多層 foothold、牆、繩子、鏡頭跟隨 ----------
@@ -4072,6 +4294,7 @@ function tickCharMonkey(dt, ts){
   if (kind !== char.kind) setCharAction(kind);
   if (kind !== "climb" || climbMoving) advanceFrame(char, dt);
   renderChar();
+  renderShadow();
   applyMonkeyCam();
 }
 
@@ -4187,6 +4410,7 @@ function resetCommonFxState(){
   projectiles = [];
   activeFx.forEach(function(fx){ if (fx.el.parentNode) fx.el.parentNode.removeChild(fx.el); });
   activeFx = [];
+  mesos = [];
   summons.forEach(function(s){ if (s.el.parentNode) s.el.parentNode.removeChild(s.el); });
   summons = [];
   activeBuffs = {};
@@ -4709,9 +4933,13 @@ Promise.all([
   loadJSON(BASICFX_JSON).catch(function(){ return {}; }),
   loadJSON(BULLET_JSON).catch(function(){ return {}; }),
   loadJSON(STAGE_MONKEY_JSON),
-  loadJSON(STDPDD_JSON).catch(function(){ return {}; })
+  loadJSON(STDPDD_JSON).catch(function(){ return {}; }),
+  loadJSON(MESO_JSON).catch(function(){ return null; })
 ]).then(function(res){
-  MOBS = res[0]; DIGITS = res[1]; CHARD = res[2]; FX = res[3]; applyCharLevel(FX); STAGE = res[4]; GOLEM = res[5]; DRAGON = res[6]; STATUS = res[7]; ACTION_TIMING = res[8] || {};
+  MESO = res[14] || null;
+  // 楓幣圖的 iconRaw origin 是圖示格的角（x 為負），掉在地上要置中落地：改用圖的中下（推定）
+  if (MESO) Object.keys(MESO).forEach(function(k){ var n = MESO[k]; n.centerX = Math.round(n.fw / 2); n.footY = n.fh; });
+  MOBS = res[0]; DIGITS = res[1]; CHARD = res[2]; FX = res[3]; applyCharLevel(FX); patchSkills(FX); STAGE = res[4]; GOLEM = res[5]; DRAGON = res[6]; STATUS = res[7]; ACTION_TIMING = res[8] || {};
   MORPH = res[9] || {}; BASICFX = res[10] || {};
   MONKEY = res[12]; mkPrepare();
   STDPDD = res[13] || {};
@@ -4825,13 +5053,14 @@ Promise.all([
       return {
         activeFx: activeFx.length, projectiles: projectiles.length, summons: summons.length,
         buffs: Object.keys(activeBuffs).length, mists: mists.length, mistTiles: mists.reduce(function(n, m){ return n + m.entries.length; }, 0), comboActive: combo.active, comboCount: combo.count, charX: char.x, charDir: char.dir, charY: char.y, charCasting: char.casting, charAction: char.actionName,
-        charSet: char.setKey, mobCount: instances.length
+        charSet: char.setKey, mobCount: instances.length, mesos: mesos.length
       };
     },
+    buffs: function(){ return Object.keys(activeBuffs); },
     charState: function(){
       return {
         stageKey: STAGE_KEY, x: char.x, tier: char.tier, absY: char.absY,
-        climbing: char.climbing, falling: char.falling, kind: char.kind
+        climbing: char.climbing, falling: char.falling, kind: char.kind, action: char.actionName, casting: char.casting
       };
     },
     dragonState: function(){
