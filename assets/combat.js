@@ -88,9 +88,10 @@
     return clamp((1.3 * acc - t) / (0.6 * acc), 0, 1);
   }
 
-  // 魔法命中：怪迴避 ≤ (INT+LUK)/2 × 100 / (255 + 10×等級差) × U(0.5,1.2)（等級差為負沒驗，推定照式）
+  // 魔法命中：怪迴避 ≤ (INT+LUK)/2 × 100 / (255 + 10×等級差) × U(0.5,1.2)
+  // 等級差只算怪比角色高的部分（跟物理一樣 max(0, 差)；負的沒驗，推定）。不夾的話怪低 26 級以上分母變負、必 MISS。
   function playerMagicHit(intStat, luk, mobEva, levelDiff, rng) {
-    var lim = (intStat + luk) / 2 * 100 / (255 + 10 * levelDiff) * (0.5 + 0.7 * roll(rng));
+    var lim = (intStat + luk) / 2 * 100 / (255 + 10 * Math.max(0, levelDiff)) * (0.5 + 0.7 * roll(rng));
     return mobEva <= lim;
   }
 
