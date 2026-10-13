@@ -2337,6 +2337,31 @@ function preloadSkillFx(skill){
   if (MINI_MODE) return;
   Object.keys(skill.fx || {}).forEach(function(k){ var n = skill.fx[k]; if (n && n.file) preloadImg((n._base || FX_IMG_BASE) + n.file); });
 }
+// 開頁先把三張地圖的圖抓好（約 1 MB），換舞台就不用等；選職業時把該職業整列技能的特效在背景抓好（一個職業約 2 MB）。
+// 都排在舞台畫出來之後才開始，不搶第一眼要用的圖。全部技能（約 53 MB）不先抓。
+function preloadStageImgs(stage, base){
+  if (!stage) return;
+  (stage.back || []).concat(stage.front || []).forEach(function(b){ if (b && b.file) preloadImg(base + b.file); });
+  if (stage.ground && stage.ground.file) preloadImg(base + stage.ground.file);
+  if (stage.groundFill && stage.groundFill.file) preloadImg(base + stage.groundFill.file);
+}
+function preloadAllStages(){
+  if (MINI_MODE) return;
+  setTimeout(function(){
+    preloadStageImgs(STAGE, STAGE_IMG_BASE);
+    preloadStageImgs(GOLEM, STAGE_GOLEM_IMG_BASE);
+    preloadStageImgs(MONKEY, STAGE_MONKEY_IMG_BASE);
+  }, 1500);
+}
+var preloadJobTimer = null;
+function preloadJobSkills(jn){
+  if (MINI_MODE) return;
+  if (preloadJobTimer) clearTimeout(preloadJobTimer);
+  preloadJobTimer = setTimeout(function(){
+    var ids = (skillsByGroup[currentGroup] && skillsByGroup[currentGroup][jn]) || [];
+    ids.forEach(function(id){ if (FX[id]) preloadSkillFx(FX[id]); });
+  }, 800);
+}
 
 // CharLevel/N/effect、CharLevel/N/hit/M：展示一律用最高等級那組，載入時直接蓋掉 effect／hit/M（推定：客戶端是依角色等級挑）
 function applyCharLevel(fxAll){
@@ -4008,6 +4033,7 @@ function selectJob(jn){
     b.classList.toggle("active", b.dataset.job === jn);
   });
   renderSkillRow(jn);
+  preloadJobSkills(jn);
   // 規格 5：選龍魔導士職業時，角色旁跟著一條對應轉數的龍。
   if (currentGroup === "龍魔導士"){
     var m = /第(\d+)次/.exec(jn);
@@ -6021,11 +6047,13 @@ Promise.all([
     switchStage("golem");
     if (paramSkill && FX[paramSkill]) jumpToSkillId(paramSkill);
     loadPlayerData();
+    preloadAllStages();
   }
 
   // ---------- Playwright 自動化測試用的除錯掛鉤（不影響一般使用） ----------
   window.KD_DEBUG = {
     ready: function(){ return !!(SETS && FX && MOBS); },
+    preloadCount: function(){ return Object.keys(preloaded).length; },
     listSkillIds: function(){ return Object.keys(FX); },
     skillInfo: function(id){
       var s = FX[id];
