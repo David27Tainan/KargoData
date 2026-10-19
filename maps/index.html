@@ -9,6 +9,36 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
 <link rel="stylesheet" href="../assets/site.css?v=4adfe4d6">
+<style>
+/* 5134：世界地圖（遊戲內 M／N） */
+.wm{margin:18px 0 6px; padding:12px; background:var(--kd-surface); border:1px solid var(--kd-line); border-radius:12px}
+.wm-bar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px}
+.wm-bar h2{margin:0 8px 0 0; font-size:16px}
+.wm-bar select,.wm-bar button{font:inherit; font-size:14px; padding:5px 10px; border-radius:8px; border:1px solid var(--kd-line); background:var(--kd-surface-2); color:var(--kd-ink); cursor:pointer}
+.wm-bar button[hidden]{display:none}
+.wm-hint{font-size:12px; color:var(--kd-muted)}
+.wm-stage{position:relative; width:100%; max-width:640px; margin:0 auto; user-select:none}
+.wm-stage img.wm-base{display:block; width:100%; height:auto; border-radius:8px}
+.wm-link,.wm-path{position:absolute; pointer-events:none}
+.wm-link{pointer-events:auto; cursor:pointer; opacity:0; transition:opacity .15s}
+.wm-link:hover,.wm-link:focus{opacity:1; outline:none}
+.wm-path{opacity:0; transition:opacity .15s}
+.wm-path.on{opacity:1}
+.wm-spot{position:absolute; width:12px; height:12px; margin:-6px 0 0 -6px; padding:0; border-radius:50%;
+  border:2px solid #fff; background:#e8553b; box-shadow:0 0 0 1px rgba(0,0,0,.45); cursor:pointer}
+.wm-spot.t1{width:9px; height:9px; margin:-4.5px 0 0 -4.5px; background:#f3b23a}
+.wm-spot.t3{width:14px; height:14px; margin:-7px 0 0 -7px; background:#3b8be8}
+.wm-spot.none{background:#9a9a9a; cursor:help}
+.wm-spot:hover,.wm-spot:focus,.wm-spot.sel{transform:scale(1.5); z-index:3; outline:none}
+.wm-tip{position:absolute; z-index:5; transform:translate(-50%,-100%); margin-top:-10px; padding:4px 8px; border-radius:6px;
+  background:rgba(20,20,20,.88); color:#fff; font-size:12px; white-space:nowrap; pointer-events:none}
+.wm-pop{max-width:640px; margin:10px auto 0; padding:10px 12px; border:1px solid var(--kd-line); border-radius:10px; background:var(--kd-surface-2); font-size:14px}
+.wm-pop[hidden]{display:none}
+.wm-pop h3{margin:0 0 4px; font-size:15px}
+.wm-pop p{margin:0 0 6px; color:var(--kd-muted); font-size:13px}
+.wm-pop ul{margin:0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:6px}
+.wm-pop button{font:inherit; font-size:13px; padding:4px 10px; border-radius:999px; border:1px solid var(--kd-line); background:var(--kd-surface); color:var(--kd-accent-ink); cursor:pointer}
+</style>
 </head>
 <body class="kd-body">
 <div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>2.0.0</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/" aria-current="page">地圖</a><a href="../skills/">職業技能</a><a href="../calc/">能力值計算機</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a><a href="../job3/">三轉任務</a><a href="../halloween/">萬聖節活動</a><a class="kd-ext" href="https://maplestockdata.vercel.app/?i=maple-sidesria&amp;tf=1h&amp;type=area" target="_blank" rel="noopener">楓股數據 ↗</a><a class="kd-mail" href="mailto:maplestockdata@gmail.com">聯絡我：maplestockdata@gmail.com</a></div></div>
@@ -19,6 +49,16 @@
     <p class="kd-lede">客戶端裡每一張有名字的地圖，依區域分組。點地圖卡片可以展開小地圖，看傳送點、NPC、怪物重生點的實際位置；下面另外列出沒怪物（點名字可以跳到怪物資料庫）、NPC、傳送點清單。</p>
     <div class="kd-stats" id="stats"></div>
   </div>
+  <section class="wm" id="wm" aria-label="世界地圖">
+    <div class="wm-bar">
+      <h2>世界地圖</h2>
+      <select id="wmSel" aria-label="切換大陸"></select>
+      <button type="button" id="wmUp" hidden>回上一層</button>
+      <span class="wm-hint">點圖上的區域可以進到那塊大陸；點小圓點直接看那張地圖。灰點＝客戶端沒有這張地圖。</span>
+    </div>
+    <div class="wm-stage" id="wmStage"></div>
+    <div class="wm-pop" id="wmPop" hidden></div>
+  </section>
   <div id="notice"></div>
   <div class="kd-bar">
     <input class="kd-search" id="q" type="search" placeholder="搜地圖名稱、區域或編號…" autocomplete="off">
@@ -388,6 +428,76 @@
     if (head && !head.classList.contains('kd-map-head-static')) openCard(row, head, idStr, m);  // 5016/5017：小地圖懶載入照常觸發（展開才 fetch）
   }
 
+
+  // ---------- 5134：世界地圖（遊戲內 M／N）：切大陸、點小點帶到那張地圖 ----------
+  (function(){
+    var WM = null, cur = null, stage = document.getElementById('wmStage'), sel = document.getElementById('wmSel');
+    var up = document.getElementById('wmUp'), pop = document.getElementById('wmPop'), tip = null;
+    function pct(v, tot){ return (100 * v / tot) + '%'; }
+    function depth(k){ var d = 0, r = WM.regions[k]; while (r && r.parent) { d++; r = WM.regions[r.parent]; } return d; }
+    function goMap(id){
+      try { var u = new URL(location.href); u.searchParams.set('id', id); u.searchParams.set('wm', cur); u.searchParams.delete('q'); history.pushState(null, '', u); } catch(e) {}
+      qEl.value = ''; noticeEl.innerHTML = '';
+      showOnlyMap(String(id));
+      listEl.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+    function showPop(sp){
+      var h = '<h3>' + esc(sp.title) + '</h3>' + (sp.desc ? '<p>' + esc(sp.desc) + '</p>' : '');
+      if (!sp.maps.length) h += '<p>客戶端沒有這張地圖，網站查不到。</p>';
+      else h += '<ul>' + sp.maps.map(function(m){ return '<li><button type="button" data-id="' + m[0] + '">' + esc(m[1]) + '</button></li>'; }).join('') + '</ul>';
+      pop.innerHTML = h; pop.hidden = false;
+    }
+    pop.addEventListener('click', function(ev){
+      var b = ev.target.closest('button[data-id]'); if (b) goMap(b.getAttribute('data-id'));
+    });
+    function draw(k){
+      var r = WM.regions[k]; if (!r) return;
+      cur = k; sel.value = k; up.hidden = !r.parent; pop.hidden = true;
+      var h = '<img class="wm-base" src="../assets/worldmap/' + r.img + '" width="' + r.w + '" height="' + r.h + '" alt="' + esc(r.name) + '">';
+      r.spots.forEach(function(sp, i){
+        if (sp.path) h += '<img class="wm-path" data-i="' + i + '" src="../assets/worldmap/' + sp.path.img + '" alt="" style="left:' + pct(sp.path.x, r.w) + ';top:' + pct(sp.path.y, r.h) + ';width:' + pct(sp.path.w, r.w) + '">';
+      });
+      r.links.forEach(function(l){
+        var to = WM.regions[l.to];
+        h += '<img class="wm-link" tabindex="0" role="button" data-to="' + l.to + '" src="../assets/worldmap/' + l.img + '" alt="' + esc(to.name) + '" title="' + esc(to.name) + '" style="left:' + pct(l.x, r.w) + ';top:' + pct(l.y, r.h) + ';width:' + pct(l.w, r.w) + '">';
+      });
+      r.spots.forEach(function(sp, i){
+        h += '<button type="button" class="wm-spot t' + sp.t + (sp.maps.length ? '' : ' none') + '" data-i="' + i + '" aria-label="' + esc(sp.title) + '" style="left:' + pct(sp.x, r.w) + ';top:' + pct(sp.y, r.h) + '"></button>';
+      });
+      stage.innerHTML = h + '<div class="wm-tip" hidden></div>';
+      tip = stage.querySelector('.wm-tip');
+    }
+    function spotOf(el){ return WM.regions[cur].spots[+el.getAttribute('data-i')]; }
+    function hover(el, on){
+      var i = el.getAttribute('data-i'), p = stage.querySelector('.wm-path[data-i="' + i + '"]');
+      if (p) p.classList.toggle('on', on);
+      if (on) { tip.textContent = spotOf(el).title; tip.style.left = el.style.left; tip.style.top = el.style.top; tip.hidden = false; }
+      else tip.hidden = true;
+    }
+    stage.addEventListener('mouseover', function(ev){ var s = ev.target.closest('.wm-spot'); if (s) hover(s, true); });
+    stage.addEventListener('mouseout', function(ev){ var s = ev.target.closest('.wm-spot'); if (s) hover(s, false); });
+    stage.addEventListener('click', function(ev){
+      var l = ev.target.closest('.wm-link'); if (l) { draw(l.getAttribute('data-to')); return; }
+      var s = ev.target.closest('.wm-spot'); if (!s) return;
+      var sp = spotOf(s);
+      stage.querySelectorAll('.wm-spot.sel').forEach(function(x){ x.classList.remove('sel'); });
+      s.classList.add('sel');
+      if (sp.maps.length === 1) { pop.hidden = true; goMap(sp.maps[0][0]); }
+      else showPop(sp);
+    });
+    stage.addEventListener('keydown', function(ev){
+      if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.classList.contains('wm-link')) { ev.preventDefault(); draw(ev.target.getAttribute('data-to')); }
+    });
+    sel.addEventListener('change', function(){ draw(sel.value); });
+    up.addEventListener('click', function(){ var r = WM.regions[cur]; if (r.parent) draw(r.parent); });
+    fetchJson('../data/worldmap.json').then(function(d){
+      WM = d;
+      sel.innerHTML = d.order.map(function(k){ return '<option value="' + k + '">' + '\u3000'.repeat(depth(k)) + esc(d.regions[k].name) + '</option>'; }).join('');
+      var start = d.root;
+      try { var w = new URLSearchParams(location.search).get('wm'); if (w && d.regions[w]) start = w; } catch(e) {}
+      draw(start);
+    }).catch(function(e){ document.getElementById('wm').hidden = true; console.error(e); });
+  })();
   var t;
   qEl.addEventListener('input', function(){ clearTimeout(t); t = setTimeout(render, 120); });
   var targetId = null;

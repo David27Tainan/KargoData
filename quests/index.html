@@ -377,15 +377,15 @@
     return any ? out : '<div class="cond">沒有額外獎勵。</div>';
   }
 
-  function stepHTML(step, idx){
+  function stepHTML(step, idx, isRepeat){
     var out = '<div class="step" data-qid="' + step.id + '">';
-    out += '<h3><span class="stepno">第 <b>' + (idx + 1) + '</b> 步</span>' + esc(step.name) + '</h3>';
+    out += '<h3><span class="stepno">' + (isRepeat ? '選項' : '第') + ' <b>' + (idx + 1) + '</b>' + (isRepeat ? '' : ' 步') + '</span>' + esc(step.name) + '</h3>';
 
     out += '<div class="srow2"><span class="lbl">接取</span><div>' + npcLine(step.start) + condText(step) + '</div></div>';
     out += '<div class="srow2"><span class="lbl">要做的事</span><div>' + goalHTML(step) + '</div></div>';
     out += '<div class="srow2"><span class="lbl">完成</span><div>' + npcLine(step.end) + '</div></div>';
 
-    var rewardBody = actHTML(step.complete);
+    var rewardBody = step.rewardNote ? '<div class="cond">' + esc(step.rewardNote) + '</div>' : actHTML(step.complete);
     var acceptGive = (step.accept.give || []);
     if (acceptGive.length || step.accept.exp || step.accept.money || step.accept.pop) {
       rewardBody += '<div class="acceptgive"><div class="lbl2">接任務時獲得</div>' + actHTML(step.accept) + '</div>';
@@ -400,7 +400,8 @@
   }
 
   function seriesDetail(s){
-    return s.steps.map(function(step, i){ return stepHTML(step, i); }).join('');
+    return (s.note ? '<div class="scriptnote">' + esc(s.note) + '</div>' : '') +
+      s.steps.map(function(step, i){ return stepHTML(step, i, s.repeat); }).join('');
   }
 
   /* ---------- 搜尋用字串／分層排序（5013：名稱優先） ---------- */
@@ -493,15 +494,15 @@
     var ul = document.createElement('ul'); ul.className = 'series';
     hits.forEach(function(s){
       var li = document.createElement('li'); li.className = 'srow'; li.setAttribute('data-sid', s.sid);
-      var lvText = s.lvmin ? ('Lv' + s.lvmin + (s.lvmax && s.lvmax !== s.lvmin ? '～' + s.lvmax : '')) : '不限等級';
+      var lvText = s.lvText || (s.lvmin ? ('Lv' + s.lvmin + (s.lvmax && s.lvmax !== s.lvmin ? '～' + s.lvmax : '')) : '不限等級');
       var mapText = s.start && s.start.map ? s.start.map : '';
       li.innerHTML =
         '<button class="shead" type="button" aria-expanded="' + (open[s.sid] ? 'true' : 'false') + '">' +
           (s.start ? npcIcon(s.start) : '<span class="ic ic-npc ph" aria-hidden="true"></span>') +
           '<span class="sname-wrap"><span class="sname"></span>' +
-          '<span class="smeta">' + s.n + ' 步<span class="dot">·</span>' + esc(lvText) +
+          '<span class="smeta">' + s.n + (s.repeat ? ' 種' : ' 步') + '<span class="dot">·</span>' + esc(lvText) +
           (mapText ? '<span class="dot">·</span>' + esc(mapText) : '') + '</span></span>' +
-          '<span class="stags"><span class="tag lv">' + esc(lvText) + '</span></span>' +
+          '<span class="stags">' + (s.repeat ? '<span class="tag lv">可重複</span>' : '') + '<span class="tag lv">' + esc(lvText) + '</span></span>' +
         '</button><div class="sbody"></div>';
       var nameEl = li.querySelector('.sname');
       nameEl.textContent = '';
