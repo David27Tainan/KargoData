@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
-<link rel="stylesheet" href="../assets/site.css?v=4adfe4d6">
+<link rel="stylesheet" href="../assets/site.css?v=49897ddc">
 <style>
 /* 5134：世界地圖（遊戲內 M／N） */
 .wm{margin:18px 0 6px; padding:12px; background:var(--kd-surface); border:1px solid var(--kd-line); border-radius:12px}
@@ -38,6 +38,12 @@
 .wm-pop p{margin:0 0 6px; color:var(--kd-muted); font-size:13px}
 .wm-pop ul{margin:0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:6px}
 .wm-pop button{font:inherit; font-size:13px; padding:4px 10px; border-radius:999px; border:1px solid var(--kd-line); background:var(--kd-surface); color:var(--kd-accent-ink); cursor:pointer}
+.kd-pt-focus{z-index:3}
+.kd-pt-focus::after{content:""; position:absolute; left:50%; top:50%; width:44px; height:44px; margin:-22px 0 0 -22px; border:3px solid #C0392B; border-radius:50%; animation:kdFocus 1.2s ease-out infinite; pointer-events:none}
+@keyframes kdFocus{0%{transform:scale(.6); opacity:1}100%{transform:scale(1.5); opacity:0}}
+@media (prefers-reduced-motion: reduce){.kd-pt-focus::after{animation:none}}
+.kd-npc-focus{margin:0 0 8px; padding:8px 12px; border-radius:8px; border:1px solid #C0392B; display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:14px}
+.kd-npc-focus button{margin-left:auto; font:inherit; font-size:13px; padding:3px 10px; border-radius:6px; border:1px solid var(--kd-line, #ccc); background:transparent; color:inherit; cursor:pointer}
 </style>
 </head>
 <body class="kd-body">
@@ -243,7 +249,7 @@
 
   // 5019：小地圖放大到容器寬度（上限 4 倍原生尺寸、容器寬度上限約 900px，平滑縮放不用 pixelated）；
   // 疊圖怪物／NPC 圖示跟著放大後的地圖寬度成比例，限制在 14～28px 高，不然小地圖被圖示整個蓋掉。
-  function overlayHTML(entry, rootId, vp){
+  function overlayHTML(entry, rootId, vp, focusNpc){
     var w = entry.mm[0], h = entry.mm[1];
     var renderW = Math.min(w * 4, 900);
     var iconH = Math.max(14, Math.min(28, Math.round(renderW / 40)));
@@ -258,11 +264,13 @@
         'data-tip="' + esc(tip) + '" data-href="../mobs/?id=' + mobId + '">' + sizedIconHTML(MOB_ATLAS, mobId, iconH, 'kd-ico-mob') + '</button>';
     });
     (entry.n || []).forEach(function(p){
+      // 5138：從任務頁帶 npc= 進來時，小地圖只畫那位 NPC（紅圈），其他 NPC 不畫
+      if (focusNpc && String(p[2]) !== String(focusNpc)) return;
       var left = (p[0] / w * 100).toFixed(2), top = (p[1] / h * 100).toFixed(2);
       var npcId = p[2], limited = p[3] === 1;
       var name = NPC_NAME[npcId] || ('NPC ' + npcId);
       var tip = name + (limited ? '（活動限定）' : '');
-      html += '<button type="button" class="kd-pt kd-pt-npc' + (limited ? ' kd-pt-limited' : '') + '" style="left:' + left + '%;top:' + top + '%" ' +
+      html += '<button type="button" class="kd-pt kd-pt-npc' + (limited ? ' kd-pt-limited' : '') + (focusNpc ? ' kd-pt-focus' : '') + '" style="left:' + left + '%;top:' + top + '%" ' +
         'data-tip="' + esc(tip) + '">' + sizedIconHTML(NPC_ATLAS, npcId, iconH, 'kd-ico-npc') + '</button>';
     });
     vp.forEach(function(p){
@@ -278,16 +286,26 @@
     return html;
   }
 
-  function buildDetailHTML(mapId, secondaryMobs){
+  function buildDetailHTML(mapId, secondaryMobs, focusNpc){
     var resolved = resolveLayout(mapId);
     if (!resolved) return '<p class="kd-map-empty">客戶端沒有這張地圖的配置資料。</p>';
     var entry = resolved.entry, rootId = resolved.rootId;
     var vp = visiblePortals(entry.p);
     var html = '';
-    if (entry.mm) html += legendHTML(entry, vp) + overlayHTML(entry, rootId, vp);
+    var nList = entry.n || [];
+    if (focusNpc) {
+      var only = nList.filter(function(p){ return String(p[2]) === String(focusNpc); });
+      if (only.length) nList = only; else focusNpc = null;  // 這張圖沒有他就照常全列
+    }
+    if (focusNpc) {
+      html += '<div class="kd-npc-focus">' + sizedIconHTML(NPC_ATLAS, focusNpc, 24, 'kd-ico-npc') +
+        '<span><b>' + esc(NPC_NAME[focusNpc] || ('NPC ' + focusNpc)) + '</b> 在這張地圖' + (entry.mm ? '（小地圖上閃紅圈的位置）' : '') + '</span>' +
+        '<button type="button" class="kd-npc-all" data-id="' + esc(String(mapId)) + '">顯示全部 NPC</button></div>';
+    }
+    if (entry.mm) html += legendHTML(entry, vp) + overlayHTML(entry, rootId, vp, focusNpc);
     html += '<div class="kd-map-sections">' +
       '<section><h3>出沒怪物</h3>' + mobRowsHTML(buildMobRows(entry.m, secondaryMobs)) + '</section>' +
-      '<section><h3>NPC</h3>' + npcRowsHTML(entry.n) + '</section>' +
+      '<section><h3>NPC</h3>' + npcRowsHTML(nList) + '</section>' +
       '<section><h3>傳送點</h3>' + portalRowsHTML(vp) + '</section>' +
       '</div>';
     return html;
@@ -375,12 +393,12 @@
 
   // 5030：拿掉「顯示地圖與配置」按鈕，改成點卡片本身（收合狀態下可見的那一塊）展開／收合；
   // 展開內容（小地圖＋三份清單）放在卡片按鈕範圍之外，裡面的連結點了會正常跳轉、不會連帶收合卡片。
-  function openCard(card, headBtn, id, m){
+  function openCard(card, headBtn, id, m, focusNpc){
     card.classList.add('open');
     headBtn.setAttribute('aria-expanded', 'true');
     var body = card.querySelector('.kd-map-body');
     if (body && !body.dataset.loaded) {
-      body.innerHTML = buildDetailHTML(id, m && m[4]);
+      body.innerHTML = buildDetailHTML(id, m && m[4], focusNpc);
       body.dataset.loaded = '1';
     }
   }
@@ -390,6 +408,13 @@
   }
 
   listEl.addEventListener('click', function(e){
+    var all = e.target.closest('.kd-npc-all');
+    if (all) {
+      var c = all.closest('.kd-map-card'), cid = c.getAttribute('data-id');
+      c.querySelector('.kd-map-body').innerHTML = buildDetailHTML(cid, (MAP_BY_ID[Number(cid)] || MAP_BY_ID[cid] || [])[4]);
+      try { var u = new URL(location.href); u.searchParams.delete('npc'); history.replaceState(null, '', u); } catch(err) {}
+      return;
+    }
     var head = e.target.closest('.kd-map-head');
     if (head && !head.classList.contains('kd-map-head-static')) {
       var card = head.closest('.kd-map-card');
@@ -413,7 +438,7 @@
 
   // 5022：?id= 打開時不要把整份清單畫出來再捲過去（手機深連結會捲不到，見 5021 回報）。
   // 改成只渲染那一張地圖、直接展開（不另加說明列）。
-  function showOnlyMap(idStr){
+  function showOnlyMap(idStr, focusNpc){
     var idx = MAPS.findIndex(function(m){ return String(m[0]) === String(idStr); });
     if (idx === -1) {
       noticeEl.innerHTML = '<p class="kd-note">找不到編號 ' + esc(idStr) + '（可能已從網站移除）</p>';
@@ -425,8 +450,18 @@
     listEl.innerHTML = '<section class="kd-group"><ul class="kd-map-cards">' + mapCardHTML(m, null) + '</ul></section>';
     var row = listEl.querySelector('.kd-map-card[data-id="' + idStr + '"]');
     var head = row.querySelector('.kd-map-head');
-    if (head && !head.classList.contains('kd-map-head-static')) openCard(row, head, idStr, m);  // 5016/5017：小地圖懶載入照常觸發（展開才 fetch）
+    if (head && !head.classList.contains('kd-map-head-static')) openCard(row, head, idStr, m, focusNpc);  // 5016/5017：小地圖懶載入照常觸發（展開才 fetch）
+    else if (focusNpc) {
+      // 5138：客戶端沒有小地圖的圖（多半是室內），至少講清楚 NPC 在這張圖
+      row.classList.add('open');
+      row.querySelector('.kd-map-body').innerHTML = '<div class="kd-npc-focus">' + sizedIconHTML(NPC_ATLAS, focusNpc, 24, 'kd-ico-npc') +
+        '<span><b>' + esc(NPC_NAME[focusNpc] || ('NPC ' + focusNpc)) + '</b> 在這張地圖。這張圖客戶端沒有小地圖，只能告訴你地圖名稱。</span></div>';
+    }
+    // 5138：從任務頁點 NPC 進來，直接捲到這張地圖卡片，不要停在上面的世界地圖（世界地圖載完會把卡片往下推，再捲一次）
+    if (focusNpc) { focusRow = row; scrollFocus(); }
   }
+  var focusRow = null;
+  function scrollFocus(){ if (focusRow) setTimeout(function(){ focusRow.scrollIntoView({block: 'start'}); }, 50); }
 
 
   // ---------- 5134：世界地圖（遊戲內 M／N）：切大陸、點小點帶到那張地圖 ----------
@@ -496,19 +531,20 @@
       var start = d.root;
       try { var w = new URLSearchParams(location.search).get('wm'); if (w && d.regions[w]) start = w; } catch(e) {}
       draw(start);
+      scrollFocus();
     }).catch(function(e){ document.getElementById('wm').hidden = true; console.error(e); });
   })();
   var t;
   qEl.addEventListener('input', function(){ clearTimeout(t); t = setTimeout(render, 120); });
-  var targetId = null;
+  var targetId = null, targetNpc = null;
   try {
     var params = new URLSearchParams(location.search);
     var pid = params.get('id');
-    if (pid) { targetId = pid; }
+    if (pid) { targetId = pid; targetNpc = params.get('npc'); }
     else { var pq = params.get('q'); if (pq) qEl.value = pq; }
   } catch(e) {}
   renderChips();
-  if (targetId !== null) showOnlyMap(targetId);
+  if (targetId !== null) showOnlyMap(targetId, targetNpc);
   else render();
 })().catch(function(err){
   document.getElementById('list').innerHTML = '<p class="kd-empty">資料載入失敗，請重新整理頁面。</p>';

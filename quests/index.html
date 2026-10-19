@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
-<link rel="stylesheet" href="../assets/site.css?v=4adfe4d6">
+<link rel="stylesheet" href="../assets/site.css?v=49897ddc">
 <style>
   :root{
     --bg:#EBEEF0; --surface:#FFFFFF; --surface-2:#F3F6F7; --sunk:#E2E7EA;
@@ -115,6 +115,9 @@
   }
   .tag b{font-family:"IBM Plex Mono",monospace;font-weight:500}
   .tag.lv{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .tag.cap{background:transparent;border:1px solid #C0392B;color:#C0392B;font-weight:600}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tag.cap{border-color:#F0776A;color:#F0776A}}
+  :root[data-theme="dark"] .tag.cap{border-color:#F0776A;color:#F0776A}
   .sbody{display:none;padding:4px 14px 16px;border-top:1px solid var(--line-soft)}
   li.srow.open .sbody{display:block}
   mark{background:var(--accent-soft);color:var(--accent-ink);padding:0 1px;border-radius:2px}
@@ -138,6 +141,8 @@
   .npcline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .npcwho{display:flex;flex-direction:column;gap:1px;min-width:0}
   .npcwho .nm{font-weight:500;font-size:14px}
+  .npcwho a.nm{color:inherit;text-decoration:none}
+  .npcwho a.nm:hover{text-decoration:underline}
   .npcwho .mp{font-size:12px;color:var(--muted)}
   .npcwho .mp a{color:var(--accent-ink);text-decoration:none}
   .npcwho .mp a:hover{text-decoration:underline}
@@ -279,17 +284,20 @@
     return '<span class="ic ic-mini ph" data-mob-id="' + id + '" aria-hidden="true"></span>';
   }
 
+  // 5138：點 NPC 跳地圖頁，帶 npc= 讓地圖頁只標這位 NPC（紅圈）
+  function npcHref(npc){ return '../maps/?id=' + npc.mapId + '&npc=' + npc.id; }
   function mapLink(npc){
     if (!npc.map) return '';
-    if (npc.mapId != null) return '<a href="../maps/?id=' + npc.mapId + '">' + esc(npc.map) + '</a>';
+    if (npc.mapId != null) return '<a href="' + npcHref(npc) + '">' + esc(npc.map) + '</a>';
     return esc(npc.map);
   }
 
   /* 接取／完成的 NPC 一行：頭像＋名稱＋地圖（可點就連結，查不到地圖 id 就純文字） */
   function npcLine(npc){
     if (!npc) return '<span class="npcline">（無資料）</span>';
-    return '<span class="npcline">' + npcIcon(npc) +
-      '<span class="npcwho"><span class="nm">' + esc(npc.name) + '</span>' +
+    var go = npc.mapId != null;
+    return '<span class="npcline">' + (go ? '<a href="' + npcHref(npc) + '" title="看 ' + esc(npc.name) + ' 在哪裡">' + npcIcon(npc) + '</a>' : npcIcon(npc)) +
+      '<span class="npcwho">' + (go ? '<a class="nm" href="' + npcHref(npc) + '">' + esc(npc.name) + '</a>' : '<span class="nm">' + esc(npc.name) + '</span>') +
       (npc.map ? '<span class="mp">' + mapLink(npc) + '</span>' : '') +
       '</span></span>';
   }
@@ -305,7 +313,10 @@
   }
   function condText(step){
     var bits = [];
-    if (step.lvmin) bits.push('Lv' + step.lvmin + (step.lvmax ? '～' + step.lvmax : ' 以上'));
+    // 5137：有等級上限要講清楚；只有上限沒下限的也要顯示
+    if (step.lvmin && step.lvmax) bits.push('Lv' + step.lvmin + '～' + step.lvmax + '（超過 Lv' + step.lvmax + ' 不能接）');
+    else if (step.lvmin) bits.push('Lv' + step.lvmin + ' 以上');
+    else if (step.lvmax) bits.push('Lv' + step.lvmax + ' 以下（超過不能接）');
     if (step.jobLabel) bits.push(step.jobLabel);
     (step.prev || []).forEach(function(p){ bits.push(prevText(p)); });
     (step.needItems || []).forEach(function(it){
@@ -501,7 +512,8 @@
     var ul = document.createElement('ul'); ul.className = 'series';
     hits.forEach(function(s){
       var li = document.createElement('li'); li.className = 'srow'; li.setAttribute('data-sid', s.sid);
-      var lvText = s.lvText || (s.lvmin ? ('Lv' + s.lvmin + (s.lvmax && s.lvmax !== s.lvmin ? '～' + s.lvmax : '')) : '不限等級');
+      var lvText = s.lvText || (s.lvmin ? ('Lv' + s.lvmin + (s.lvmax && s.lvmax !== s.lvmin ? '～' + s.lvmax : '')) :
+                                (s.lvcap ? 'Lv' + s.lvcap + ' 以下' : '不限等級'));
       var mapText = s.start && s.start.map ? s.start.map : '';
       li.innerHTML =
         '<button class="shead" type="button" aria-expanded="' + (open[s.sid] ? 'true' : 'false') + '">' +
@@ -509,7 +521,8 @@
           '<span class="sname-wrap"><span class="sname"></span>' +
           '<span class="smeta">' + s.n + (s.repeat ? ' 種' : ' 步') + '<span class="dot">·</span>' + esc(lvText) +
           (mapText ? '<span class="dot">·</span>' + esc(mapText) : '') + '</span></span>' +
-          '<span class="stags">' + (s.repeat ? '<span class="tag lv">可重複</span>' : '') + '<span class="tag lv">' + esc(lvText) + '</span></span>' +
+          '<span class="stags">' + (s.repeat ? '<span class="tag lv">可重複</span>' : '') +
+            (s.lvcap ? '<span class="tag cap" title="超過這個等級就不能接">上限 Lv' + s.lvcap + '</span>' : '') + '<span class="tag lv">' + esc(lvText) + '</span></span>' +
         '</button><div class="sbody"></div>';
       var nameEl = li.querySelector('.sname');
       nameEl.textContent = '';

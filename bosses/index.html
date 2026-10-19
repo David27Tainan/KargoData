@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
-<link rel="stylesheet" href="../assets/site.css?v=4adfe4d6">
+<link rel="stylesheet" href="../assets/site.css?v=49897ddc">
 <style>.kd-boss-summon{margin-top:8px; padding:8px 10px; border-radius:8px; background:var(--kd-gold-soft); font-size:13px}.kd-boss-summon b{display:block; margin-bottom:2px}.kd-boss-summon p{margin:2px 0}</style>
 </head>
 <body class="kd-body">
@@ -69,7 +69,7 @@
   if (D.timeMob && D.timeMob.length){
     h += '<section class="kd-sec"><h2>時段出現的怪</h2><p>地圖設定成只在特定時段出現的怪（時間為伺服器時間）。</p><div class="kd-tablewrap"><table class="kd-table"><thead><tr><th>怪物</th><th>出現時段</th><th>地圖</th></tr></thead><tbody>' +
       D.timeMob.map(function(t){
-        return '<tr><td>' + mobLink(t.mob, t.name) + '</td><td class="kd-time">' + t.startHour + ':00 ～ ' + t.endHour + ':00</td><td class="wrap">' + mapLink(t.map, t.mapname) + '</td></tr>';
+        return '<tr><td>' + mobLink(t.mob, t.name) + '</td><td class="kd-time">' + (t.startHour >= 0 && t.endHour >= 0 ? t.startHour + ':00 ～ ' + t.endHour + ':00' : '不限時段<br><span class="kd-faint">客戶端只設定出現時全圖廣播</span>') + '</td><td class="wrap">' + mapLink(t.map, t.mapname) + '</td></tr>';
       }).join('') + '</tbody></table></div></section>';
   }
   if (D.bossNoTimer && D.bossNoTimer.length){

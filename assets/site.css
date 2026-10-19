@@ -193,7 +193,7 @@
 .kd-map-cards{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px}
 .kd-map-card{
   background:var(--kd-surface); border:1px solid var(--kd-line); border-radius:14px;
-  box-shadow:var(--kd-shadow); overflow:hidden; scroll-margin-top:80px;
+  box-shadow:var(--kd-shadow); overflow:hidden; scroll-margin-top:140px;
 }
 .kd-map-card:not(.kd-map-card-static):hover{border-color:var(--kd-accent)}
 .kd-map-card.open{border-color:var(--kd-accent); box-shadow:0 0 0 2px var(--kd-accent-soft), var(--kd-shadow)}
