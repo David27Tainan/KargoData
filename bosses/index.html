@@ -68,8 +68,18 @@
     '<div class="kd-boss-grid">' + (D.cards || []).map(bossCard).join('') + '</div></section>';
   if (D.timeMob && D.timeMob.length){
     h += '<section class="kd-sec"><h2>時段出現的怪</h2><p>地圖設定成只在特定時段出現的怪（時間為伺服器時間）。</p><div class="kd-tablewrap"><table class="kd-table"><thead><tr><th>怪物</th><th>出現時段</th><th>地圖</th></tr></thead><tbody>' +
-      D.timeMob.map(function(t){
-        return '<tr><td>' + mobLink(t.mob, t.name) + '</td><td class="kd-time">' + (t.startHour >= 0 && t.endHour >= 0 ? t.startHour + ':00 ～ ' + t.endHour + ':00' : '不限時段<br><span class="kd-faint">客戶端只設定出現時全圖廣播</span>') + '</td><td class="wrap">' + mapLink(t.map, t.mapname) + '</td></tr>';
+      // 5140：同一隻怪、同一個時段的多張地圖合併成一列
+      (function(){
+        var g = {}, order = [];
+        D.timeMob.forEach(function(t){
+          var k = t.mob + '|' + t.startHour + '|' + t.endHour;
+          if (!g[k]) { g[k] = {mob: t.mob, name: t.name, startHour: t.startHour, endHour: t.endHour, maps: []}; order.push(k); }
+          g[k].maps.push(t);
+        });
+        return order.map(function(k){ g[k].maps.sort(function(a, b){ return a.map - b.map; }); return g[k]; })
+          .sort(function(a, b){ return a.mob - b.mob; });
+      })().map(function(t){
+        return '<tr><td>' + mobLink(t.mob, t.name) + '</td><td class="kd-time">' + (t.startHour >= 0 && t.endHour >= 0 ? t.startHour + ':00 ～ ' + t.endHour + ':00' : '不限時段<br><span class="kd-faint">客戶端只設定出現時全圖廣播</span>') + '</td><td class="wrap">' + t.maps.map(function(m){ return mapLink(m.map, m.mapname); }).join('<br>') + '</td></tr>';
       }).join('') + '</tbody></table></div></section>';
   }
   if (D.bossNoTimer && D.bossNoTimer.length){
