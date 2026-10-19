@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
 <link rel="stylesheet" href="../assets/site.css?v=4adfe4d6">
+<style>.kd-boss-summon{margin-top:8px; padding:8px 10px; border-radius:8px; background:var(--kd-gold-soft); font-size:13px}.kd-boss-summon b{display:block; margin-bottom:2px}.kd-boss-summon p{margin:2px 0}</style>
 </head>
 <body class="kd-body">
 <div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>2.0.0</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../skills/">職業技能</a><a href="../calc/">能力值計算機</a><a href="../bosses/" aria-current="page">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a><a href="../job3/">三轉任務</a><a href="../halloween/">萬聖節活動</a><a class="kd-ext" href="https://maplestockdata.vercel.app/?i=maple-sidesria&amp;tf=1h&amp;type=area" target="_blank" rel="noopener">楓股數據 ↗</a><a class="kd-mail" href="mailto:maplestockdata@gmail.com">聯絡我：maplestockdata@gmail.com</a></div></div>
@@ -58,6 +59,7 @@
         '<h3>' + mobLink(c.mob, c.name) + '</h3>' +
         '<p class="kd-boss-lv">Lv. ' + num(c.level) + '</p>' +
         '<ul class="kd-boss-locs">' + rows + '</ul>' +
+        ((c.summon && c.summon.length) ? '<div class="kd-boss-summon"><b>召喚方式</b>' + c.summon.map(function(x){ return '<p>' + esc(x) + '</p>'; }).join('') + '</div>' : '') +
       '</div></article>';
   }
 
