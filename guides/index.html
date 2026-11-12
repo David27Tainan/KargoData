@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>攻略｜魔龍數據</title>
+<meta name="description" content="《楓之谷 Classic》2.0.4 職業攻略總覽：劍士、法師、弓箭手、盜賊、海盜五大職業，依四轉職業分類。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<link rel="stylesheet" href="../assets/site.css?v=49897ddc">
+<style>
+:root{ --gold:#A8761A; --gold-soft:#F4EAD2; --done:#8A968D; --accent-soft:#F3E7E3; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --gold:#E2B75A; --gold-soft:#2E2716; --done:#6B776E; --accent-soft:#33201A; } }
+:root[data-theme="dark"]{ --gold:#E2B75A; --gold-soft:#2E2716; --done:#6B776E; --accent-soft:#33201A; }
+.kd-wrap{ max-width:900px; }
+.hero{ padding:40px 0 20px; border-bottom:2px solid var(--kd-line); margin-bottom:24px; }
+.hero h1{ margin:6px 0 10px; font-family:var(--kd-serif); font-size:clamp(32px,6vw,44px); line-height:1.15; color:var(--kd-accent); }
+.lede{ margin:0; max-width:60ch; font-size:16px; color:var(--kd-ink); }
+.classes{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:18px; }
+@media (max-width:760px){ .classes{ grid-template-columns:repeat(2,1fr); } }
+.cls{ font:inherit; color:var(--kd-ink); text-align:left; display:flex; flex-direction:column; gap:4px; padding:12px; border-radius:10px;
+  border:1px solid var(--kd-line); background:var(--kd-surface); cursor:pointer; min-width:0; }
+.cls:hover{ border-color:var(--kd-accent); }
+.cls[aria-pressed="true"]{ border-color:var(--kd-accent); background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--kd-accent); }
+.cn{ font-family:var(--kd-serif); font-size:20px; font-weight:700; }
+.cc{ font-size:13px; color:var(--kd-muted); }
+.ts{ display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+.ts .t{ font-size:12px; padding:1px 7px; border-radius:999px; border:1px solid var(--kd-line); color:var(--kd-muted); }
+.tags{ display:flex; flex-wrap:wrap; gap:6px; margin:0 0 16px; min-height:30px; }
+.tag{ font:inherit; font-size:14px; padding:4px 12px; border-radius:999px; border:1px solid var(--kd-line); background:var(--kd-surface); color:var(--kd-ink); cursor:pointer; }
+.tag[aria-pressed="true"]{ border-color:var(--kd-accent); background:var(--accent-soft); color:var(--kd-accent); font-weight:700; }
+.tag small{ color:var(--kd-muted); font-weight:400; margin-left:4px; }
+.list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+.guide{ display:flex; flex-direction:column; gap:6px; padding:14px 16px; border-radius:10px; border:1px solid var(--kd-line); background:var(--kd-surface);
+  color:var(--kd-ink); text-decoration:none; }
+.guide:hover{ border-color:var(--kd-accent); }
+.gt{ font-family:var(--kd-serif); font-size:20px; font-weight:700; color:var(--kd-accent); }
+.gtag{ align-self:flex-start; font-size:12px; padding:1px 8px; border-radius:999px; background:var(--gold-soft); color:var(--kd-ink); border:1px solid var(--gold); }
+.gch{ font-size:13px; color:var(--kd-muted); display:flex; flex-wrap:wrap; align-items:center; gap:2px; }
+.gd{ font-size:14px; }
+.empty{ color:var(--kd-muted); font-size:15px; padding:20px 0; }
+.jobic{ display:inline-block; vertical-align:middle; }
+.jobic i{ display:block; }
+.cls .jobic{ align-self:flex-start; }
+.gch .jobic{ transform:scale(.7); margin:-5px -3px; }
+</style>
+</head>
+<body class="kd-body">
+<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>2.0.4</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../skills/">職業技能</a><a href="../calc/">能力值計算機</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a><a href="../job3/">三轉任務</a><a href="../guides/" aria-current="page">攻略</a><a class="kd-ext" href="https://maplestockdata.vercel.app/?i=maple-sidesria&amp;tf=1h&amp;type=area" target="_blank" rel="noopener">楓股數據 ↗</a><a class="kd-mail" href="mailto:maplestockdata@gmail.com">聯絡我：maplestockdata@gmail.com</a></div></div>
+<main class="kd-wrap">
+<header class="hero">
+  <p class="kd-eyebrow">MapleStory Classic · 2.0.4 · 職業攻略</p>
+  <h1>攻略</h1>
+  <p class="lede">先選職業，再用四轉職業挑攻略。數值、NPC、道具和掉落都是遊戲客戶端的資料；加點順序和玩法是玩家整理的建議。</p>
+</header>
+<div class="classes" role="group" aria-label="職業"><button type="button" class="cls" data-c="100" aria-pressed="false"><span class="jobic" aria-hidden="true"><i style="width:26px;height:30px;background-image:url('../assets/job_0.png');background-position:-35px -1px"></i></span><span class="cn">劍士</span><span class="cc">還沒有攻略</span><span class="ts"><span class="t">英雄</span><span class="t">聖騎士</span><span class="t">黑騎士</span></span></button><button type="button" class="cls" data-c="200" aria-pressed="false"><span class="jobic" aria-hidden="true"><i style="width:26px;height:30px;background-image:url('../assets/job_0.png');background-position:-355px -1px"></i></span><span class="cn">法師</span><span class="cc">還沒有攻略</span><span class="ts"><span class="t">大魔導士(火、毒)</span><span class="t">大魔導士(冰、雷)</span><span class="t">主教</span></span></button><button type="button" class="cls" data-c="300" aria-pressed="false"><span class="jobic" aria-hidden="true"><i style="width:26px;height:30px;background-image:url('../assets/job_0.png');background-position:-675px -1px"></i></span><span class="cn">弓箭手</span><span class="cc">還沒有攻略</span><span class="ts"><span class="t">箭神</span><span class="t">神射手</span></span></button><button type="button" class="cls" data-c="400" aria-pressed="false"><span class="jobic" aria-hidden="true"><i style="width:26px;height:30px;background-image:url('../assets/job_0.png');background-position:-899px -1px"></i></span><span class="cn">盜賊</span><span class="cc">還沒有攻略</span><span class="ts"><span class="t">夜使者</span><span class="t">暗影神偷</span></span></button><button type="button" class="cls" data-c="500" aria-pressed="false"><span class="jobic" aria-hidden="true"><i style="width:26px;height:30px;background-image:url('../assets/job_0.png');background-position:-1123px -1px"></i></span><span class="cn">海盜</span><span class="cc">1 篇攻略</span><span class="ts"><span class="t">拳霸</span><span class="t">槍神</span></span></button></div>
+<div class="tags" id="tags" role="group" aria-label="四轉職業"></div>
+<div class="list" id="list"><a class="guide" href="../gunslinger/" data-c="500" data-j="522"><span class="gt">槍神攻略</span><span class="gtag">槍神</span><span class="gch"><span class="jobic" aria-hidden="true"><i style="width:26px;height:30px;background-image:url('../assets/job_0.png');background-position:-1123px -1px"></i></span>海盜 → <span class="jobic" aria-hidden="true"><i style="width:26px;height:30px;background-image:url('../assets/job_0.png');background-position:-1251px -1px"></i></span>槍手 → <span class="jobic" aria-hidden="true"><i style="width:26px;height:30px;background-image:url('../assets/job_0.png');background-position:-1283px -1px"></i></span>神槍手 → <span class="jobic" aria-hidden="true"><i style="width:26px;height:30px;background-image:url('../assets/job_0.png');background-position:-1315px -1px"></i></span>槍神</span><span class="gd">海盜火槍路線：特色、能力值與攻擊力公式、轉職路線、各轉技能加點、裝備與子彈去哪打。</span></a></div>
+<p class="empty" id="empty" hidden>這個職業還沒有攻略。</p>
+</main>
+<div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 2.0.4 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理 ・ 聯絡：<a href="mailto:maplestockdata@gmail.com">maplestockdata@gmail.com</a></div>
+<script>
+(function(){
+  var D = {"classes": [{"c": 100, "name": "劍士", "fourth": [{"j": 112, "name": "英雄"}, {"j": 122, "name": "聖騎士"}, {"j": 132, "name": "黑騎士"}]}, {"c": 200, "name": "法師", "fourth": [{"j": 212, "name": "大魔導士(火、毒)"}, {"j": 222, "name": "大魔導士(冰、雷)"}, {"j": 232, "name": "主教"}]}, {"c": 300, "name": "弓箭手", "fourth": [{"j": 312, "name": "箭神"}, {"j": 322, "name": "神射手"}]}, {"c": 400, "name": "盜賊", "fourth": [{"j": 412, "name": "夜使者"}, {"j": 422, "name": "暗影神偷"}]}, {"c": 500, "name": "海盜", "fourth": [{"j": 512, "name": "拳霸"}, {"j": 522, "name": "槍神"}]}], "guides": []};
+  var cards = [].slice.call(document.querySelectorAll('.cls'));
+  var guides = [].slice.call(document.querySelectorAll('.guide'));
+  var tagsEl = document.getElementById('tags'), empty = document.getElementById('empty');
+  var cur = {c: 0, j: 0};
+  function count(f){ return guides.filter(f).length; }
+  function apply(){
+    cards.forEach(function(b){ b.setAttribute('aria-pressed', String(+b.dataset.c === cur.c)); });
+    var html = '';
+    var cls = D.classes.filter(function(x){ return x.c === cur.c; })[0];
+    if (cls) {
+      html += '<button type="button" class="tag" data-j="0" aria-pressed="' + (cur.j === 0) + '">全部' + cls.name +
+        '<small>' + count(function(g){ return +g.dataset.c === cur.c; }) + '</small></button>';
+      cls.fourth.forEach(function(f){
+        html += '<button type="button" class="tag" data-j="' + f.j + '" aria-pressed="' + (cur.j === f.j) + '">' + f.name +
+          '<small>' + count(function(g){ return +g.dataset.j === f.j; }) + '</small></button>';
+      });
+    }
+    tagsEl.innerHTML = html;
+    var shown = 0;
+    guides.forEach(function(g){
+      var ok = (!cur.c || +g.dataset.c === cur.c) && (!cur.j || +g.dataset.j === cur.j);
+      g.hidden = !ok; if (ok) shown++;
+    });
+    empty.hidden = shown > 0;
+    var h = cur.j ? '#j' + cur.j : cur.c ? '#c' + cur.c : '';
+    if (location.hash !== h) history.replaceState(null, '', h || location.pathname + location.search);
+  }
+  cards.forEach(function(b){ b.addEventListener('click', function(){
+    var c = +b.dataset.c; cur = cur.c === c ? {c: 0, j: 0} : {c: c, j: 0}; apply();
+  }); });
+  tagsEl.addEventListener('click', function(e){
+    var t = e.target.closest('.tag'); if (!t) return; cur.j = +t.dataset.j; apply();
+  });
+  var m = /^#([cj])(\d+)$/.exec(location.hash);
+  if (m) { var v = +m[2]; cur = m[1] === 'j' ? {c: Math.floor(v / 100) * 100, j: v} : {c: v, j: 0}; }
+  apply();
+})();
+</script>
+</body>
+</html>
