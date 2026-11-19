@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>楓葉商會｜魔龍數據</title>
+<meta name="description" content="《楓之谷 Classic》楓葉商會活動：用楓葉商會硬幣換楓葉法杖與法師楓葉卷軸，三條衝裝路線與模擬結果。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+<link rel="stylesheet" href="../assets/site.css?v=49897ddc">
+<style>
+:root{ --mc-blue:#3E6C8F; --mc-blue-soft:#E0EAF2; --mc-gold:#A8761A; --mc-gold-soft:#F4EAD2; --mc-soft:#F7E3DC; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --mc-blue:#86B3D6; --mc-blue-soft:#1E2C38; --mc-gold:#E2B75A; --mc-gold-soft:#33291A; --mc-soft:#3B241D; } }
+:root[data-theme="dark"]{ --mc-blue:#86B3D6; --mc-blue-soft:#1E2C38; --mc-gold:#E2B75A; --mc-gold-soft:#33291A; --mc-soft:#3B241D; }
+.kd-wrap{ max-width:860px; }
+.mc{ display:flex; flex-direction:column; gap:28px; padding:32px 0 48px; }
+.mc h1{ font-family:var(--kd-serif); font-size:clamp(28px,6vw,40px); line-height:1.2; margin:0; color:var(--kd-accent); text-wrap:balance; }
+.mc h2{ font-family:var(--kd-serif); font-size:22px; margin:0 0 10px; }
+.mc .eyebrow{ font-size:12px; letter-spacing:.12em; color:var(--kd-muted); margin:0 0 6px; }
+.mc p{ margin:0; }
+.mc .num{ font-family:var(--kd-mono); font-variant-numeric:tabular-nums; }
+.mc .budget{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:14px; font-size:15px; }
+.mc .chip{ background:var(--kd-surface); border:1px solid var(--kd-line); border-radius:999px; padding:4px 12px; display:inline-flex; align-items:center; gap:6px; }
+.mc .answer{ background:var(--mc-soft); border-radius:10px; padding:16px 18px; }
+.mc .answer b{ color:var(--kd-accent); }
+.mc .tbl{ overflow-x:auto; }
+.mc table{ border-collapse:collapse; width:100%; font-size:15px; background:var(--kd-surface); border:1px solid var(--kd-line); }
+.mc th,.mc td{ padding:8px 10px; border-bottom:1px solid var(--kd-line); text-align:left; vertical-align:middle; }
+.mc th{ font-size:13px; color:var(--kd-muted); font-weight:500; }
+.mc td.r,.mc th.r{ text-align:right; }
+.mc td a{ color:inherit; }
+.mc .routes{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+@media (max-width:760px){ .mc .routes{ grid-template-columns:1fr; } }
+.mc .route{ background:var(--kd-surface); border:1px solid var(--kd-line); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.mc .route.b{ border-color:var(--kd-accent); box-shadow:inset 0 0 0 1px var(--kd-accent); }
+.mc .route h3{ margin:0; font-size:19px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.mc .tag{ font-size:12px; font-weight:500; padding:1px 8px; border-radius:999px; }
+.mc .tag.rec{ background:var(--kd-accent); color:var(--kd-surface); }
+.mc .tag.dog{ background:var(--mc-gold); color:var(--kd-surface); }
+.mc .tag.safe{ background:var(--mc-blue-soft); color:var(--mc-blue); }
+.mc .steps{ margin:0; padding-left:22px; display:flex; flex-direction:column; gap:6px; }
+.mc .stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.mc .stats div div{ background:none; padding:0; }
+.mc .stats > div{ background:var(--kd-bg); border-radius:6px; padding:6px 8px; }
+.mc .stats .k{ font-size:12px; color:var(--kd-muted); }
+.mc .stats .v{ font-family:var(--kd-mono); font-size:17px; }
+.mc .chart{ background:var(--kd-surface); border:1px solid var(--kd-line); border-radius:10px; padding:12px; overflow-x:auto; }
+.mc .chart svg{ width:100%; min-width:520px; height:auto; display:block; }
+.mc .grid{ stroke:var(--kd-line); stroke-width:1; }
+.mc .ax{ fill:var(--kd-muted); font-size:12px; }
+.mc .val{ fill:var(--kd-ink); font-size:11px; font-family:var(--kd-mono); }
+.mc .sa{ fill:var(--mc-blue); } .mc .sb{ fill:var(--kd-accent); } .mc .sc{ fill:var(--mc-gold); }
+.mc .legend{ display:flex; gap:16px; font-size:14px; margin:4px 0 8px; flex-wrap:wrap; }
+.mc .legend i{ display:inline-block; width:12px; height:12px; border-radius:2px; margin-right:6px; vertical-align:-1px; }
+.mc .note{ font-size:14px; color:var(--kd-muted); }
+.mc ul.notes{ margin:0; padding-left:20px; font-size:14px; color:var(--kd-muted); display:flex; flex-direction:column; gap:4px; }
+.mc .lab{ font-size:12px; padding:0 6px; border-radius:4px; border:1px solid var(--kd-line); color:var(--kd-muted); margin-left:4px; white-space:nowrap; }
+</style>
+</head>
+<body class="kd-body">
+<div class="kd-nav" role="navigation" aria-label="網站選單"><div class="kd-nav-in"><a class="kd-brand" href="../">魔龍數據<span>2.0.6</span></a><a href="../mobs/">怪物</a><a href="../items/">道具</a><a href="../quests/">任務</a><a href="../maps/">地圖</a><a href="../skills/">職業技能</a><a href="../calc/">能力值計算機</a><a href="../bosses/">野王</a><a href="../high-value/">高價值任務</a><a href="../ring/">冒險家戒指</a><a href="../job3/">三轉任務</a><a href="../guides/">攻略</a><a href="../maple-coin/" aria-current="page">楓葉商會</a><a class="kd-ext" href="https://maplestockdata.vercel.app/?i=maple-sidesria&amp;tf=1h&amp;type=area" target="_blank" rel="noopener">楓股數據 ↗</a><a class="kd-mail" href="mailto:maplestockdata@gmail.com">聯絡我：maplestockdata@gmail.com</a></div></div>
+<main class="kd-wrap mc">
+<header>
+  <p class="eyebrow">楓葉商會 · 11/19～12/09 · 法師</p>
+  <h1>楓葉法杖衝裝路線</h1>
+  <div class="budget">
+    <span class="chip"><span class="ico" aria-hidden="true"><i style="width:31px;height:31px;background-image:url('../assets/item_0.png');background-position:-764px -3764px"></i></span>每天 100 枚 × 21 天 ＝ <b class="num">2,100</b></span>
+    <span class="chip"><span class="ico" aria-hidden="true"><i style="width:35px;height:35px;background-image:url('../assets/item_0.png');background-position:-2162px -1682px"></i></span>法杖 <b class="num">200</b></span>
+    <span class="chip">卷軸 <b class="num">100</b></span>
+  </div>
+</header>
+
+<section class="answer">
+  <p><b>推薦拚高派。</b>不買 100%，主力 70%，15% 只在前兩格賭。</p>
+</section>
+
+<section>
+  <h2>商店</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>道具</th><th class="r">硬幣</th><th class="r">楓幣</th><th>效果</th></tr></thead>
+    <tbody>
+      <tr><td><span class="ico" aria-hidden="true"><i style="width:35px;height:35px;background-image:url('../assets/item_0.png');background-position:-2162px -1682px"></i></span><a href="../items/?id=1382296">楓葉法杖</a></td><td class="r num">200</td><td class="r">—</td><td>魔攻 58、上卷 7 次</td></tr>
+      <tr><td><span class="ico" aria-hidden="true"><i style="width:30px;height:28px;background-image:url('../assets/item_0.png');background-position:-2125px -2486px"></i></span><a href="../items/?id=2046417">卷軸 100%</a></td><td class="r num">100</td><td class="r">—</td><td>魔攻 +1</td></tr>
+      <tr><td><span class="ico" aria-hidden="true"><i style="width:30px;height:28px;background-image:url('../assets/item_0.png');background-position:-2165px -2486px"></i></span><a href="../items/?id=2046418">卷軸 70%</a></td><td class="r num">100</td><td class="r num">30 萬</td><td>魔攻 +2、INT +1</td></tr>
+      <tr><td><span class="ico" aria-hidden="true"><i style="width:30px;height:28px;background-image:url('../assets/item_0.png');background-position:-2205px -2486px"></i></span><a href="../items/?id=2046419">卷軸 15%</a></td><td class="r num">100</td><td class="r num">30 萬</td><td>魔攻 +5、INT +3</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note" style="margin-top:6px">失敗不會壞，只少一格。</p>
+</section>
+
+<section>
+  <h2>三條路線</h2>
+  <div class="routes">
+    <article class="route b">
+      <h3>拚高派 <span class="tag rec">推薦</span></h3>
+      <ol class="steps">
+        <li>買法杖，衝 2 張 <b>15%</b>。</li>
+        <li>中了 → 剩下全上 70%，收工。</li>
+        <li>都沒中 → 換一支重來，最多 3 支。</li>
+        <li>第 4 支不賭，7 張 70%。</li>
+      </ol>
+      <div class="stats">
+        <div><div class="k">平均</div><div class="v">69.6</div></div>
+        <div><div class="k">73 以上</div><div class="v">19%</div></div>
+        <div><div class="k">楓幣</div><div class="v">≤390萬</div></div>
+      </div>
+    </article>
+    <article class="route">
+      <h3>穩穩派 <span class="tag safe">安全</span></h3>
+      <ol class="steps">
+        <li>買法杖，第 1 張 <b>70%</b>。</li>
+        <li>沒中 → 換一支（11/30 前）。</li>
+        <li>中了 → 7 張 70% 上完。</li>
+        <li>11/30 前上完 → 再開一支，留最好的。</li>
+      </ol>
+      <div class="stats">
+        <div><div class="k">平均</div><div class="v">69.4</div></div>
+        <div><div class="k">最高</div><div class="v">72</div></div>
+        <div><div class="k">楓幣</div><div class="v">約420萬</div></div>
+      </div>
+    </article>
+    <article class="route">
+      <h3>賭狗流 <span class="tag dog">全押 15%</span></h3>
+      <ol class="steps">
+        <li>只用 <b>15%</b>。</li>
+        <li>前 4 張全沒中 → 換一支（12/03 前）。</li>
+        <li>中過 → 7 格上完。</li>
+        <li>12/03 前上完 → 再開一支，留最好的。</li>
+      </ol>
+      <div class="stats">
+        <div><div class="k">平均</div><div class="v">66.3</div></div>
+        <div><div class="k">78 以上</div><div class="v">2.7%</div></div>
+        <div><div class="k">63 以下</div><div class="v">46%</div></div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section>
+  <h2>最後魔攻落在哪</h2>
+  <div class="legend"><span><i style="background:var(--mc-blue)"></i>穩穩派</span><span><i style="background:var(--kd-accent)"></i>拚高派</span><span><i style="background:var(--mc-gold)"></i>賭狗流</span></div>
+  <div class="chart"><svg viewBox="0 0 680 270" role="img" aria-label="三條路線最後加了多少魔攻的機率"><line x1="40" x2="670" y1="224.0" y2="224.0" class="grid"/><text x="34" y="228.0" class="ax" text-anchor="end">0%</text><line x1="40" x2="670" y1="182.4" y2="182.4" class="grid"/><text x="34" y="186.4" class="ax" text-anchor="end">10%</text><line x1="40" x2="670" y1="140.8" y2="140.8" class="grid"/><text x="34" y="144.8" class="ax" text-anchor="end">20%</text><line x1="40" x2="670" y1="99.2" y2="99.2" class="grid"/><text x="34" y="103.2" class="ax" text-anchor="end">30%</text><line x1="40" x2="670" y1="57.6" y2="57.6" class="grid"/><text x="34" y="61.6" class="ax" text-anchor="end">40%</text><line x1="40" x2="670" y1="16.0" y2="16.0" class="grid"/><text x="34" y="20.0" class="ax" text-anchor="end">50%</text><rect x="47.9" y="218.7" width="20.5" height="5.3" class="sa" rx="2"><title>穩穩派 +6 以下：1.3%</title></rect><text x="58.1" y="214.7" class="val" text-anchor="middle">1</text><rect x="69.3" y="204.0" width="20.5" height="20.0" class="sb" rx="2"><title>拚高派 +6 以下：4.8%</title></rect><text x="79.6" y="200.0" class="val" text-anchor="middle">5</text><rect x="90.8" y="34.3" width="20.5" height="189.7" class="sc" rx="2"><title>賭狗流 +6 以下：45.6%</title></rect><text x="101.1" y="30.3" class="val" text-anchor="middle">46</text><text x="79.6" y="242" class="ax" text-anchor="middle">+6 以下</text><rect x="126.6" y="190.5" width="20.5" height="33.5" class="sa" rx="2"><title>穩穩派 +7～9：8.1%</title></rect><text x="136.9" y="186.5" class="val" text-anchor="middle">8</text><rect x="148.1" y="159.4" width="20.5" height="64.6" class="sb" rx="2"><title>拚高派 +7～9：15.5%</title></rect><text x="158.3" y="155.4" class="val" text-anchor="middle">16</text><rect x="169.6" y="224.0" width="20.5" height="0.0" class="sc" rx="2"><title>賭狗流 +7～9：0.0%</title></rect><text x="158.3" y="242" class="ax" text-anchor="middle">+7～9</text><rect x="205.4" y="104.5" width="20.5" height="119.5" class="sa" rx="2"><title>穩穩派 +10～11：28.7%</title></rect><text x="215.6" y="100.5" class="val" text-anchor="middle">29</text><rect x="226.8" y="111.6" width="20.5" height="112.4" class="sb" rx="2"><title>拚高派 +10～11：27.0%</title></rect><text x="237.1" y="107.6" class="val" text-anchor="middle">27</text><rect x="248.3" y="65.9" width="20.5" height="158.1" class="sc" rx="2"><title>賭狗流 +10～11：38.0%</title></rect><text x="258.6" y="61.9" class="val" text-anchor="middle">38</text><text x="237.1" y="242" class="ax" text-anchor="middle">+10～11</text><rect x="284.1" y="48.9" width="20.5" height="175.1" class="sa" rx="2"><title>穩穩派 +12～13：42.1%</title></rect><text x="294.4" y="44.9" class="val" text-anchor="middle">42</text><rect x="305.6" y="96.7" width="20.5" height="127.3" class="sb" rx="2"><title>拚高派 +12～13：30.6%</title></rect><text x="315.8" y="92.7" class="val" text-anchor="middle">31</text><rect x="327.1" y="224.0" width="20.5" height="0.0" class="sc" rx="2"><title>賭狗流 +12～13：0.0%</title></rect><text x="315.8" y="242" class="ax" text-anchor="middle">+12～13</text><rect x="362.9" y="141.4" width="20.5" height="82.6" class="sa" rx="2"><title>穩穩派 +14：19.9%</title></rect><text x="373.1" y="137.4" class="val" text-anchor="middle">20</text><rect x="384.4" y="211.2" width="20.5" height="12.8" class="sb" rx="2"><title>拚高派 +14：3.1%</title></rect><text x="394.6" y="207.2" class="val" text-anchor="middle">3</text><rect x="405.8" y="224.0" width="20.5" height="0.0" class="sc" rx="2"><title>賭狗流 +14：0.0%</title></rect><text x="394.6" y="242" class="ax" text-anchor="middle">+14</text><rect x="441.6" y="224.0" width="20.5" height="0.0" class="sa" rx="2"><title>穩穩派 +15～16：0.0%</title></rect><rect x="463.1" y="161.7" width="20.5" height="62.3" class="sb" rx="2"><title>拚高派 +15～16：15.0%</title></rect><text x="473.3" y="157.7" class="val" text-anchor="middle">15</text><rect x="484.6" y="167.4" width="20.5" height="56.6" class="sc" rx="2"><title>賭狗流 +15～16：13.6%</title></rect><text x="494.8" y="163.4" class="val" text-anchor="middle">14</text><text x="473.3" y="242" class="ax" text-anchor="middle">+15～16</text><rect x="520.4" y="224.0" width="20.5" height="0.0" class="sa" rx="2"><title>穩穩派 +17～19：0.0%</title></rect><rect x="541.9" y="207.3" width="20.5" height="16.7" class="sb" rx="2"><title>拚高派 +17～19：4.0%</title></rect><text x="552.1" y="203.3" class="val" text-anchor="middle">4</text><rect x="563.3" y="224.0" width="20.5" height="0.0" class="sc" rx="2"><title>賭狗流 +17～19：0.0%</title></rect><text x="552.1" y="242" class="ax" text-anchor="middle">+17～19</text><rect x="599.1" y="224.0" width="20.5" height="0.0" class="sa" rx="2"><title>穩穩派 +20 以上：0.0%</title></rect><rect x="620.6" y="224.0" width="20.5" height="0.0" class="sb" rx="2"><title>拚高派 +20 以上：0.0%</title></rect><rect x="642.1" y="212.8" width="20.5" height="11.2" class="sc" rx="2"><title>賭狗流 +20 以上：2.7%</title></rect><text x="652.3" y="208.8" class="val" text-anchor="middle">3</text><text x="630.8" y="242" class="ax" text-anchor="middle">+20 以上</text><text x="40" y="264" class="ax">魔攻加了多少（法杖本身 58）</text></svg></div>
+</section>
+
+<section>
+  <h2>注意</h2>
+  <ul class="notes">
+    <li>硬幣每天每伺服器最多 100 枚，不能交易<span class="lab">官網</span>。</li>
+    <li>商店開到 12/16，卷軸 12/17 00:00 前要上完<span class="lab">官網</span>。</li>
+    <li>法師卷軸價錢照劍士版推算<span class="lab">推定</span>。</li>
+    <li>數字是每條路線模擬 20 萬次的結果。</li>
+  </ul>
+</section>
+</main>
+<div class="kd-foot" role="contentinfo">資料取自《楓之谷 Classic》客戶端 2.0.6 ・ 遊戲素材著作權屬於原廠 ・ 非官方粉絲整理 ・ 聯絡：<a href="mailto:maplestockdata@gmail.com">maplestockdata@gmail.com</a></div>
+</body>
+</html>
